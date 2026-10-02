@@ -205,3 +205,9 @@ test('online lookup: Arabic to English and nutrient mapping', () => {
   assert.equal(off?.name, 'Chipsy (PepsiCo)');
   assert.deepEqual(off?.tags, ['processed']);
 });
+
+test('Open Food Facts fast-search shapes (arrays, language maps) map safely', () => {
+  const o = fromOFFHit({ code: 622, product_name: { ar: 'شيبسي', en: 'Chipsy' }, brands: ['Chipsy', 'PepsiCo'], nutriments: { 'energy-kcal_100g': 536 } });
+  assert.equal(o?.name, 'شيبسي (Chipsy)');
+  assert.equal(fromOFFHit({ code: '1', product_name: 5 as unknown as string, nutriments: { 'energy-kcal_100g': 1 } }), null);
+});

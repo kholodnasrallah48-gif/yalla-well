@@ -64,13 +64,16 @@ export function fromUSDA(x: USDAFood): OnlineFood | null {
   };
 }
 
-type OFFHit = { code?: string; product_name?: string; product_name_ar?: string; product_name_en?: string; brands?: string; nova_group?: number; serving_quantity?: number | string; nutriments?: Record<string, number | undefined> };
+type OFFHit = { code?: string | number; product_name?: unknown; product_name_ar?: unknown; product_name_en?: unknown; brands?: unknown; nova_group?: number; serving_quantity?: number | string; nutriments?: Record<string, number | undefined> };
 
 /** One Open Food Facts product as values per 100 g. */
 export function fromOFFHit(x: OFFHit): OnlineFood | null {
   const n = x.nutriments ?? {};
   const kcal = n['energy-kcal_100g'] ?? (n['energy_100g'] != null ? n['energy_100g']! / 4.184 : undefined);
-  const name = (x.product_name_ar || x.product_name || x.product_name_en || '').trim();
+  // The fast search returns some fields as arrays or language maps, the classic one as strings.
+  const str = (v: unknown): string => typeof v === 'string' ? v : Array.isArray(v) ? str(v[0]) : v && typeof v === 'object' ? str(Object.values(v)[0]) : '';
+  const name = (str(x.product_name_ar) || str(x.product_name) || str(x.product_name_en)).trim();
+  const brand = str(x.brands).split(',')[0].trim();
   if (kcal == null || !name || !x.code) return null;
   const sugar = n['sugars_100g'];
   const tags: FoodTag[] = [];
@@ -80,7 +83,7 @@ export function fromOFFHit(x: OFFHit): OnlineFood | null {
   if ((n['fiber_100g'] ?? 0) >= 6) tags.push('fiber');
   const serving = Number(x.serving_quantity) || undefined;
   return {
-    id: 'off' + x.code, name: x.brands ? `${name} (${x.brands.split(',')[0].trim()})` : name, src: 'Open Food Facts',
+    id: 'off' + x.code, name: brand ? `${name} (${brand})` : name, src: 'Open Food Facts',
     per100: { kcal: Math.round(kcal), p: n['proteins_100g'] ?? 0, c: n['carbohydrates_100g'] ?? 0, f: n['fat_100g'] ?? 0, sugar, fiber: n['fiber_100g'], salt: n['salt_100g'] },
     tags, nova: x.nova_group, servingG: serving,
   };
@@ -119,7 +122,7 @@ export async function searchUSDA(en: string, key = USDA_KEY): Promise<OnlineFood
   const base = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${key}&pageSize=12&dataType=${encodeURIComponent('Foundation,SR Legacy,Survey (FNDDS)')}&query=`;
   // One request per search keeps us inside the key's hourly limit; USDA ranks the best word matches first.
   const j = await getJSON<{ foods?: USDAFood[] }>(base + encodeURIComponent(en));
-  return (j?.foods ?? []).map(fromUSDA).filter((x): x is OnlineFood => !!x);
+  return (Array.isArray(j?.foods) ? j.foods : []).map((x) => { try { return fromUSDA(x); } catch { return null; } }).filter((x): x is OnlineFood => !!x);
 }
 
 export async function searchOFF(query: string): Promise<OnlineFood[]> {
@@ -132,13 +135,13 @@ export async function searchOFF(query: string): Promise<OnlineFood[]> {
     );
     list = j?.products;
   }
-  return (list ?? []).map(fromOFFHit).filter((x): x is OnlineFood => !!x);
+  return (Array.isArray(list) ? list : []).map((x) => { try { return fromOFFHit(x); } catch { return null; } }).filter((x): x is OnlineFood => !!x);
 }
 
 /** Searches generic foods (USDA, in English) and packaged products (Open Food Facts, in Arabic) together. */
 export async function searchOnline(text: string): Promise<OnlineFood[]> {
   const en = toEnglish(text);
-  const [usda, off] = await Promise.all([en ? searchUSDA(en) : Promise.resolve([]), searchOFF(text)]);
+  const [usda, off] = await Promise.all([en ? searchUSDA(en).catch(() => []) : Promise.resolve([]), searchOFF(text).catch(() => [])]);
   // Generic foods first; they fit typed descriptions like "زيتون مخلل" better than one brand's product.
   const seen = new Set<string>();
   return [...usda.slice(0, 6), ...off.slice(0, 4), ...usda.slice(6)].filter((x) => !seen.has(x.id) && seen.add(x.id));

@@ -35,8 +35,8 @@ function mix(a: string, b: string, k: number): string {
 }
 const light = (hex: string) => { const [r, g, b] = rgb(hex); return 0.299 * r + 0.587 * g + 0.114 * b > 200; };
 
-export type Crop = 'full' | 'head' | 'top' | 'bottom';
-const VIEW: Record<Crop, string> = { full: '0 -14 200 404', head: '32 -6 136 136', top: '18 96 164 164', bottom: '24 200 152 190' };
+export type Crop = 'full' | 'bust' | 'head' | 'face' | 'top' | 'bottom';
+const VIEW: Record<Crop, string> = { full: '0 -14 200 404', bust: '14 -14 172 186', head: '44 -4 112 112', face: '60 30 80 80', top: '18 96 164 164', bottom: '24 200 152 190' };
 
 // ---- body geometry ----
 function torsoPts(s: Shape, fem: boolean): P[] {
@@ -95,7 +95,7 @@ export function avatarSVG(a: Avatar, bmiValue: number, sex: 'f' | 'm', opts: { i
     <radialGradient id="${id}iris" cx=".5" cy=".45" r=".55"><stop offset="0" stop-color="${sh(a.eyes, 1.35)}"/><stop offset=".75" stop-color="${a.eyes}"/><stop offset="1" stop-color="${sh(a.eyes, 0.55)}"/></radialGradient>
     ${grad('hj', a.hijabColor, true, 0.8, 1.05)}
     <radialGradient id="${id}gnd" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
-    ${[-1, 1].map((sd) => `<clipPath id="${id}eye${sd > 0 ? 'r' : 'l'}"><path d="${eyePath(CX + sd * 11, hy + 4, sd)}"/></clipPath>`).join('')}
+    ${[-1, 1].map((sd) => `<clipPath id="${id}eye${sd > 0 ? 'r' : 'l'}"><path d="${eyePath(CX + sd * 11, hy + 4, sd, a.eyeShape)}"/></clipPath>`).join('')}
     <clipPath id="${id}cTop"><rect x="0" y="${top === 'bra' ? 132 : top === 'crop' ? 100 : 100}" width="200" height="${({ bra: 40, tank: 136, crop: 84, tee: 140, oversized: 152, long: 140, hoodie: 150, jacket: 148, tunic: 196 } as const)[top] - (top === 'bra' ? 0 : 0)}"/></clipPath>
     <clipPath id="${id}sl"><rect x="0" y="100" width="200" height="${Math.max(1, sleeveTo - 100)}"/></clipPath>
     <clipPath id="${id}cBot"><rect x="0" y="212" width="200" height="${({ leggings: 154, biker: 76, shorts: 50, joggers: 154, wide: 156, skirt: 60, maxi: 152 } as const)[bot]}"/></clipPath>
@@ -158,46 +158,39 @@ export function avatarSVG(a: Avatar, bmiValue: number, sex: 'f' | 'm', opts: { i
   if (a.hair !== 'hijab') add(`<path d="M${CX - s.neck} 84 L${CX - s.neck - 0.5} 106 Q${CX} 112 ${CX + s.neck + 0.5} 106 L${CX + s.neck} 84 Z" fill="${G('neck')}"/>`);
   add(`<g transform="translate(100 100) scale(1.16) translate(-100 -100)">`);
   if (a.hair === 'hijab') add(hijabBack(a, s, hy, G));
-  // ears
-  [1, -1].forEach((sd) => add(`<path d="${smooth(side([[cw - 2, hy - 3], [cw + 4.5, hy - 1], [cw + 5, hy + 8], [cw + 1, hy + 14], [cw - 2, hy + 12]], sd))}" fill="${skinD}"/><path d="M${CX + sd * (cw + 1)} ${hy + 1} q${sd * 2.5} 3 ${sd * 0.5} 8" stroke="${skinDD}" stroke-width="1" fill="none"/>`));
-  const face = smooth([
-    [CX, hy - 34], [CX + cw - 6, hy - 28], [CX + cw, hy - 10], [CX + cw + 0.5, hy + 8], [CX + cw - 4, hy + 24], [CX + 9, hy + 34], [CX, hy + 36.5],
-    [CX - 9, hy + 34], [CX - cw + 4, hy + 24], [CX - cw - 0.5, hy + 8], [CX - cw, hy - 10], [CX - cw + 6, hy - 28],
-  ]);
-  add(`<path d="${face}" fill="${G('face')}"/>`);
-  if (a.beard) add(beard(s, hy, hair, hairD));
+  // ears (+ earrings)
+  const ek = { small: 0.8, normal: 1, big: 1.25 }[a.ears];
+  [1, -1].forEach((sd) => add(`<path d="${smooth(side([[cw - 2, hy - 3], [cw + 4.5 * ek, hy - 1], [cw + 5 * ek, hy + 8], [cw + 1 + ek, hy + 14], [cw - 2, hy + 12]], sd))}" fill="${skinD}"/><path d="M${CX + sd * (cw + 1)} ${hy + 1} q${sd * 2.5 * ek} 3 ${sd * 0.5} 8" stroke="${skinDD}" stroke-width="1" fill="none"/>`));
+  if (a.hair !== 'hijab') add(earrings(a, cw, hy));
+  add(`<path d="${facePath(a.face, cw, hy)}" fill="${G('face')}"/>`);
+  // soft light: forehead and cheek highlights, shade under the hairline
+  add(`<ellipse cx="${CX - 4}" cy="${hy - 16}" rx="12" ry="7" fill="#fff" opacity=".13"/><ellipse cx="${CX - cw * 0.55}" cy="${hy + 12}" rx="6" ry="4" fill="#fff" opacity=".1"/><ellipse cx="${CX + cw * 0.55}" cy="${hy + 12}" rx="6" ry="4" fill="#fff" opacity=".08"/>`);
+  if (a.freckles) add([[-15, 13], [-12, 16], [-17, 17], [-10, 12], [15, 13], [12, 16], [17, 17], [10, 12], [-3, 14], [3, 14]].map(([x, y]) => `<circle cx="${CX + x}" cy="${hy + y}" r=".75" fill="${skinDD}" opacity=".7"/>`).join(''));
+  if (a.facial !== 'none') add(facialHair(a.facial, a.face, cw, hy, hair, hairD));
 
   // eyes
   [-1, 1].forEach((sd) => {
     const ex = CX + sd * 11, ey = hy + 4, cid = `${id}eye${sd > 0 ? 'r' : 'l'}`;
-    if (a.shadow) add(`<path d="M${ex - sd * 7.5} ${ey + 0.5} Q${ex} ${ey - 10.5} ${ex + sd * 8.5} ${ey - 0.5} Q${ex} ${ey - 5} ${ex - sd * 7.5} ${ey + 0.5}Z" fill="${a.shadow}" opacity=".6"/>`);
-    add(`<path d="M${ex - sd * 6} ${ey - 6.6} Q${ex} ${ey - 10.6} ${ex + sd * 7} ${ey - 5}" stroke="${skinD}" stroke-width=".9" fill="none" opacity=".6"/>`);
-    add(`<path d="${eyePath(ex, ey, sd)}" fill="#FAFAFA"/>`);
-    add(`<g clip-path="url(#${cid})"><circle cx="${ex + sd * 0.4}" cy="${ey}" r="4.6" fill="${G('iris')}"/><circle cx="${ex + sd * 0.4}" cy="${ey}" r="2.1" fill="#0C0A0A"/><path d="${eyePath(ex, ey, sd)}" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="2.4"/></g>`);
+    const ep = eyePath(ex, ey, sd, a.eyeShape);
+    const lid = lidPath(ex, ey, sd, a.eyeShape);
+    if (a.shadow) add(`<path d="M${ex - sd * 7.5} ${ey + 0.5} Q${ex} ${ey - 11} ${ex + sd * 8.5} ${ey - 0.5} Q${ex} ${ey - 5} ${ex - sd * 7.5} ${ey + 0.5}Z" fill="${a.shadow}" opacity=".6"/>`);
+    add(`<path d="M${ex - sd * 6} ${ey - (a.eyeShape === 'hooded' ? 4.6 : 6.8)} Q${ex} ${ey - (a.eyeShape === 'hooded' ? 7.6 : 10.8)} ${ex + sd * 7} ${ey - (a.eyeShape === 'hooded' ? 3.4 : 5)}" stroke="${skinD}" stroke-width="${a.eyeShape === 'hooded' ? 1.6 : 0.9}" fill="none" opacity=".6"/>`);
+    add(`<path d="${ep}" fill="#FAFAFA"/>`);
+    add(`<g clip-path="url(#${cid})"><circle cx="${ex + sd * 0.4}" cy="${ey}" r="4.7" fill="${G('iris')}"/><circle cx="${ex + sd * 0.4}" cy="${ey}" r="2.1" fill="#0C0A0A"/><path d="${ep}" fill="none" stroke="#000" stroke-opacity=".14" stroke-width="2.6"/></g>`);
     add(`<circle cx="${ex + sd * 0.4 + 1.6}" cy="${ey - 1.6}" r="1.3" fill="#fff"/><circle cx="${ex + sd * 0.4 - 1.2}" cy="${ey + 1.3}" r=".5" fill="#fff" opacity=".8"/>`);
-    // upper lid line (+ wing when liner is on), lashes
-    add(`<path d="M${ex - sd * 6.8} ${ey + 0.6} Q${ex - sd * 1.2} ${ey - 8.2} ${ex + sd * 7} ${ey - 0.4}${a.liner ? ` Q${ex + sd * 8.4} ${ey - 1.2} ${ex + sd * 9.6} ${ey - 2.8}` : ''}" stroke="#1A1212" stroke-width="${fem ? 1.5 : 1.2}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
-    if (fem) add(`<path d="M${ex + sd * 4.6} ${ey - 3.6} q${sd * 1.2} -0.9 ${sd * 2.4} -1.1 M${ex + sd * 6.2} ${ey - 1.8} q${sd * 1.2} -0.5 ${sd * 2.3} -0.4" stroke="#1A1212" stroke-width=".8" fill="none" stroke-linecap="round"/>`);
-    // brow
+    add(`<path d="${lid}${a.liner ? ` q${sd * 1.6} -0.6 ${sd * 2.8} -2.4` : ''}" stroke="#1A1212" stroke-width="${a.lashes ? 1.6 : 1.15}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
+    if (a.lashes) add(`<path d="M${ex + sd * 4.6} ${ey - 3.6 + lift(a.eyeShape)} q${sd * 1.2} -0.9 ${sd * 2.4} -1.1 M${ex + sd * 6.2} ${ey - 1.8 + lift(a.eyeShape)} q${sd * 1.2} -0.5 ${sd * 2.3} -0.4" stroke="#1A1212" stroke-width=".8" fill="none" stroke-linecap="round"/>`);
     const bc = a.hair === 'bald' || a.hair === 'buzz' ? sh(hair, 0.8) : a.hair === 'hijab' ? '#3A2618' : hairD;
-    const bw = fem ? 1 : 1.5;
-    add(`<path d="M${ex - sd * 7.8} ${ey - 8.2} Q${ex - sd * 0.5} ${ey - 13.8 - bw} ${ex + sd * 8.8} ${ey - 9.8} Q${ex} ${ey - 11.2 - bw * 0.3} ${ex - sd * 7.4} ${ey - 5.6 - bw}Z" fill="${bc}"/>`);
+    add(`<path d="${browPath(ex, ey, sd, a.brows)}" fill="${bc}"/>`);
   });
-  // nose
-  add(`<path d="M${CX + 2.2} ${hy + 6} Q${CX + 4.8} ${hy + 15} ${CX + 3.6} ${hy + 18}" stroke="${skinD}" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".75"/>`);
-  add(`<path d="M${CX - 4.6} ${hy + 19} q2 1.6 3.4 0.4 M${CX + 4.6} ${hy + 19} q-2 1.6 -3.4 0.4" stroke="${skinDD}" stroke-width="1.1" fill="none" stroke-linecap="round"/>`);
-  add(`<ellipse cx="${CX + 0.6}" cy="${hy + 15.5}" rx="1.6" ry="1.1" fill="#fff" opacity=".35"/>`);
-  // blush
+  add(nosePath(a.nose, hy, skinD, skinDD));
   if (a.blush) add(`<ellipse cx="${CX - 15.5}" cy="${hy + 15}" rx="7.5" ry="5" fill="${G('blush')}"/><ellipse cx="${CX + 15.5}" cy="${hy + 15}" rx="7.5" ry="5" fill="${G('blush')}"/>`);
-  // lips
-  const my = hy + 26.5;
-  add(`<path d="M${CX - 8} ${my} Q${CX - 4} ${my - 3.8} ${CX} ${my - 2.2} Q${CX + 4} ${my - 3.8} ${CX + 8} ${my} Q${CX} ${my + 1} ${CX - 8} ${my}Z" fill="${sh(lipCol, 0.86)}"/>`);
-  add(`<path d="M${CX - 8} ${my} Q${CX - 4} ${my + 6.6} ${CX} ${my + 6.4} Q${CX + 4} ${my + 6.6} ${CX + 8} ${my} Q${CX} ${my + 1.2} ${CX - 8} ${my}Z" fill="${G('lip')}"/>`);
-  add(`<path d="M${CX - 8.6} ${my - 0.4} Q${CX} ${my + 1.8} ${CX + 8.6} ${my - 0.4}" stroke="${sh(lipCol, 0.55)}" stroke-width=".9" fill="none" stroke-linecap="round"/>`);
-  add(`<ellipse cx="${CX + 1}" cy="${my + 3.6}" rx="3" ry="1" fill="#fff" opacity=".28"/>`);
+  add(lipsPath(a.mouth, hy + 26.5, lipCol, G));
 
-  // ---- hair in front ----
+  // ---- hair in front, then glasses and headwear ----
   add(a.hair === 'hijab' ? hijabFront(a, s, hy, G) : hairFront(a, s, hy, G, hairD, hairL, fem));
+  if (a.glasses !== 'none') add(glasses(a.glasses, a.glassesColor, cw, hy));
+  if (a.headwear !== 'none' && a.hair !== 'hijab') add(headwear(a.headwear, a.headwearColor, cw, hy));
   add('</g>');
 
   const vb = VIEW[crop];
@@ -206,17 +199,86 @@ export function avatarSVG(a: Avatar, bmiValue: number, sex: 'f' | 'm', opts: { i
 }
 const CLR_ACCENT = '#2E9BFF';
 
-function eyePath(ex: number, ey: number, sd: number) {
-  return `M${ex - sd * 6.6} ${ey + 0.8} Q${ex - sd * 1.2} ${ey - 8} ${ex + sd * 6.8} ${ey - 0.2} Q${ex + sd * 0.6} ${ey + 6} ${ex - sd * 6.6} ${ey + 0.8}Z`;
+type EyeShape = Avatar['eyeShape'];
+/** How much the outer corner rises (negative) or drops for each eye shape. */
+const lift = (e: EyeShape) => ({ almond: 0, round: 0, hooded: 0.6, upturned: -1.6, downturned: 1.6 })[e];
+function eyePath(ex: number, ey: number, sd: number, e: EyeShape) {
+  const h = e === 'round' ? 9.4 : e === 'hooded' ? 6.2 : 8, lo = e === 'round' ? 7 : 6, o = lift(e);
+  return `M${ex - sd * 6.6} ${ey + 0.8} Q${ex - sd * 1.2} ${ey - h} ${ex + sd * 6.8} ${ey - 0.2 + o} Q${ex + sd * 0.6} ${ey + lo} ${ex - sd * 6.6} ${ey + 0.8}Z`;
 }
-
-function beard(s: Shape, hy: number, hair: string, hairD: string) {
-  const cw = s.cheek;
-  const d = smooth([
-    [CX - cw + 0.5, hy + 4], [CX - cw + 2, hy + 18], [CX - cw + 7, hy + 28], [CX - 8, hy + 36], [CX, hy + 38.5], [CX + 8, hy + 36], [CX + cw - 7, hy + 28], [CX + cw - 2, hy + 18], [CX + cw - 0.5, hy + 4],
-    [CX + cw - 5, hy + 15], [CX + 9, hy + 22], [CX + 4, hy + 21], [CX, hy + 22], [CX - 4, hy + 21], [CX - 9, hy + 22], [CX - cw + 5, hy + 15],
+function lidPath(ex: number, ey: number, sd: number, e: EyeShape) {
+  const h = e === 'round' ? 9.6 : e === 'hooded' ? 6.2 : 8.2, o = lift(e);
+  return `M${ex - sd * 6.8} ${ey + 0.6} Q${ex - sd * 1.2} ${ey - h} ${ex + sd * 7} ${ey - 0.4 + o}`;
+}
+function browPath(ex: number, ey: number, sd: number, b: Avatar['brows']) {
+  const [th, arch, len] = ({ natural: [1.4, 13.8, 8.8], thin: [0.6, 13.4, 8.4], thick: [2.6, 14, 9.2], arched: [1.3, 16, 8.6], straight: [1.6, 11.4, 9] } as const)[b];
+  return `M${ex - sd * 7.8} ${ey - 8.2} Q${ex - sd * 0.5} ${ey - arch - th} ${ex + sd * len} ${ey - 9.8 + (b === 'straight' ? -1.2 : 0)} Q${ex} ${ey - arch + 2.6 - th * 0.3} ${ex - sd * 7.4} ${ey - 5.6 - th}Z`;
+}
+function facePath(f: Avatar['face'], cw: number, hy: number) {
+  const [top, jaw, jawY, chin, len] = ({ oval: [6, 4, 24, 9, 36.5], round: [5, 1.5, 24, 12, 34], heart: [3, 7, 22, 6, 37], square: [5, 0.5, 26, 13, 35], long: [6, 4.5, 27, 9, 40] } as const)[f];
+  return smooth([
+    [CX, hy - 34], [CX + cw - top, hy - 28], [CX + cw, hy - 10], [CX + cw + 0.5, hy + 8], [CX + cw - jaw, hy + jawY], [CX + chin, hy + len - 2.5], [CX, hy + len],
+    [CX - chin, hy + len - 2.5], [CX - cw + jaw, hy + jawY], [CX - cw - 0.5, hy + 8], [CX - cw, hy - 10], [CX - cw + top, hy - 28],
   ]);
-  return `<path d="${d}" fill="${hair}" opacity=".92"/><path d="M${CX - 9} ${hy + 31} Q${CX} ${hy + 36} ${CX + 9} ${hy + 31}" stroke="${hairD}" stroke-width="1" fill="none" opacity=".5"/>`;
+}
+function nosePath(n: Avatar['nose'], hy: number, d: string, dd: string) {
+  const [w, len, tip] = ({ small: [3.6, 16, 1.4], button: [4, 15, 2.4], straight: [4.4, 18, 1.6], wide: [6, 17, 2], pointed: [3.8, 19, 1.2] } as const)[n];
+  return `<path d="M${CX + 2} ${hy + 4} Q${CX + 4.6} ${hy + len - 4} ${CX + w - 0.6} ${hy + len}" stroke="${d}" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".7"/>`
+    + `<path d="M${CX - w} ${hy + len + 1} q2 1.6 ${w - 1.2} 0.4 M${CX + w} ${hy + len + 1} q-2 1.6 ${-(w - 1.2)} 0.4" stroke="${dd}" stroke-width="1.1" fill="none" stroke-linecap="round"/>`
+    + `<ellipse cx="${CX + 0.6}" cy="${hy + len - 2.5}" rx="${tip}" ry="${tip * 0.7}" fill="#fff" opacity=".35"/>`;
+}
+function lipsPath(m: Avatar['mouth'], my: number, col: string, G: (n: string) => string) {
+  const [w, up, lo] = ({ natural: [8, 3.8, 6.5], full: [8.6, 5, 8.4], thin: [8, 2.4, 4.4], wide: [10.5, 3.6, 6], heart: [7, 5, 6.4] } as const)[m];
+  const dip = m === 'heart' ? 3.4 : 2.2;
+  return `<path d="M${CX - w} ${my} Q${CX - w / 2} ${my - up} ${CX} ${my - dip} Q${CX + w / 2} ${my - up} ${CX + w} ${my} Q${CX} ${my + 1} ${CX - w} ${my}Z" fill="${sh(col, 0.86)}"/>`
+    + `<path d="M${CX - w} ${my} Q${CX - w / 2} ${my + lo} ${CX} ${my + lo - 0.2} Q${CX + w / 2} ${my + lo} ${CX + w} ${my} Q${CX} ${my + 1.2} ${CX - w} ${my}Z" fill="${G('lip')}"/>`
+    + `<path d="M${CX - w - 0.6} ${my - 0.4} Q${CX} ${my + 1.8} ${CX + w + 0.6} ${my - 0.4}" stroke="${sh(col, 0.55)}" stroke-width=".9" fill="none" stroke-linecap="round"/>`
+    + `<ellipse cx="${CX + 1}" cy="${my + lo * 0.55}" rx="${w * 0.36}" ry="1" fill="#fff" opacity=".28"/>`;
+}
+function earrings(a: Avatar, cw: number, hy: number) {
+  const gold = '#E8C15A';
+  return [1, -1].map((sd) => {
+    const x = CX + sd * (cw + 2.6), y = hy + 14;
+    if (a.earrings === 'studs') return `<circle cx="${x}" cy="${y}" r="1.7" fill="#F4F7FA" stroke="#B9C2CC" stroke-width=".5"/>`;
+    if (a.earrings === 'hoops') return `<circle cx="${x}" cy="${y + 5}" r="5" fill="none" stroke="${gold}" stroke-width="1.4"/>`;
+    if (a.earrings === 'drops') return `<path d="M${x} ${y} v4" stroke="${gold}" stroke-width=".9"/><path d="M${x} ${y + 3.5} q3 4 0 7.5 q-3 -3.5 0 -7.5Z" fill="${gold}"/>`;
+    return '';
+  }).join('');
+}
+function facialHair(k: Avatar['facial'], f: Avatar['face'], cw: number, hy: number, hair: string, hairD: string) {
+  if (k === 'stubble') return `<path d="${smooth([[CX - cw + 0.5, hy + 6], [CX - cw + 3, hy + 22], [CX - 9, hy + 34], [CX, hy + 36.5], [CX + 9, hy + 34], [CX + cw - 3, hy + 22], [CX + cw - 0.5, hy + 6], [CX + cw - 6, hy + 18], [CX, hy + 20], [CX - cw + 6, hy + 18]])}" fill="${hair}" opacity=".28"/>`;
+  const must = `<path d="M${CX - 10} ${hy + 25} Q${CX - 5} ${hy + 20} ${CX} ${hy + 22} Q${CX + 5} ${hy + 20} ${CX + 10} ${hy + 25} Q${CX + 5} ${hy + 23} ${CX} ${hy + 24} Q${CX - 5} ${hy + 23} ${CX - 10} ${hy + 25}Z" fill="${hair}"/>`;
+  if (k === 'mustache') return must;
+  if (k === 'goatee') return must + `<path d="${smooth([[CX - 7, hy + 31], [CX, hy + 30.5], [CX + 7, hy + 31], [CX + 5, hy + 38], [CX, hy + 40], [CX - 5, hy + 38]])}" fill="${hair}"/>`;
+  return `<path d="${smooth([
+    [CX - cw + 0.5, hy + 4], [CX - cw + 2, hy + 18], [CX - cw + 7, hy + 28], [CX - 8, hy + 36], [CX, hy + 39], [CX + 8, hy + 36], [CX + cw - 7, hy + 28], [CX + cw - 2, hy + 18], [CX + cw - 0.5, hy + 4],
+    [CX + cw - 5, hy + 15], [CX + 9, hy + 22], [CX + 4, hy + 21], [CX, hy + 22], [CX - 4, hy + 21], [CX - 9, hy + 22], [CX - cw + 5, hy + 15],
+  ])}" fill="${hair}" opacity=".93"/><path d="M${CX - 9} ${hy + 31} Q${CX} ${hy + 36} ${CX + 9} ${hy + 31}" stroke="${hairD}" stroke-width="1" fill="none" opacity=".5"/>`;
+}
+function glasses(k: Avatar['glasses'], col: string, cw: number, hy: number) {
+  const ey = hy + 4, sun = k === 'sun';
+  const lens = (ex: number, sd: number) => {
+    if (k === 'round') return `<circle cx="${ex}" cy="${ey}" r="8.4"/>`;
+    if (k === 'square') return `<rect x="${ex - 9}" y="${ey - 7}" width="18" height="13.5" rx="3"/>`;
+    if (k === 'cateye') return `<path d="M${ex - sd * 8.5} ${ey - 4} Q${ex} ${ey - 9} ${ex + sd * 10.5} ${ey - 8} Q${ex + sd * 9} ${ey + 7.5} ${ex} ${ey + 7} Q${ex - sd * 9} ${ey + 6} ${ex - sd * 8.5} ${ey - 4}Z"/>`;
+    return `<path d="M${ex - sd * 9} ${ey - 6} Q${ex} ${ey - 8.5} ${ex + sd * 9.5} ${ey - 6} Q${ex + sd * 10} ${ey + 4} ${ex + sd * 2} ${ey + 8} Q${ex - sd * 8} ${ey + 8} ${ex - sd * 9} ${ey - 6}Z"/>`;
+  };
+  let o = '';
+  for (const sd of [-1, 1]) {
+    const ex = CX + sd * 11;
+    o += `<g fill="${sun ? '#1A2230' : '#DDEBFF'}" fill-opacity="${sun ? 0.88 : 0.14}" stroke="${col}" stroke-width="${k === 'round' ? 1.4 : 1.8}">${lens(ex, sd)}</g>`;
+    o += `<path d="M${ex - 4} ${ey - 4} l3 -2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity="${sun ? 0.5 : 0.6}"/>`;
+    o += `<path d="M${CX + sd * 20} ${ey - 3} L${CX + sd * (cw + 1)} ${ey - 4}" stroke="${col}" stroke-width="1.6"/>`;
+  }
+  return o + `<path d="M${CX - 3} ${ey - 2} Q${CX} ${ey - 4.5} ${CX + 3} ${ey - 2}" stroke="${col}" stroke-width="1.6" fill="none"/>`;
+}
+function headwear(k: Avatar['headwear'], col: string, cw: number, hy: number) {
+  const d = sh(col, light(col) ? 0.8 : 0.68), l = sh(col, light(col) ? 1 : 1.3);
+  if (k === 'headband') return `<path d="M${CX - cw - 1} ${hy - 16} Q${CX} ${hy - 32} ${CX + cw + 1} ${hy - 16}" stroke="${col}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M${CX - cw} ${hy - 18} Q${CX} ${hy - 33} ${CX + cw} ${hy - 18}" stroke="${l}" stroke-width="1" fill="none" opacity=".6"/>`;
+  if (k === 'cap') return `<path d="${smooth([[CX - cw - 2, hy - 14], [CX - cw + 1, hy - 34], [CX, hy - 45], [CX + cw - 1, hy - 34], [CX + cw + 2, hy - 14], [CX, hy - 18]])}" fill="${col}"/><path d="M${CX - cw - 1} ${hy - 16} Q${CX} ${hy - 26} ${CX + cw + 1} ${hy - 16} Q${CX + cw * 0.7} ${hy - 6} ${CX} ${hy - 7} Q${CX - cw * 0.7} ${hy - 6} ${CX - cw - 1} ${hy - 16}Z" fill="${d}"/><circle cx="${CX}" cy="${hy - 44}" r="2" fill="${d}"/><path d="M${CX} ${hy - 43} V${hy - 21}" stroke="${d}" stroke-width=".8" opacity=".6"/>`;
+  if (k === 'beanie') return `<path d="${smooth([[CX - cw - 3, hy - 14], [CX - cw, hy - 36], [CX, hy - 48], [CX + cw, hy - 36], [CX + cw + 3, hy - 14], [CX, hy - 18]])}" fill="${col}"/><path d="M${CX - cw - 3.5} ${hy - 22} Q${CX} ${hy - 30} ${CX + cw + 3.5} ${hy - 22} L${CX + cw + 3} ${hy - 12} Q${CX} ${hy - 19} ${CX - cw - 3} ${hy - 12}Z" fill="${d}"/>${[-12, -6, 0, 6, 12].map((x) => `<path d="M${CX + x} ${hy - 26 + Math.abs(x) * 0.08} v8" stroke="${sh(d, 0.85)}" stroke-width=".8"/>`).join('')}`;
+  // bucket hat
+  return `<path d="${smooth([[CX - cw + 1, hy - 18], [CX - cw + 3, hy - 38], [CX, hy - 44], [CX + cw - 3, hy - 38], [CX + cw - 1, hy - 18]])}" fill="${col}"/><path d="M${CX - cw - 10} ${hy - 10} Q${CX} ${hy - 26} ${CX + cw + 10} ${hy - 10} Q${CX} ${hy - 16} ${CX - cw - 10} ${hy - 10}Z" fill="${d}"/><path d="M${CX - cw + 2} ${hy - 22} Q${CX} ${hy - 28} ${CX + cw - 2} ${hy - 22}" stroke="${l}" stroke-width="1.6" fill="none" opacity=".6"/>`;
 }
 
 // ---- hair ----

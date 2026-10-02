@@ -19,7 +19,22 @@ export type Avatar = {
   liner: boolean;
   /** Eyeshadow colour, '' = none. */
   shadow: string;
-  beard: boolean;
+  /** Kept for avatars saved before facial-hair styles existed. */
+  beard?: boolean;
+  face: 'oval' | 'round' | 'heart' | 'square' | 'long';
+  brows: 'natural' | 'thin' | 'thick' | 'arched' | 'straight';
+  eyeShape: 'almond' | 'round' | 'hooded' | 'upturned' | 'downturned';
+  lashes: boolean;
+  nose: 'small' | 'button' | 'straight' | 'wide' | 'pointed';
+  mouth: 'natural' | 'full' | 'thin' | 'wide' | 'heart';
+  ears: 'small' | 'normal' | 'big';
+  earrings: 'none' | 'studs' | 'hoops' | 'drops';
+  freckles: boolean;
+  facial: 'none' | 'stubble' | 'full' | 'goatee' | 'mustache';
+  glasses: 'none' | 'round' | 'square' | 'cateye' | 'sport' | 'sun';
+  glassesColor: string;
+  headwear: 'none' | 'cap' | 'beanie' | 'headband' | 'bucket';
+  headwearColor: string;
   top: Top;
   topColor: string;
   bottom: Bottom;
@@ -43,12 +58,20 @@ export const BOTTOMS: Bottom[] = ['leggings', 'biker', 'shorts', 'joggers', 'wid
 export const BOTTOMS_M: Bottom[] = ['shorts', 'joggers', 'wide'];
 
 export function defaultAvatar(sex: 'f' | 'm'): Avatar {
+  const common = { face: 'oval', brows: 'natural', eyeShape: 'almond', nose: 'small', ears: 'normal', freckles: false, glasses: 'none', glassesColor: '#1B1210', headwear: 'none', headwearColor: CLOTHES[0], hijabColor: '#C9A27E' } as const;
   return sex === 'm'
-    ? { skin: SKINS[3], body: 'straight', eyes: EYE_COLORS[0], hair: 'short', hairColor: HAIR_COLORS[0], hijabColor: '#C9A27E', lips: '', blush: false, liner: false, shadow: '', beard: true, top: 'tee', topColor: CLOTHES[1], bottom: 'joggers', bottomColor: CLOTHES[0], shoes: CLOTHES[7] }
-    : { skin: SKINS[2], body: 'hourglass', eyes: EYE_COLORS[1], hair: 'long', hairColor: HAIR_COLORS[1], hijabColor: '#C9A27E', lips: LIPS[1], blush: true, liner: true, shadow: '', beard: false, top: 'tank', topColor: CLOTHES[1], bottom: 'leggings', bottomColor: CLOTHES[0], shoes: CLOTHES[7] };
+    ? { ...common, skin: SKINS[3], body: 'straight', eyes: EYE_COLORS[0], hair: 'short', hairColor: HAIR_COLORS[0], lips: '', blush: false, liner: false, lashes: false, shadow: '', mouth: 'natural', earrings: 'none', facial: 'full', top: 'tee', topColor: CLOTHES[1], bottom: 'joggers', bottomColor: CLOTHES[0], shoes: CLOTHES[7] }
+    : { ...common, skin: SKINS[2], body: 'hourglass', eyes: EYE_COLORS[1], hair: 'long', hairColor: HAIR_COLORS[1], lips: LIPS[1], blush: true, liner: true, lashes: true, shadow: '', mouth: 'full', earrings: 'studs', facial: 'none', top: 'tank', topColor: CLOTHES[1], bottom: 'leggings', bottomColor: CLOTHES[0], shoes: CLOTHES[7] };
 }
 
-export const avatarOf = (p: Profile): Avatar => ({ ...defaultAvatar(p.sex), ...(p.avatar ?? {}) });
+export const FRAMES = ['#1B1210', '#7C5A3A', '#C9A27E', '#E8C15A', '#C0C6CE', '#2E9BFF', '#FF5C6C', '#F2A0C0'];
+
+export function avatarOf(p: Profile): Avatar {
+  const a = { ...defaultAvatar(p.sex), ...(p.avatar ?? {}) };
+  // Older saves had a beard on/off switch.
+  if (p.avatar && p.avatar.facial === undefined && p.avatar.beard !== undefined) a.facial = p.avatar.beard ? 'full' : 'none';
+  return a;
+}
 
 export const bmi = (kg: number, cm: number) => (cm > 0 ? kg / (cm / 100) ** 2 : 22);
 

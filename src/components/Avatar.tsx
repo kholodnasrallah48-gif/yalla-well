@@ -26,7 +26,7 @@ function useEased(target: number, ms = 1400) {
   return v;
 }
 
-const RATIO: Record<Crop, number> = { full: 200 / 404, head: 1, top: 1, bottom: 152 / 190 };
+const RATIO: Record<Crop, number> = { full: 200 / 404, bust: 172 / 186, head: 1, face: 1, top: 1, bottom: 152 / 190 };
 
 /** size = height in points. */
 export function AvatarView({ a, bmi, sex, size = 220, id = 'av', crop = 'full' }: { a: A; bmi: number; sex: 'f' | 'm'; size?: number; id?: string; crop?: Crop }) {

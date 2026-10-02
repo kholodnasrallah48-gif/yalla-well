@@ -1,11 +1,14 @@
 import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold } from '@expo-google-fonts/ibm-plex-sans-arabic';
+import { Rakkas_400Regular } from '@expo-google-fonts/rakkas';
 import { ReadexPro_600SemiBold, ReadexPro_700Bold, useFonts } from '@expo-google-fonts/readex-pro';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
-import { ActivityIndicator, I18nManager, Platform, View } from 'react-native';
+import { useState } from 'react';
+import { I18nManager, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Splash } from '../components/Splash.tsx';
 import { AppStoreProvider, useStore } from '../store/AppStore.tsx';
 import { ThemeProvider, useColors, useTheme } from '../theme.ts';
 
@@ -25,9 +28,8 @@ function Gate() {
   const c = useColors();
   const { isDark } = useTheme();
   const { ready } = useStore();
-  if (!ready) {
-    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg }}><ActivityIndicator color={c.petrol} /></View>;
-  }
+  const [intro, setIntro] = useState(true);
+  if (!ready || intro) return <><StatusBar style="light" /><Splash onDone={() => setIntro(false)} /></>;
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -43,7 +45,7 @@ function Gate() {
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    ReadexPro_600SemiBold, ReadexPro_700Bold,
+    ReadexPro_600SemiBold, ReadexPro_700Bold, Rakkas_400Regular,
     IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold,
   });
   if (!loaded) return null;

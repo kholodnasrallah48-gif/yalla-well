@@ -23,6 +23,8 @@ export const fonts = {
   body: 'IBMPlexSansArabic_400Regular',
   bodyMedium: 'IBMPlexSansArabic_500Medium',
   bodySemi: 'IBMPlexSansArabic_600SemiBold',
+  /** Logo wordmark only. */
+  brand: 'Rakkas_400Regular',
 };
 
 export type ThemePref = 'system' | 'light' | 'dark';

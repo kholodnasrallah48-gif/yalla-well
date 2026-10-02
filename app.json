@@ -40,6 +40,14 @@
           "cameraPermission": "يلا ويل محتاج الكاميرا عشان يقرا باركود المنتجات ويجيب سعراتها.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0E4C5A",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120
+        }
       ]
     ],
     "scheme": "yallawell",

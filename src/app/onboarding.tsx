@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { logWeight } from '../lib/avatar.ts';
 import { Bg, Btn, Card, Chip, Choice, NoteView, Ring, START, T, WeekStrip, styles } from '../components/ui.tsx';
 import { CONDITIONS, MEDS, PAINS, SCHEDULES, type ScheduleId } from '../lib/data.ts';
 import { fmt } from '../lib/day.ts';
@@ -47,7 +48,9 @@ export default function Onboarding() {
     const e = validate();
     if (e) { setErr(e); return; }
     if (st === 'done') {
-      saveProfile({ name: '', start: profile?.start ?? new Date().toISOString().slice(0, 10), ...d } as Profile);
+      const next = { name: '', start: profile?.start ?? new Date().toISOString().slice(0, 10), ...d } as Profile;
+      // A changed weight counts as a weigh-in, so the avatar and progress follow it.
+      saveProfile(profile && profile.weight !== next.weight ? logWeight({ ...next, weight: profile.weight }, next.weight) : next);
       router.replace('/');
       return;
     }

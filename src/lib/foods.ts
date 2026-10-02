@@ -120,7 +120,8 @@ export function foodAdvice(p: Profile, f: Food, remaining: number, pool: Food[] 
     notes.push({ level: 'warn', text: remaining > 0 ? L(`هتعدي هدف النهارده بـ ${Math.round(f.kcal - remaining)} سعرة.`, `This puts you ${num(Math.round(f.kcal - remaining))} kcal over today's target.`) : L(`${g('خلصت', 'خلصتي')} سعرات النهارده، فأي زيادة هتعدي الهدف.`, "You've used up today's calories, so anything more goes over the target.") });
   }
   const level = worst(notes);
-  const swaps = RANK[level] >= RANK.warn ? findSwaps(p, f, pool) : [];
+  // Over the calories: only swaps that are actually lighter than this food make sense.
+  const swaps = RANK[level] >= RANK.warn ? findSwaps(p, f, pool, f.kcal > remaining ? f.kcal * 0.9 : undefined) : [];
   return { level, notes: notes.sort((a, b) => RANK[b.level] - RANK[a.level]), swaps };
 }
 
@@ -148,8 +149,8 @@ const KINDS: Kind[] = [
   { re: /رز ابيض|رز بالشعريه|رز معمر|مكرونه|pasta|spaghetti|بطاطس|potato|rice/, alts: ['رز بني', 'كينوا', 'مكرونة قمح كامل', 'بطاطس بالفرن'], recipes: /رز بني|كينوا|سن|بطاطا/ },
 ];
 
-/** Up to 3 healthier foods in the same craving as `f`, suited to this person's conditions. */
-export function findSwaps(p: Profile, f: Food, pool: Food[] = FOODS): Food[] {
+/** Up to 3 healthier foods in the same craving as `f`, suited to this person's conditions (and at most `maxKcal`). */
+export function findSwaps(p: Profile, f: Food, pool: Food[] = FOODS, maxKcal?: number): Food[] {
   const text = norm(f.n);
   const kind = KINDS.find((k) => k.re.test(text)) ?? (f.tags?.includes('soda') ? KINDS[3] : undefined);
   const byName = new Map(pool.map((x) => [norm(x.n), x]));
@@ -178,7 +179,7 @@ export function findSwaps(p: Profile, f: Food, pool: Food[] = FOODS): Food[] {
   const words = norm(f.n).split(/\s+/).filter((w) => w.length > 2);
   const shared = (x: Food) => norm(x.n).split(/\s+/).filter((w) => words.some((v) => v === w || (w.length > 3 && v.length > 3 && (v.startsWith(w) || w.startsWith(v))))).length;
   return cands
-    .filter((x) => healthy(x) && x.kcal <= Math.max(f.kcal * 1.3, 150) && !seen.has(x.n) && seen.add(x.n))
+    .filter((x) => healthy(x) && x.kcal <= (maxKcal ?? Math.max(f.kcal * 1.3, 150)) && !seen.has(x.n) && seen.add(x.n))
     .map((x, i) => ({ x, i, s: RANK[worst(judge(p, x))], w: shared(x) }))
     .sort((u, v) => v.w - u.w || u.s - v.s || u.i - v.i)
     .slice(0, 3)

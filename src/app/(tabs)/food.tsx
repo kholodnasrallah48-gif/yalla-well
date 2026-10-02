@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { MacroChips } from '../../components/food.tsx';
 import { Btn, Card, MacroBar, Screen, T, styles } from '../../components/ui.tsx';
-import { changePortion, fmt, mealTotals, totals, type LoggedFood } from '../../lib/day.ts';
+import { changePortion, fmt, mealTotals, planned, totals, type LoggedFood } from '../../lib/day.ts';
 import { FOODS, MY_FOODS_CAT, itemAlerts, type Food } from '../../lib/foods.ts';
 import { L, isEn, tx } from '../../lib/i18n.ts';
 import { MEALS, MEAL_NAME, dayPlan, toMeal } from '../../lib/mealplan.ts';
@@ -39,9 +39,11 @@ export default function FoodScreen() {
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
   const t = totals(day);
+  // Logged in meals not ticked yet: shown, but not counted until the meal is ticked.
+  const waiting = planned(day).kcal - t.kcal;
   const ticked = day.meals ?? [];
   const started = MEALS.filter((m) => day.foods.some((x) => x.meal === m));
-  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), t.kcal, ticked, started);
+  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), t.kcal + waiting, ticked, started);
   const loose = day.foods.filter((x) => !x.meal);
 
   const tick = (meal: Meal) => {
@@ -95,6 +97,7 @@ export default function FoodScreen() {
           <MacroBar label={L('كارب', 'Carbs')} value={t.c} target={T0.carbs} />
           <MacroBar label={L('دهون', 'Fat')} value={t.f} target={T0.fat} />
         </View>
+        {waiting > 0 ? <T kind="small" color={c.warn}>{L(`+ ${fmt(waiting)} سعرة في وجبات لسه ${g('معلمتش', 'معلمتيش')} عليها. بتتحسب لما ${g('تعلّم', 'تعلّمي')} إنك ${g('خلصتها', 'خلصتيها')}.`, `+ ${fmt(waiting)} kcal in meals not ticked yet. They count once you tick the meal as done.`)}</T> : null}
       </Card>
 
       {MEALS.map((meal) => {
@@ -117,7 +120,7 @@ export default function FoodScreen() {
                 <T kind="h3">{tx(MEAL_NAME[meal])}</T>
                 <T kind="small" color={done ? c.ok : undefined}>
                   {done ? L(`${g('خلصته', 'خلصتيه')} · ${fmt(sum.kcal)} سعرة`, `Done · ${fmt(sum.kcal)} kcal`)
-                    : foods.length ? L(`${fmt(sum.kcal)} سعرة لحد دلوقتي`, `${fmt(sum.kcal)} kcal so far`)
+                    : foods.length ? L(`${fmt(sum.kcal)} سعرة · ${g('علّم', 'علّمي')} لما ${g('تخلص', 'تخلصي')} عشان تتحسب`, `${fmt(sum.kcal)} kcal · tick when done to count it`)
                     : L(`لسه ${g('مسجلتش', 'مسجلتيش')}`, 'Nothing logged yet')}
                 </T>
               </View>

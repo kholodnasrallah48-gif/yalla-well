@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { AdviceView, Dot, MacroChips } from '../components/food.tsx';
 import { Btn, Card, START, T, styles } from '../components/ui.tsx';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { addFood, fmt, mealTotals, totals } from '../lib/day.ts';
+import { addFood, fmt, mealTotals, planned } from '../lib/day.ts';
 import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, OFTEN, byUse, oftenFoods, foodAdvice, foodLevel, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../lib/foods.ts';
 import { L, isEn, num, tx } from '../lib/i18n.ts';
 import { searchOnline, toFood, type OnlineFood } from '../lib/online.ts';
@@ -64,7 +64,7 @@ export default function AddFood() {
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
-  const t = totals(day);
+  const t = planned(day);
   const remaining = T0.kcal - t.kcal;
   const female = profile.sex !== 'm';
   const add = (f: Food) => { play(profile && foodLevel(profile, f) === 'bad' ? 'warn' : 'add'); updateDay((d) => addFood(d, f, target)); setOpen(null); flash(tx(f.n)); };

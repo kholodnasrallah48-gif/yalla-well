@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdviceView } from '../components/food.tsx';
 import { Btn, Card, T } from '../components/ui.tsx';
 import { lookupBarcode } from '../lib/barcode.ts';
-import { addFood, fmt, totals } from '../lib/day.ts';
+import { addFood, fmt, planned } from '../lib/day.ts';
 import { foodAdvice, type Food } from '../lib/foods.ts';
 import { L, tx } from '../lib/i18n.ts';
 import { genderFor, targets } from '../lib/plan.ts';
@@ -27,7 +27,7 @@ export default function Scan() {
   const busy = useRef(false);
   if (!profile) return null;
   const g = genderFor(profile.sex);
-  const remaining = targets(profile).kcal - totals(day).kcal;
+  const remaining = targets(profile).kcal - planned(day).kcal;
 
   const onScan = async (code: string) => {
     if (busy.current) return;

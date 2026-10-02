@@ -350,3 +350,14 @@ test('streaks count on-target calorie days and done workouts, skipping rest days
   assert.ok(s.points >= 4 * POINTS.kcal + 2 * POINTS.workout);
   assert.equal(scoreDay(p, logs[keyOf(5)], new Date(2026, 9, 2 - 5)).kcalOk, false);
 });
+
+test('meal foods count only once the meal is ticked, and over-calorie swaps are lighter', () => {
+  const f = FOODS[0];
+  let d = addFood(blankDay(), f, 'lunch');
+  d = addFood(d, FOODS[1]); // no meal: counts right away
+  assert.equal(totals(d).kcal, FOODS[1].kcal);
+  assert.equal(totals({ ...d, meals: ['lunch'] }).kcal, f.kcal + FOODS[1].kcal);
+  const cucumber = FOODS.find((x) => x.n === 'خيار')!;
+  const adv = foodAdvice(base, cucumber, 3);
+  assert.ok(adv.swaps.every((x) => x.kcal < cucumber.kcal), adv.swaps.map((x) => `${x.n} ${x.kcal}`).join());
+});

@@ -23,7 +23,16 @@ export const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-
 /** 0 = Saturday … 6 = Friday. */
 export const weekIndex = (d: Date) => (d.getDay() + 1) % 7;
 
+/** Whether a logged food counts toward the day yet: foods in a meal count once that meal is ticked as eaten. */
+export const counted = (day: DayLog, x: LoggedFood) => !x.meal || (day.meals ?? []).includes(x.meal);
+
+/** What was eaten today: foods without a meal, and foods in meals ticked as done. */
 export function totals(day: DayLog) {
+  return planned({ ...day, foods: day.foods.filter((x) => counted(day, x)) });
+}
+
+/** Everything logged, ticked or not. */
+export function planned(day: DayLog) {
   return day.foods.reduce(
     (a, f) => ({ kcal: a.kcal + f.kcal * f.q, p: a.p + f.p * f.q, c: a.c + f.c * f.q, f: a.f + f.f * f.q }),
     { kcal: 0, p: 0, c: 0, f: 0 },
@@ -39,7 +48,7 @@ export function addFood(day: DayLog, food: Food, meal?: Meal, q = 1): DayLog {
 }
 
 /** Totals for the foods logged under one meal. */
-export const mealTotals = (day: DayLog, meal: Meal) => totals({ ...day, foods: day.foods.filter((x) => x.meal === meal) });
+export const mealTotals = (day: DayLog, meal: Meal) => planned({ ...day, foods: day.foods.filter((x) => x.meal === meal) });
 
 /** Changes a logged portion by delta (in halves); removes it at zero. */
 export function changePortion(day: DayLog, index: number, delta: number): DayLog {

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdviceView, MacroChips, arNum } from '../../components/food.tsx';
 import { Btn, Card, T, styles } from '../../components/ui.tsx';
-import { addFood, fmt, totals } from '../../lib/day.ts';
+import { addFood, fmt, planned } from '../../lib/day.ts';
 import { foodAdvice, recipeFood } from '../../lib/foods.ts';
 import { L, tx } from '../../lib/i18n.ts';
 import { MEAL_NAME, suitability, videoURL } from '../../lib/mealplan.ts';
@@ -24,7 +24,7 @@ export default function RecipeScreen() {
   if (!profile || !r) return null;
   const g = genderFor(profile.sex);
   const food = recipeFood(r);
-  const adv = foodAdvice(profile, food, targets(profile).kcal - totals(day).kcal);
+  const adv = foodAdvice(profile, food, targets(profile).kcal - planned(day).kcal);
   const added = day.foods.some((x) => x.ref === food.id);
   const video = () => WebBrowser.openBrowserAsync(videoURL(r), {
     presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET, controlsColor: c.petrol,

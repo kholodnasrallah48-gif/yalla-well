@@ -1,4 +1,5 @@
 // Food list, personal food advice (conditions, blood sugar, calorie budget) and a free-text meal parser.
+import { AR_EN } from './food-words.ts';
 import { FOOD_ROWS } from './foods-data.ts';
 import { genderFor, type Profile } from './plan.ts';
 
@@ -105,47 +106,73 @@ const QTY_WORDS: Record<string, number> = {
 const STEMS: Record<string, string> = { 'بيضتين': 'بيضه', 'بيض': 'بيضه', 'رغيفين': 'عيش', 'رغيف': 'عيش', 'كوبايتين': 'كوب', 'تفاحتين': 'تفاحه', 'موزتين': 'موزه', 'بلحات': 'بلح', 'عيشه': 'عيش', 'اسمر': 'بني', 'سمرا': 'بني', 'فراخ': 'فراخ' };
 const FILLER = new Set(['طبق', 'كوبايه', 'كوب', 'حبه', 'حبايه', 'قطعه', 'معلقه', 'علبه', 'جم', 'جرام', 'من', 'في', 'شويه', 'صغير', 'صغيره', 'كبير', 'كبيره', 'متوسط', 'متوسطه', 'حته', 'اكلت', 'شربت', 'فطرت', 'تغديت', 'اتعشيت']);
 
-export type ParsedItem = { food: Food; q: number; text: string };
+export type ParsedItem = { food: Food; q: number; text: string; grams?: number };
+export type Unknown = { text: string; q: number; grams?: number };
 
-/** Splits "٢ بيض وعيش بلدي وجبنة قريش" into foods from the list with quantities. */
-export function parseMeal(text: string, pool: Food[] = FOODS): { items: ParsedItem[]; unknown: string[] } {
+const GRAM_WORDS = new Set(['جم', 'جرام', 'جرامات', 'g', 'gm', 'مل']);
+/** Grams in one portion from its text, e.g. "طبق ٢٠٠ جم" → 200. */
+export function portionGrams(u: string): number | null {
+  const m = norm(u).match(/(\d+(?:\.\d+)?)\s*(جم|مل|جرام)/);
+  return m ? parseFloat(m[1]) : null;
+}
+
+/** Best one-to-one match of query words to name tokens (each word and token used once). */
+function matchScore(rest: string[], toks: string[]): { hit: number; covered: number } {
+  const m = (w: string, t: string) => (t === w ? 1 : w.length > 2 && t.length > 2 && Math.abs(w.length - t.length) <= 1 && (t.startsWith(w) || w.startsWith(t)) ? 0.8 : 0);
+  const pairs: { i: number; j: number; s: number }[] = [];
+  rest.forEach((w, i) => toks.forEach((t, j) => { const s = m(w, t); if (s) pairs.push({ i, j, s }); }));
+  pairs.sort((a, b) => b.s - a.s);
+  const ui = new Set<number>(), uj = new Set<number>();
+  let total = 0;
+  for (const x of pairs) if (!ui.has(x.i) && !uj.has(x.j)) { ui.add(x.i); uj.add(x.j); total += x.s; }
+  return { hit: total, covered: total };
+}
+
+/** Splits "٢ بيض وعيش بلدي وجبنة قريش" into foods from the list with quantities; the rest is returned as unknown. */
+export function parseMeal(text: string, pool: Food[] = FOODS): { items: ParsedItem[]; unknown: Unknown[] } {
   const names = pool.map((f) => ({ f, toks: norm(f.n).split(/\s+/) }));
   const vocab = new Set(names.flatMap((x) => x.toks));
-  const known = (w: string) => vocab.has(w) || vocab.has(STEMS[w] ?? '') || [...vocab].some((v) => v.length > 2 && (v.startsWith(w) || w.startsWith(v)));
+  const known = (w: string) => vocab.has(w) || vocab.has(STEMS[w] ?? '') || [...vocab].some((v) => v.length > 2 && Math.abs(v.length - w.length) <= 1 && (v.startsWith(w) || w.startsWith(v)));
   // "بسكر" → "سكر", "الفول" → "فول" when only the bare word is a food word.
   const strip = (w: string) => known(w) ? w : (['بال', 'ال', 'ب'].map((p) => (w.startsWith(p) ? w.slice(p.length) : '')).find((x) => x.length > 1 && known(x)) ?? w);
-  const words = norm(text).replace(/[،,+\n.؛;]/g, ' | ').replace(/\s(مع|و)\s/g, ' | ').split(/\s+/).filter(Boolean);
+  const words = norm(text).replace(/(\d)(جم|جرام|g)/g, '$1 $2').replace(/[،,+\n.؛;]/g, ' | ').replace(/\s(مع|و)\s/g, ' | ').split(/\s+/).filter(Boolean);
   const chunks: string[][] = [[]];
   for (const w of words) {
     if (w === '|') { chunks.push([]); continue; }
     if (/^و\d/.test(w)) { chunks.push([w.slice(1)]); continue; }
     // "وعيش" → boundary + "عيش" when the word itself isn't a food word.
-    if (w.length > 2 && w.startsWith('و') && !known(w) && known(w.slice(1))) { chunks.push([w.slice(1)]); continue; }
+    if (w.length > 2 && w.startsWith('و') && !known(w) && (known(w.slice(1)) || !!AR_EN[w.slice(1)])) { chunks.push([w.slice(1)]); continue; }
     chunks[chunks.length - 1].push(w);
   }
   const items: ParsedItem[] = [];
-  const unknown: string[] = [];
+  const unknown: Unknown[] = [];
   for (const ch of chunks) {
     if (!ch.length) continue;
     let q = 1;
+    let grams: number | undefined;
     const rest: string[] = [];
-    for (const w of ch) {
-      if (/^\d+(\.\d+)?$/.test(w)) q = parseFloat(w);
-      else if (QTY_WORDS[w] != null && !vocab.has(w)) { q = QTY_WORDS[w]; if (STEMS[w] && !FILLER.has(STEMS[w])) rest.push(STEMS[w]); }
-      else if (!FILLER.has(w)) rest.push(STEMS[w] ?? strip(w));
+    const label: string[] = [];
+    for (let k = 0; k < ch.length; k++) {
+      const w = ch[k];
+      const next = ch[k + 1];
+      if (/^\d+(\.\d+)?$/.test(w) && next && GRAM_WORDS.has(next)) { grams = parseFloat(w); k++; }
+      else if (w === 'كيلو') grams = q * 1000;
+      else if (/^\d+(\.\d+)?$/.test(w)) q = parseFloat(w);
+      else if (QTY_WORDS[w] != null && !vocab.has(w)) { q = QTY_WORDS[w]; if (STEMS[w] && !FILLER.has(STEMS[w])) { rest.push(STEMS[w]); label.push(w); } }
+      else if (!FILLER.has(w)) { rest.push(STEMS[w] ?? strip(w)); label.push(w); }
     }
     if (!rest.length) continue;
     let best: { f: Food; s: number } | null = null;
-    const m = (w: string, t: string) => (t === w ? 1 : w.length > 2 && t.length > 2 && (t.startsWith(w) || w.startsWith(t)) ? 0.8 : 0);
     for (const { f, toks } of names) {
-      const hit = rest.reduce((a, w) => a + Math.max(0, ...toks.map((t) => m(w, t))), 0);
+      const { hit, covered } = matchScore(rest, toks);
       if (!hit) continue;
-      const covered = toks.reduce((a, t) => a + Math.max(0, ...rest.map((w) => m(w, t))), 0);
       const s = hit / rest.length + (0.5 * covered) / toks.length;
       if (!best || s > best.s) best = { f, s };
     }
-    if (best && best.s >= 0.9) items.push({ food: best.f, q, text: ch.join(' ') });
-    else unknown.push(ch.join(' '));
+    if (best && best.s >= 0.9) {
+      const pg = grams != null ? portionGrams(best.f.u) : null;
+      items.push({ food: best.f, q: grams != null && pg ? Math.round((grams / pg) * 100) / 100 : q, text: ch.join(' '), grams });
+    } else unknown.push({ text: label.join(' '), q, grams });
   }
   return { items, unknown };
 }

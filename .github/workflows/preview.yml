@@ -19,6 +19,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run typecheck
+      - name: Online food lookup check
+        continue-on-error: true
+        run: node --experimental-strip-types --no-warnings scripts/online-smoke.ts
       - name: Check EXPO_TOKEN
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

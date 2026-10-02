@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
 import { FOODS, foodAdvice, parseMeal } from './foods.ts';
 import { fromOFF } from './barcode.ts';
+import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
 import { addFood, blankDay, changePortion, totals, weekIndex } from './day.ts';
 import { medical, sessionFor, targets, type Profile } from './plan.ts';
 import { PHASES, programWeek, suggestWeight } from './progress.ts';
@@ -165,4 +166,42 @@ test('barcode products map to one serving with health tags', () => {
     nutriments: { 'energy-kcal_100g': 42, 'sugars_100g': 10.6, 'carbohydrates_100g': 10.6 } })!;
   assert.equal(f.kcal, 139);
   assert.ok(f.tags?.includes('soda') && f.tags.includes('processed'));
+});
+
+test('parser keeps similar words apart and reads grams', () => {
+  const r = parseMeal('زيتون مخلل\nتوست حبوب كاملة');
+  assert.deepEqual(r.items.map((x) => x.food.n), ['زيتون مخلل', 'توست حبوب كاملة']);
+  assert.equal(parseMeal('زيت زيتون').items[0].food.n, 'زيت زيتون');
+  const g = parseMeal('٢٠٠ جم فول مدمس');
+  assert.equal(g.items[0].food.n, 'فول مدمس');
+  assert.equal(g.items[0].q, 1);
+  assert.equal(parseMeal('١٠٠جم فول مدمس').items[0].q, 0.5);
+  const u = parseMeal('٢ بيض و١٥٠ جرام كيمتشي كوري');
+  assert.equal(u.items[0].q, 2);
+  assert.deepEqual(u.unknown, [{ text: 'كيمتشي كوري', q: 1, grams: 150 }]);
+});
+
+test('online lookup: Arabic to English and nutrient mapping', () => {
+  assert.equal(toEnglish('زيتون مخلل'), 'olives pickled');
+  assert.equal(toEnglish('صدور فراخ مشوية'), 'breast chicken grilled');
+  assert.equal(toEnglish('حاجة غريبة'), null);
+  const o = fromUSDA({
+    fdcId: 169094, description: 'Olives, pickled, canned or bottled, green', dataType: 'SR Legacy',
+    foodNutrients: [
+      { nutrientId: 1008, nutrientNumber: '208', nutrientName: 'Energy', unitName: 'KCAL', value: 145 },
+      { nutrientId: 1003, nutrientNumber: '203', nutrientName: 'Protein', unitName: 'G', value: 1.03 },
+      { nutrientId: 1004, nutrientNumber: '204', nutrientName: 'Total lipid (fat)', unitName: 'G', value: 15.3 },
+      { nutrientId: 1005, nutrientNumber: '205', nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: 3.84 },
+      { nutrientId: 1093, nutrientNumber: '307', nutrientName: 'Sodium, Na', unitName: 'MG', value: 1556 },
+    ],
+  });
+  assert.ok(o);
+  assert.deepEqual(o!.tags, ['canned', 'salty']);
+  const f = toFood(o!, 40, 'زيتون مخلل');
+  assert.equal(f.kcal, 58);
+  assert.equal(f.u, '40 جم');
+  assert.equal(f.f, 6.1);
+  const off = fromOFFHit({ code: '622', product_name: 'Chipsy', brands: 'PepsiCo', nova_group: 4, nutriments: { 'energy-kcal_100g': 536, proteins_100g: 6, carbohydrates_100g: 53, fat_100g: 33 } });
+  assert.equal(off?.name, 'Chipsy (PepsiCo)');
+  assert.deepEqual(off?.tags, ['processed']);
 });

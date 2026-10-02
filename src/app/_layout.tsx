@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { I18nManager, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Reminders } from '../components/Reminders.tsx';
 import { Splash } from '../components/Splash.tsx';
 import { loadLang, onLangChange, type Lang } from '../lib/i18n.ts';
 import { AppStoreProvider, useStore } from '../store/AppStore.tsx';
@@ -44,11 +45,13 @@ function Gate() {
   return (
     <View key={lang} style={{ flex: 1, direction: lang === 'en' ? 'ltr' : 'rtl' }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Reminders />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
         <Stack.Screen name="exercise/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="scan" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="add" options={{ presentation: 'modal' }} />
         <Stack.Screen name="report" />
         <Stack.Screen name="recipe/[id]" options={{ presentation: 'modal' }} />
       </Stack>

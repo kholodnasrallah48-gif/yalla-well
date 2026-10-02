@@ -6,7 +6,8 @@ import { SCHEDULES } from '../../lib/data.ts';
 import { fmt, totals, weekIndex } from '../../lib/day.ts';
 import { genderFor, medical, sessionFor, targets, type Note } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
-import { L, tx } from '../../lib/i18n.ts';
+import { L, num, tx } from '../../lib/i18n.ts';
+import { streaks } from '../../lib/streaks.ts';
 import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { useColors } from '../../theme.ts';
@@ -15,7 +16,7 @@ const RANK: Record<Note['tone'], number> = { bad: 0, warn: 1, info: 2 };
 
 export default function Home() {
   const c = useColors();
-  const { profile, day, updateDay } = useStore();
+  const { profile, day, updateDay, history, today } = useStore();
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
@@ -25,6 +26,7 @@ export default function Home() {
   const ses = sessionFor(profile, todayIdx, day.flare, programWeek(profile.start, new Date()));
   const left = T0.kcal - t.kcal;
   const notes = [...M.train, ...M.food].sort((a, b) => RANK[a.tone] - RANK[b.tone]).slice(0, 2);
+  const st = streaks(profile, { ...history, [today]: day }, new Date());
   const greet = new Date().getHours() < 12 ? L('صباح الخير', 'Good morning') : L('مساء الخير', 'Good evening');
 
   return (
@@ -44,6 +46,25 @@ export default function Home() {
           <MacroBar label={L('دهون', 'Fat')} value={t.f} target={T0.fat} />
         </View>
         <Btn kind="outline" title={L(g('سجّل أكل', 'سجّلي أكل'), 'Log food')} onPress={() => router.navigate('/food')} style={{ marginTop: 6 }} />
+      </Card>
+
+      <Card>
+        <View style={[styles.row, { gap: 8 }]}>
+          {([
+            ['🔥', num(st.kcal), L(st.kcal === 1 ? 'يوم في السعرات' : 'أيام في السعرات', st.kcal === 1 ? 'day on target' : 'days on target')],
+            ['💪', num(st.workout), L(st.workout === 1 ? 'تمرين ورا بعض' : 'تمارين ورا بعض', st.workout === 1 ? 'workout in a row' : 'workouts in a row')],
+            ['⭐', num(st.points), L('نقطة', 'points')],
+          ] as const).map(([icon, v, label]) => (
+            <View key={icon} style={{ flex: 1, alignItems: 'center', gap: 2, backgroundColor: c.soft, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 4 }}>
+              <T kind="h2" style={{ textAlign: 'center' }}>{icon} {v}</T>
+              <T kind="small" style={{ textAlign: 'center' }}>{label}</T>
+            </View>
+          ))}
+        </View>
+        <T kind="small">{st.todayPoints
+          ? L(`${g('جمعت', 'جمعتي')} ${num(st.todayPoints)} نقطة النهارده.`, `${num(st.todayPoints)} points today.`)
+          : L(`${g('خليك', 'خليكي')} في حدود سعراتك ${g('وخلص', 'وخلصي')} تمرينك عشان الستريك يكمل.`, 'Stay within your calories and finish your workout to keep the streak going.')}
+          {' '}{L(`السعرات بتتحسب لو ${g('أكلت', 'أكلتي')} من ٧٥٪ لـ١١٠٪ من هدفك.`, 'Calories count when you eat 75–110% of your target.')}</T>
       </Card>
 
       <Card tone="petrol">

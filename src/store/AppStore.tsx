@@ -27,6 +27,8 @@ type Store = {
   readDay: (key: string) => Promise<DayLog | null>;
   /** On how many of the last 30 days (today included) each food id was logged. */
   usage: Record<string, number>;
+  /** Logs of the 89 days before today, by date key (days with nothing saved are missing). */
+  history: Record<string, DayLog>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -50,17 +52,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [day, setDay] = useState<DayLog>(blankDay);
   const todayRef = useRef(today);
   todayRef.current = today;
-  // Foods logged on the 29 days before today, counted once per day; today's are added live below.
-  const [pastUse, setPastUse] = useState<Record<string, number>>({});
+  // The 89 days before today (today's log is `day`): for streaks, points and the usual-foods list.
+  const [history, setHistory] = useState<Record<string, DayLog>>({});
   useEffect(() => {
-    const keys = Array.from({ length: 29 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 1 - i); return K.day(dayKey(d)); });
-    AsyncStorage.multiGet(keys).then((rows) => {
-      const n: Record<string, number> = {};
-      for (const [, v] of rows) {
-        if (!v) continue;
-        try { for (const ref of new Set(((JSON.parse(v) as DayLog).foods ?? []).map((x) => x.ref))) n[ref] = (n[ref] ?? 0) + 1; } catch { /* skip a broken day */ }
-      }
-      setPastUse(n);
+    const keys = Array.from({ length: 89 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 1 - i); return dayKey(d); });
+    AsyncStorage.multiGet(keys.map(K.day)).then((rows) => {
+      const h: Record<string, DayLog> = {};
+      rows.forEach(([, v], i) => { if (!v) return; try { h[keys[i]] = { ...blankDay(), ...(JSON.parse(v) as DayLog) }; } catch { /* skip a broken day */ } });
+      setHistory(h);
     }).catch(() => {});
   }, [today]);
 
@@ -117,15 +116,21 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return d ? { ...blankDay(), ...d } : null;
   }, [day]);
 
+  // Foods logged on each of the last 30 days, counted once per day.
   const usage = useMemo(() => {
-    const n = { ...pastUse };
+    const n: Record<string, number> = {};
+    const cutoff = (() => { const d = new Date(); d.setDate(d.getDate() - 29); return dayKey(d); })();
+    for (const [k, log] of Object.entries(history)) {
+      if (k < cutoff) continue;
+      for (const ref of new Set(log.foods.map((x) => x.ref))) n[ref] = (n[ref] ?? 0) + 1;
+    }
     for (const ref of new Set(day.foods.map((x) => x.ref))) n[ref] = (n[ref] ?? 0) + 1;
     return n;
-  }, [pastUse, day]);
+  }, [history, day]);
 
   const value = useMemo(
-    () => ({ ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage }),
-    [ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage],
+    () => ({ ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage, history }),
+    [ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage, history],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

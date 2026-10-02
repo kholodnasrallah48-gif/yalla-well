@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
 import { FOODS, byUse, findSwaps, foodAdvice, itemAlerts, oftenFoods, parseMeal } from './foods.ts';
 import { dayPlan, mealOptions, suitability } from './mealplan.ts';
+import { POINTS, scoreDay, streaks } from './streaks.ts';
 import { reportHTML, weekReport, weekStart } from './report.ts';
 import { fromOFF } from './barcode.ts';
 import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
@@ -307,4 +308,45 @@ test('picking gym, home or rest per day changes that day and keeps the week bala
   assert.deepEqual(weekSessions(q), ['push', 'pull', 'legs', null, 'homeA', 'homeB', 'homeA']);
   assert.equal(sessionFor(q, 1, false)!.place, 'gym');
   assert.equal(sessionFor({ ...p, places: { 0: 'rest' } }, 0, false), null);
+});
+
+test('phone reminders skip what is done today, follow rest days and vary their wording', async () => {
+  const { planReminders, reminderText } = await import('./reminders.ts');
+  const p: Profile = { ...base, schedule: '5mix' };
+  const now = new Date(2026, 9, 2, 8, 0); // Friday morning: a rest day on 5mix
+  const day: DayLog = { ...blankDay(), meals: ['breakfast'] };
+  const list = planReminders({ profile: p, day, now, lang: 'ar' });
+  const on = (k: string) => list.filter((r) => dayKey(r.date) === k).map((r) => r.kind);
+  assert.deepEqual(on('2026-10-02'), ['water', 'lunch', 'water', 'dinner']); // a ticked meal counts as logging
+  assert.deepEqual(on('2026-10-03'), ['breakfast', 'water', 'lunch', 'water', 'workout', 'dinner', 'nothing']);
+  assert.ok(!on('2026-10-06').includes('workout'), 'Tuesday is a rest day');
+  assert.equal(new Set(list.map((r) => dayKey(r.date))).size, 7);
+  assert.ok(list.every((r) => r.date > now));
+  // Later in the day with food logged and enough water: only what's still ahead and not done.
+  const late = planReminders({ profile: p, day: { ...day, water: 99, foods: [{ ref: 'x', n: 'x', u: 'x', kcal: 1, p: 0, c: 0, f: 0, q: 1 }] }, now: new Date(2026, 9, 2, 17, 0), lang: 'en', days: 1 });
+  assert.deepEqual(late.map((r) => r.kind), ['dinner']);
+  for (const k of ['breakfast', 'lunch', 'water', 'workout', 'dinner', 'nothing'] as const) {
+    assert.notEqual(reminderText(k, '2026-10-02', 'ar', 'f').body, reminderText(k, '2026-10-03', 'ar', 'f').body, k);
+  }
+  assert.notEqual(reminderText('breakfast', '2026-10-02', 'ar', 'm').body, reminderText('breakfast', '2026-10-02', 'ar', 'f').body);
+});
+
+test('streaks count on-target calorie days and done workouts, skipping rest days', () => {
+  const p: Profile = { ...base, schedule: '3', start: '2026-09-01' };
+  const T = targets(p);
+  const today = new Date(2026, 9, 2); // Friday, a rest day in the 3-day plan
+  const on = (key: string, extra: Partial<DayLog> = {}): DayLog => ({ ...blankDay(), foods: [{ ref: 'x', n: 'x', u: '', kcal: T.kcal, p: 0, c: 0, f: 0, q: 1 }], ...extra });
+  const keyOf = (n: number) => dayKey(new Date(2026, 9, 2 - n));
+  const logs: Record<string, DayLog> = {};
+  for (let n = 1; n <= 4; n++) logs[keyOf(n)] = on(keyOf(n));
+  logs[keyOf(5)] = { ...on(keyOf(5)), foods: [{ ref: 'x', n: 'x', u: '', kcal: T.kcal * 1.5, p: 0, c: 0, f: 0, q: 1 }] }; // way over
+  // Wednesday (2 days back) is legs day: done; Monday (4 back) pull: done.
+  const wed = new Date(2026, 9, 2 - 2), mon = new Date(2026, 9, 2 - 4);
+  logs[keyOf(2)].done = sessionFor(p, weekIndex(wed), false, programWeek(p.start, wed))!.items.map((x) => x.id);
+  logs[keyOf(4)].done = sessionFor(p, weekIndex(mon), false, programWeek(p.start, mon))!.items.map((x) => x.id);
+  const s = streaks(p, logs, today);
+  assert.equal(s.kcal, 4); // today not logged yet doesn't break it
+  assert.equal(s.workout, 2);
+  assert.ok(s.points >= 4 * POINTS.kcal + 2 * POINTS.workout);
+  assert.equal(scoreDay(p, logs[keyOf(5)], new Date(2026, 9, 2 - 5)).kcalOk, false);
 });

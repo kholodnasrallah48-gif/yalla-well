@@ -3,7 +3,11 @@ import type { Food, FoodTag, GI } from './foods.ts';
 import type { SetLog } from './progress.ts';
 import type { Meal } from './recipes-data.ts';
 
-export type LoggedFood = { ref: string; n: string; u: string; kcal: number; p: number; c: number; f: number; q: number; gi?: GI; tags?: FoodTag[] };
+export type LoggedFood = {
+  ref: string; n: string; u: string; kcal: number; p: number; c: number; f: number; q: number; gi?: GI; tags?: FoodTag[];
+  /** The meal it was logged under (older logs have none). */
+  meal?: Meal;
+};
 export type DayLog = {
   foods: LoggedFood[]; water: number; flare: boolean; done: string[]; sets: Record<string, SetLog[]>;
   /** How many times each suggested meal was swapped for another today. */
@@ -26,13 +30,16 @@ export function totals(day: DayLog) {
   );
 }
 
-/** Adds one portion, merging with an existing entry for the same food. */
-export function addFood(day: DayLog, food: Food): DayLog {
-  const i = day.foods.findIndex((x) => x.ref === food.id);
-  if (i >= 0) return { ...day, foods: day.foods.map((x, j) => (j === i ? { ...x, q: x.q + 1 } : x)) };
+/** Adds `q` portions to a meal, merging with an existing entry for the same food in that meal. */
+export function addFood(day: DayLog, food: Food, meal?: Meal, q = 1): DayLog {
+  const i = day.foods.findIndex((x) => x.ref === food.id && x.meal === meal);
+  if (i >= 0) return { ...day, foods: day.foods.map((x, j) => (j === i ? { ...x, q: x.q + q } : x)) };
   const { id, n, u, kcal, p, c, f, gi, tags } = food;
-  return { ...day, foods: [...day.foods, { ref: id, n, u, kcal, p, c, f, q: 1, gi, tags }] };
+  return { ...day, foods: [...day.foods, { ref: id, n, u, kcal, p, c, f, q, gi, tags, ...(meal ? { meal } : {}) }] };
 }
+
+/** Totals for the foods logged under one meal. */
+export const mealTotals = (day: DayLog, meal: Meal) => totals({ ...day, foods: day.foods.filter((x) => x.meal === meal) });
 
 /** Changes a logged portion by delta (in halves); removes it at zero. */
 export function changePortion(day: DayLog, index: number, delta: number): DayLog {

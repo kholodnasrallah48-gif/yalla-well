@@ -1,140 +1,77 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { AdviceView, Dot, MacroChips } from '../../components/food.tsx';
-import { Btn, Card, Screen, START, T, styles } from '../../components/ui.tsx';
-import { addFood, changePortion, fmt, totals } from '../../lib/day.ts';
-import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, OFTEN, byUse, oftenFoods, foodAdvice, foodLevel, itemAlerts, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../../lib/foods.ts';
-import { L, isEn, num, tx } from '../../lib/i18n.ts';
-import { searchOnline, toFood, type OnlineFood } from '../../lib/online.ts';
-import { MEAL_NAME, dayPlan } from '../../lib/mealplan.ts';
+import { MacroChips } from '../../components/food.tsx';
+import { Btn, Card, MacroBar, Screen, T, styles } from '../../components/ui.tsx';
+import { changePortion, fmt, mealTotals, totals, type LoggedFood } from '../../lib/day.ts';
+import { FOODS, MY_FOODS_CAT, itemAlerts, type Food } from '../../lib/foods.ts';
+import { L, isEn, tx } from '../../lib/i18n.ts';
+import { MEALS, MEAL_NAME, dayPlan, toMeal } from '../../lib/mealplan.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
+import type { Meal } from '../../lib/recipes-data.ts';
 import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
-function IconBtn({ label, a11y, onPress, silent }: { label: string; a11y: string; onPress: () => void; silent?: boolean }) {
+function IconBtn({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
   const c = useColors();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={a11y} onPress={() => { if (!silent) play(label === '−' ? 'remove' : 'tap'); onPress(); }}
-      style={{ width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 20, lineHeight: 22, color: c.petrol, fontFamily: fonts.display }}>{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={a11y} onPress={() => { play(label === '−' ? 'remove' : 'tap'); onPress(); }}
+      style={{ width: 32, height: 32, borderRadius: 9, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 18, lineHeight: 20, color: c.petrol, fontFamily: fonts.display }}>{label}</Text>
     </Pressable>
   );
 }
 
-type Found = { loading: boolean; hits: OnlineFood[]; pick: number; grams: string };
-
 // A food's portion for display; online foods carry a computed "<grams> جم" unit.
 const showU = (u: string) => (isEn() ? tx(u).replace(/(\d) جم$/, '$1 g') : u);
 
+/** Today's food by meal: the day's totals, then each meal with what was logged in it, a tick when it's done,
+ * an add button, and a suggestion that opens only when asked for. */
 export default function FoodScreen() {
   const c = useColors();
-  const { profile, day, today, custom, updateDay, addCustomFood, usage } = useStore();
-  const [q, setQ] = useState('');
-  // The open section of the food menu (null = all closed).
-  const [cat, setCat] = useState<string | null>(null);
-  const [form, setForm] = useState({ n: '', u: '', kcal: '', p: '', c: '', f: '' });
-  const [meal, setMeal] = useState('');
-  const [parsed, setParsed] = useState<{ items: ParsedItem[]; unknown: Unknown[] } | null>(null);
-  // Online matches for each unknown part of the typed meal, by its index.
-  const [found, setFound] = useState<Record<number, Found>>({});
-  const [web, setWeb] = useState<{ q: string; loading: boolean; hits: OnlineFood[]; grams: string } | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const { profile, day, today, custom, updateDay } = useStore();
+  const [ideas, setIdeas] = useState<Meal | null>(null);
   const all = useMemo(() => [...FOODS, ...custom.map((f) => ({ ...f, cat: MY_FOODS_CAT }))], [custom]);
   const byId = useMemo(() => new Map(all.map((f) => [f.id, f])), [all]);
-  // Typing searches every section; otherwise only the open section is listed.
-  const pool = useMemo(() => {
-    const s = norm(q);
-    if (s) return byUse(all.filter((f) => norm(f.n).includes(s) || norm(f.u).includes(s)), usage).slice(0, 25);
-    return cat ? byUse(all.filter((f) => f.cat === cat), usage) : [];
-  }, [q, cat, all, usage]);
-  const often = useMemo(() => oftenFoods(all, usage), [all, usage]);
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
-  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), totals(day).kcal, day.meals);
   const t = totals(day);
-  const remaining = T0.kcal - t.kcal;
-  const female = profile.sex !== 'm';
-  const add = (f: Food) => { play(profile && foodLevel(profile, f) === 'bad' ? 'warn' : 'add'); updateDay((d) => addFood(d, f)); setOpen(null); };
-  // Online foods are kept in "أكلاتي" so next time they come from the list without internet.
-  const remember = (f: Food) => { if (!custom.some((x) => x.id === f.id)) addCustomFood(f); };
-  const calc = () => {
-    const r = parseMeal(meal, all);
-    setParsed(r);
-    const start: Record<number, Found> = {};
-    r.unknown.forEach((u, i) => { start[i] = { loading: true, hits: [], pick: 0, grams: u.grams ? String(u.grams) : '' }; });
-    setFound(start);
-    r.unknown.forEach((u, i) => {
-      searchOnline(u.text).then((hits) => setFound((prev) => {
-        const cur = prev[i];
-        if (!cur) return prev;
-        const grams = cur.grams || String(Math.round((hits[0]?.servingG ?? 100) * u.q));
-        return { ...prev, [i]: { ...cur, loading: false, hits, grams } };
-      }));
-    });
-  };
-  const onlineFoods = parsed ? parsed.unknown.map((u, i) => {
-    const x = found[i];
-    const hit = x?.hits[x.pick];
-    return hit && +x.grams > 0 ? toFood(hit, +x.grams, u.text) : null;
-  }) : [];
-  const searchWeb = () => {
-    const text = q.trim();
-    if (!text) return;
-    setWeb({ q: text, loading: true, hits: [], grams: '100' });
-    searchOnline(text).then((hits) => setWeb((w) => (w && w.q === text ? { ...w, loading: false, hits } : w)));
-  };
-  const addParsed = () => {
-    if (!parsed) return;
-    const extra = onlineFoods.filter((f): f is Food => !!f);
-    updateDay((d) => extra.reduce((acc, f) => addFood(acc, f), parsed.items.reduce((acc, it) => {
-      let next = addFood(acc, it.food);
-      const i = next.foods.findIndex((x) => x.ref === it.food.id);
-      if (it.q !== 1) next = { ...next, foods: next.foods.map((x, j) => (j === i ? { ...x, q: x.q - 1 + it.q } : x)) };
-      return next;
-    }, d)));
-    extra.forEach(remember);
-    setMeal(''); setParsed(null); setFound({});
-  };
-  const mealKcal = parsed ? parsed.items.reduce((a, it) => a + it.food.kcal * it.q, 0) + onlineFoods.reduce((a, f) => a + (f?.kcal ?? 0), 0) : 0;
-  const anyToAdd = !!parsed && (parsed.items.length > 0 || onlineFoods.some(Boolean));
-  const input = { borderWidth: 1.5, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
+  const ticked = day.meals ?? [];
+  const started = MEALS.filter((m) => day.foods.some((x) => x.meal === m));
+  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), t.kcal, ticked, started);
+  const loose = day.foods.filter((x) => !x.meal);
 
-  const saveCustom = () => {
-    if (!form.n.trim() || !form.kcal) return;
-    const f: Food = { id: 'c' + Date.now(), cat: MY_FOODS_CAT, n: form.n.trim(), u: form.u.trim() || 'حصة', kcal: +form.kcal || 0, p: +form.p || 0, c: +form.c || 0, f: +form.f || 0 };
-    addCustomFood(f);
-    updateDay((d) => addFood(d, f));
-    setForm({ n: '', u: '', kcal: '', p: '', c: '', f: '' });
+  const tick = (meal: Meal) => {
+    const on = ticked.includes(meal);
+    play(on ? 'remove' : ticked.length === MEALS.length - 1 ? 'win' : 'check');
+    updateDay((d) => ({ ...d, meals: on ? (d.meals ?? []).filter((m) => m !== meal) : [...(d.meals ?? []), meal] }));
   };
 
-  // One food in the menu: name, portion and macros, a badge when eaten often, + to log it, tap for advice.
-  const row = (f: Food, line: boolean) => {
-    const isOpen = open === f.id;
-    const used = usage[f.id] ?? 0;
+  const foodRow = (f: LoggedFood, last: boolean) => {
+    const i = day.foods.indexOf(f);
+    const src = byId.get(f.ref);
+    const food: Food = { id: f.ref, cat: '', n: f.n, u: f.u, kcal: f.kcal, p: f.p, c: f.c, f: f.f, gi: f.gi ?? src?.gi, tags: f.tags ?? src?.tags };
+    const alerts = itemAlerts(profile, food, f.q, totals({ ...day, foods: day.foods.slice(0, i) }), T0);
     return (
-      <View key={f.id} style={{ gap: 8, paddingVertical: 8, borderBottomWidth: line ? 1 : 0, borderColor: c.line }}>
-        <View style={[styles.row, { gap: 10 }]}>
-          <Pressable style={[styles.row, { flex: 1, gap: 8 }]} onPress={() => setOpen(isOpen ? null : f.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}>
-            <Dot level={foodLevel(profile, f)} />
-            <View style={{ flex: 1 }}>
-              <View style={[styles.row, { gap: 6, flexWrap: 'wrap' }]}>
-                <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(f.n)}</T>
-                {used >= OFTEN ? (
-                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: c.onLime, backgroundColor: c.lime, borderRadius: 99, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 1 }}>
-                    {L(`متكررة · ${num(used)} ${used <= 10 ? 'أيام' : 'يوم'}`, `Often · ${num(used)} ${used === 1 ? 'day' : 'days'}`)}
-                  </Text>
-                ) : null}
-              </View>
-              <T kind="small">{L(`${f.u} · ${fmt(f.kcal)} سعرة · ب ${f.p} ك ${f.c} د ${f.f}`, `${showU(f.u)} · ${fmt(f.kcal)} kcal · P ${f.p} C ${f.c} F ${f.f}`)}</T>
-            </View>
-          </Pressable>
-          <IconBtn label="+" a11y={L(`إضافة ${f.n}`, `Add ${tx(f.n)}`)} onPress={() => add(f)} silent />
+      <View key={f.ref + (f.meal ?? '')} style={{ gap: 6, paddingVertical: 8, borderBottomWidth: last ? 0 : 1, borderColor: c.line }}>
+        <View style={[styles.row, { gap: 8 }]}>
+          <View style={{ flex: 1 }}>
+            <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(f.n)}</T>
+            <T kind="small">{L(`${f.u} · ${fmt(f.kcal * f.q)} سعرة`, `${showU(f.u)} · ${fmt(f.kcal * f.q)} kcal`)}</T>
+          </View>
+          <IconBtn label="−" a11y={L('أقل', 'Less')} onPress={() => updateDay((d) => changePortion(d, i, -0.5))} />
+          <T kind="body" style={{ minWidth: 26, textAlign: 'center', fontFamily: fonts.displaySemi }}>{f.q}</T>
+          <IconBtn label="+" a11y={L('أكتر', 'More')} onPress={() => updateDay((d) => changePortion(d, i, 0.5))} />
         </View>
-        {isOpen ? <AdviceView advice={foodAdvice(profile, f, remaining, all)} onSwap={add} female={female} /> : null}
+        <MacroChips p={f.p * f.q} c={f.c * f.q} f={f.f * f.q} />
+        {alerts.map((a, k) => (
+          <View key={k} accessibilityRole="alert" style={{ backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+            <T kind="small" color={c.bad} style={a.level === 'bad' ? { fontFamily: fonts.bodyMedium } : undefined}>{a.level === 'bad' ? '⛔ ' : '⚠️ '}{a.text}</T>
+          </View>
+        ))}
       </View>
     );
   };
@@ -144,245 +81,87 @@ export default function FoodScreen() {
       <Card>
         <View style={styles.rowBetween}>
           <View>
-            <T kind="big">{fmt(t.kcal)}</T>
+            <T kind="big" color={t.kcal > T0.kcal ? c.bad : undefined}>{fmt(t.kcal)}</T>
             <T kind="small">{L(`من ${fmt(T0.kcal)} سعرة`, `of ${fmt(T0.kcal)} kcal`)}</T>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 2 }}>
-            {([['بروتين', 'Protein', t.p, T0.protein, false], ['كارب', 'Carbs', t.c, T0.carbs, true], ['دهون', 'Fat', t.f, T0.fat, true]] as const).map(([k, en, v, lim, cap]) => (
-              <T key={k} kind="small" color={cap && v > lim ? c.bad : undefined} style={{ fontVariant: ['tabular-nums'] }}>{L(`${k} ${fmt(v)} من ${fmt(lim)} جم`, `${en} ${fmt(v)} of ${fmt(lim)} g`)}</T>
-            ))}
-          </View>
+          <T kind="small" color={t.kcal > T0.kcal ? c.bad : c.ok}>
+            {t.kcal > T0.kcal
+              ? L(`${g('عديت', 'عديتي')} بـ ${fmt(t.kcal - T0.kcal)}`, `${fmt(t.kcal - T0.kcal)} over`)
+              : L(`فاضل ${fmt(T0.kcal - t.kcal)} سعرة`, `${fmt(T0.kcal - t.kcal)} kcal left`)}
+          </T>
         </View>
-        {t.kcal > T0.kcal ? <T kind="small" color={c.bad}>{L(`${g('عديت', 'عديتي')} هدف السعرات النهارده بـ ${fmt(t.kcal - T0.kcal)} سعرة.`, `You're ${fmt(t.kcal - T0.kcal)} kcal over today's target.`)}</T> : null}
+        <View style={{ gap: 8, marginTop: 4 }}>
+          <MacroBar label={L('بروتين', 'Protein')} value={t.p} target={T0.protein} />
+          <MacroBar label={L('كارب', 'Carbs')} value={t.c} target={T0.carbs} />
+          <MacroBar label={L('دهون', 'Fat')} value={t.f} target={T0.fat} />
+        </View>
       </Card>
 
-      <Card>
-        <T kind="h2">{L('اقتراحات النهارده', "Today's suggestions")}</T>
-        <T kind="small">{L(`على قد السعرات الفاضلة ${g('ليك', 'ليكي')} ومترتبة حسب حالتك وأدويتك. ${g('علّم', 'علّمي')} على الوجبة لما ${g('تخلصها', 'تخلصيها')}، والسعرات الباقية بتتقسم على اللي لسه. ${g('دوس', 'دوسي')} على الأكلة ${g('تشوف', 'تشوفي')} الطريقة والفيديو.`, 'Sized to your remaining calories and arranged around your condition and medications. Tick a meal when you finish it, and the remaining calories are split across the rest. Tap a dish to see the recipe and video.')}</T>
-        {plan.map(({ meal, recipe: r, eaten, why, portion }, i) => {
-          const ticked = (day.meals ?? []).includes(meal);
-          const loggedDish = eaten && !ticked;
-          const tick = () => {
-            if (loggedDish) return;
-            play(ticked ? 'remove' : plan.filter((e) => !e.eaten).length === 1 ? 'win' : 'check');
-            updateDay((d) => ({ ...d, meals: ticked ? (d.meals ?? []).filter((m) => m !== meal) : [...(d.meals ?? []), meal] }));
-          };
-          return (
-            <View key={meal} style={[styles.row, { gap: 10, alignItems: 'flex-start', paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line }]}>
-              <Pressable onPress={tick} disabled={loggedDish} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: eaten }} accessibilityLabel={L(`${g('خلصت', 'خلصتي')} ${MEAL_NAME[meal]}`, `Finished ${tx(MEAL_NAME[meal])}`)}
-                style={{ width: 26, height: 26, marginTop: 2, borderRadius: 8, borderWidth: 2, borderColor: c.petrol, backgroundColor: eaten ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                {eaten ? <Text style={{ color: c.onPetrol, fontSize: 15, fontWeight: '700' }}>✓</Text> : null}
+      {MEALS.map((meal) => {
+        const foods = day.foods.filter((x) => x.meal === meal);
+        const done = ticked.includes(meal);
+        const sum = mealTotals(day, meal);
+        const entry = plan.find((e) => e.meal === meal)!;
+        const r = entry.recipe;
+        const canSuggest = !done && !foods.length && !!r;
+        const showIdea = ideas === meal && canSuggest;
+        return (
+          <Card key={meal}>
+            <View style={[styles.row, { gap: 10 }]}>
+              <Pressable onPress={() => tick(meal)} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: done }}
+                accessibilityLabel={L(`${g('خلصت', 'خلصتي')} ${MEAL_NAME[meal]}`, `Finished ${tx(MEAL_NAME[meal])}`)}
+                style={{ width: 28, height: 28, borderRadius: 9, borderWidth: 2, borderColor: c.petrol, backgroundColor: done ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                {done ? <Text style={{ color: c.onPetrol, fontSize: 16, fontWeight: '700' }}>✓</Text> : null}
               </Pressable>
-              {r ? (
-                <Pressable style={{ flex: 1, gap: 2, opacity: eaten ? 0.6 : 1 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button" accessibilityLabel={`${tx(MEAL_NAME[meal])}: ${tx(r.n)}`}>
-                  <T kind="label" color={c.petrol}>{tx(MEAL_NAME[meal])}{eaten ? L(` · ${g('خلصته', 'خلصتيه')} ✓`, ' · done ✓') : ''}</T>
-                  <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(r.n)}</T>
-                  <T kind="small">{L(`${fmt(Math.round(r.kcal * portion))} سعرة · ${r.mins} دقيقة`, `${fmt(Math.round(r.kcal * portion))} kcal · ${r.mins} min`)}</T>
-                  {portion < 1 && !eaten ? <T kind="small" color={c.warn}>{L(`${g('خد', 'خدي')} ${portion === 0.5 ? 'نص' : 'تلات تربع'} الكمية عشان تفضل${g('', 'ي')} في حدود سعراتك`, `Have ${portion === 0.5 ? 'half' : 'three quarters of'} the portion to stay within your calories`)}</T> : null}
-                  {why.length && !eaten ? <T kind="small" color={c.ok}>{why.join(L('، ', ', '))}</T> : null}
-                </Pressable>
-              ) : (
-                <View style={{ flex: 1, gap: 2, opacity: eaten ? 0.6 : 1 }}>
-                  <T kind="label" color={c.petrol}>{tx(MEAL_NAME[meal])}{eaten ? L(` · ${g('خلصته', 'خلصتيه')} ✓`, ' · done ✓') : ''}</T>
-                  {eaten ? null : <T kind="small">{L(`مفيش سعرات فاضلة كفاية النهارده. لو ${g('جعت', 'جعتي')} خليها خضار أو زبادي لايت.`, "Not enough calories left today. If you get hungry, stick to veggies or light yogurt.")}</T>}
-                </View>
-              )}
-              {eaten || !r ? null : (
-                <Pressable onPress={() => { play('tap'); updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } })); }} accessibilityRole="button" accessibilityLabel={L(`اقتراح تاني لـ${MEAL_NAME[meal]}`, `Another suggestion for ${tx(MEAL_NAME[meal])}`)}
-                  style={{ borderWidth: 1, borderColor: c.line, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface }}>
-                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>{L('غيّر', 'Swap')}</Text>
-                </Pressable>
-              )}
+              <View style={{ flex: 1 }}>
+                <T kind="h3">{tx(MEAL_NAME[meal])}</T>
+                <T kind="small" color={done ? c.ok : undefined}>
+                  {done ? L(`${g('خلصته', 'خلصتيه')} · ${fmt(sum.kcal)} سعرة`, `Done · ${fmt(sum.kcal)} kcal`)
+                    : foods.length ? L(`${fmt(sum.kcal)} سعرة لحد دلوقتي`, `${fmt(sum.kcal)} kcal so far`)
+                    : L(`لسه ${g('مسجلتش', 'مسجلتيش')}`, 'Nothing logged yet')}
+                </T>
+              </View>
+              <Pressable onPress={() => { play('tap'); router.push({ pathname: '/add', params: { meal } }); }} accessibilityRole="button"
+                accessibilityLabel={L(`إضافة أكل ${toMeal(meal)}`, `Add food to ${tx(MEAL_NAME[meal])}`)}
+                style={{ borderRadius: 99, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: c.lime }}>
+                <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.onLime }}>{L(`+ ${g('ضيف', 'ضيفي')}`, '+ Add')}</Text>
+              </Pressable>
             </View>
-          );
-        })}
-      </Card>
-
-      <Card>
-        <T kind="h2">{L(`${g('اكتب', 'اكتبي')} ${g('أكلت', 'أكلتي')} إيه`, 'Type what you ate')}</T>
-        <TextInput value={meal} onChangeText={(v) => { setMeal(v); setParsed(null); setFound({}); }} multiline placeholder={L('مثلًا: ٢ بيض وعيش بلدي وجبنة قريش وكوباية شاي بلبن', 'e.g. 2 eggs, baladi bread, cottage cheese and a cup of tea with milk')} placeholderTextColor={c.muted}
-          style={[input, { minHeight: 64, textAlignVertical: 'top' }]} />
-        <View style={[styles.row, { gap: 8 }]}>
-          <Btn kind="secondary" title={L('احسب', 'Calculate')} onPress={calc} disabled={!meal.trim()} style={{ flex: 1 }} />
-          <Btn kind="outline" title={L(g('صوّر باركود', 'صوّري باركود'), 'Scan barcode')} onPress={() => router.push('/scan')} style={{ flex: 1 }} />
-        </View>
-        {parsed ? (
-          <View style={{ gap: 8 }}>
-            {parsed.items.map((it, i) => {
-              const adv = foodAdvice(profile, it.food, remaining);
-              return (
-                <View key={i} style={{ gap: 6, paddingVertical: 6, borderBottomWidth: 1, borderColor: c.line }}>
-                  <View style={[styles.row, { gap: 8 }]}>
-                    <Dot level={adv.level} />
-                    <View style={{ flex: 1 }}>
-                      <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{it.q !== 1 ? `${it.q} × ` : ''}{tx(it.food.n)}</T>
-                      <T kind="small">{L(`${it.food.u} · ${fmt(it.food.kcal * it.q)} سعرة`, `${showU(it.food.u)} · ${fmt(it.food.kcal * it.q)} kcal`)}</T>
-                    </View>
-                  </View>
-                  <MacroChips p={it.food.p * it.q} c={it.food.c * it.q} f={it.food.f * it.q} />
-                  {adv.level === 'warn' || adv.level === 'bad' ? <AdviceView advice={adv} female={female} /> : null}
-                </View>
-              );
-            })}
-            {parsed.unknown.map((u, i) => {
-              const x = found[i];
-              const f = onlineFoods[i];
-              if (!x || x.loading) return (
-                <View key={'u' + i} style={[styles.row, { gap: 8, paddingVertical: 6 }]}>
-                  <ActivityIndicator color={c.petrol} />
-                  <T kind="small">{L(`بندوّر على "${u.text}" أونلاين…`, `Searching online for "${u.text}"…`)}</T>
-                </View>
-              );
-              if (!x.hits.length) return (
-                <T key={'u' + i} kind="small" color={c.warn}>{L(`ملقيناش "${u.text}" حتى أونلاين. ${g('جرب', 'جربي')} اسم تاني أو ${g('ضيفها', 'ضيفيها')} كأكلة خاصة تحت.`, `Couldn't find "${u.text}" online either. Try another name or add it as your own food below.`)}</T>
-              );
-              const hit = x.hits[x.pick];
-              const adv = f ? foodAdvice(profile, f, remaining) : null;
-              const set = (patch: Partial<Found>) => setFound((prev) => ({ ...prev, [i]: { ...prev[i], ...patch } }));
-              return (
-                <View key={'u' + i} style={{ gap: 6, paddingVertical: 6, borderBottomWidth: 1, borderColor: c.line }}>
-                  <View style={[styles.row, { gap: 8 }]}>
-                    {adv ? <Dot level={adv.level} /> : null}
-                    <View style={{ flex: 1 }}>
-                      <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{u.text}</T>
-                      <T kind="small">{f ? L(`${f.u} · ${fmt(f.kcal)} سعرة`, `${showU(f.u)} · ${fmt(f.kcal)} kcal`) : L('اكتبي الوزن', 'Enter the weight')}</T>
-                    </View>
-                    <TextInput value={x.grams} onChangeText={(v) => set({ grams: v.replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel={L('الوزن بالجرام', 'Weight in grams')}
-                      style={[input, { width: 64, textAlign: 'center', paddingHorizontal: 4 }]} />
-                    <T kind="small">{L('جم', 'g')}</T>
-                  </View>
-                  {f ? <MacroChips p={f.p} c={f.c} f={f.f} /> : null}
-                  <T kind="small">{L(`من ${hit.src}: ${hit.name} · ${fmt(hit.per100.kcal)} سعرة لكل ١٠٠ جم`, `From ${hit.src}: ${hit.name} · ${fmt(hit.per100.kcal)} kcal per 100 g`)}</T>
-                  {x.hits.length > 1 ? (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-                      {x.hits.slice(0, 8).map((h, k) => (
-                        <Pressable key={h.id} onPress={() => set({ pick: k })} accessibilityRole="button" accessibilityState={{ selected: k === x.pick }}
-                          style={{ maxWidth: 220, borderWidth: 1, borderColor: k === x.pick ? c.petrol : c.line, backgroundColor: k === x.pick ? c.petrol : c.surface, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 }}>
-                          <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: k === x.pick ? c.onPetrol : c.ink }}>{h.name} · {fmt(h.per100.kcal)}</Text>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  ) : null}
-                  {adv && (adv.level === 'warn' || adv.level === 'bad') ? <AdviceView advice={adv} female={female} /> : null}
-                </View>
-              );
-            })}
-            {parsed.unknown.length ? <T kind="small">{L(`اللي جاي من أونلاين بيتحسب بالوزن. لو مش مظبوط ${g('اختار', 'اختاري')} نتيجة تانية من تحته.`, "Online results are counted by weight. If it's not right, pick another result below it.")}</T> : null}
-            {anyToAdd ? (
-              <>
-                <T kind="h3">{L(`المجموع: ${fmt(mealKcal)} سعرة`, `Total: ${fmt(mealKcal)} kcal`)}</T>
-                <Btn title={L(g('ضيفهم لأكل النهارده', 'ضيفيهم لأكل النهارده'), "Add to today's food")} onPress={addParsed} />
-              </>
+            {foods.length ? <View>{foods.map((f, k) => foodRow(f, k === foods.length - 1))}</View> : null}
+            {canSuggest ? (
+              <Pressable onPress={() => { play('tap'); setIdeas(showIdea ? null : meal); }} accessibilityRole="button" accessibilityState={{ expanded: showIdea }}>
+                <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>
+                  {showIdea ? L('اخفي الاقتراح', 'Hide suggestion') : L(`💡 ${g('عايز', 'عايزة')} اقتراح ${toMeal(meal)}؟`, `💡 Want an idea for ${tx(MEAL_NAME[meal])}?`)}
+                </T>
+              </Pressable>
             ) : null}
-          </View>
-        ) : null}
-      </Card>
-
-      <Card>
-        <T kind="h2">{L('أكل النهارده', "Today's food")}</T>
-        {day.foods.length ? day.foods.map((f, i) => {
-          const src = byId.get(f.ref);
-          const food: Food = { id: f.ref, cat: '', n: f.n, u: f.u, kcal: f.kcal, p: f.p, c: f.c, f: f.f, gi: f.gi ?? src?.gi, tags: f.tags ?? src?.tags };
-          const before = totals({ ...day, foods: day.foods.slice(0, i) });
-          const alerts = itemAlerts(profile, food, f.q, before, T0);
-          return (
-            <View key={f.ref} style={{ gap: 6, paddingVertical: 8, borderBottomWidth: i < day.foods.length - 1 ? 1 : 0, borderColor: c.line }}>
-              <View style={[styles.row, { gap: 10 }]}>
-                <View style={{ flex: 1 }}>
-                  <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(f.n)}</T>
-                  <T kind="small">{L(`${f.u} · ${fmt(f.kcal * f.q)} سعرة`, `${showU(f.u)} · ${fmt(f.kcal * f.q)} kcal`)}</T>
+            {showIdea && r ? (
+              <View style={{ backgroundColor: c.soft, borderRadius: 12, padding: 12, gap: 4 }}>
+                <View style={[styles.row, { gap: 8 }]}>
+                  <Pressable style={{ flex: 1, gap: 2 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button">
+                    <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(r.n)}</T>
+                    <T kind="small">{L(`${fmt(Math.round(r.kcal * entry.portion))} سعرة · ${r.mins} دقيقة`, `${fmt(Math.round(r.kcal * entry.portion))} kcal · ${r.mins} min`)}</T>
+                  </Pressable>
+                  <Pressable onPress={() => { play('tap'); updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } })); }} accessibilityRole="button"
+                    style={{ borderWidth: 1, borderColor: c.line, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface }}>
+                    <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>{L('غيّر', 'Swap')}</Text>
+                  </Pressable>
                 </View>
-                <IconBtn label="−" a11y={L('أقل', 'Less')} onPress={() => updateDay((d) => changePortion(d, i, -0.5))} />
-                <T kind="h3" style={{ minWidth: 28, textAlign: 'center' }}>{f.q}</T>
-                <IconBtn label="+" a11y={L('أكتر', 'More')} onPress={() => updateDay((d) => changePortion(d, i, 0.5))} />
+                {entry.portion < 1 ? <T kind="small" color={c.warn}>{L(`${g('خد', 'خدي')} ${entry.portion === 0.5 ? 'نص' : 'تلات تربع'} الكمية عشان تفضل${g('', 'ي')} في حدود سعراتك`, `Have ${entry.portion === 0.5 ? 'half' : 'three quarters of'} the portion to stay within your calories`)}</T> : null}
+                {entry.why.length ? <T kind="small" color={c.ok}>{entry.why.join(L('، ', ', '))}</T> : null}
+                <Btn kind="outline" title={L(`${g('شوف', 'شوفي')} المكونات والطريقة`, 'See ingredients and steps')} onPress={() => router.push(`/recipe/${r.id}`)} />
               </View>
-              <MacroChips p={f.p * f.q} c={f.c * f.q} f={f.f * f.q} />
-              {alerts.map((a, k) => (
-                <View key={k} accessibilityRole="alert" style={{ backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                  <T kind="small" color={c.bad} style={a.level === 'bad' ? { fontFamily: fonts.bodyMedium } : undefined}>{a.level === 'bad' ? '⛔ ' : '⚠️ '}{a.text}</T>
-                </View>
-              ))}
-            </View>
-          );
-                }) : <T kind="small">{L(`${g('لسه مسجلتش', 'لسه مسجلتيش')} حاجة النهارده. ${g('دور', 'دوري')} على الأكلة تحت و${g('دوس', 'دوسي')} +.`, "You haven't logged anything today. Find a food below and tap +.")}</T>}
-      </Card>
+            ) : null}
+          </Card>
+        );
+      })}
 
-      <Card>
-        <T kind="h2">{L(g('ضيف أكلة', 'ضيفي أكلة'), 'Add a food')}</T>
-        <TextInput value={q} onChangeText={(v) => { setQ(v); setWeb(null); }} onSubmitEditing={searchWeb} returnKeyType="search" placeholder={L(g('دور: فول، فراخ، بيبسي...', 'دوري: فول، فراخ، بيبسي...'), 'Search: fava beans, chicken, Pepsi...')} placeholderTextColor={c.muted} style={input} />
-        {q.trim() ? (
-          pool.length ? <View>{pool.map((f, i) => row(f, i < pool.length - 1))}</View> : <T kind="small">{L('مفيش نتيجة في اللستة.', 'No results in the list.')}</T>
-        ) : (
-          <>
-            {often.length ? (
-              <View style={{ gap: 2 }}>
-                <T kind="h3">{L('الأكتر استخدامًا', 'Most used')}</T>
-                {often.map((f, i) => row(f, i < often.length - 1))}
-              </View>
-            ) : <T kind="small">{L(`الأكل اللي ${g('بتاكله', 'بتاكليه')} كتير هيظهر هنا فوق عشان ${g('تضيفه', 'تضيفيه')} بسرعة.`, 'Foods you eat often will show up here so you can add them quickly.')}</T>}
-            <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: 14, overflow: 'hidden' }}>
-              {FOOD_CATS.filter((k) => k !== ALL_CAT).map((k, ci, cats) => {
-                const n = all.filter((f) => f.cat === k).length;
-                if (!n) return null;
-                const isCat = cat === k;
-                return (
-                  <View key={k} style={{ borderBottomWidth: ci < cats.length - 1 ? 1 : 0, borderColor: c.line }}>
-                    <Pressable onPress={() => { play('tap'); setCat(isCat ? null : k); setOpen(null); }} accessibilityRole="button" accessibilityState={{ expanded: isCat }}
-                      style={[styles.row, { gap: 8, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: isCat ? c.soft : c.surface }]}>
-                      <Text style={{ flex: 1, fontFamily: fonts.displaySemi, fontSize: 15, color: isCat ? c.petrol : c.ink }}>{tx(k)}</Text>
-                      <Text style={{ fontFamily: fonts.body, fontSize: 12, color: c.muted }}>{L(`${num(n)} أكلة`, `${num(n)} ${n === 1 ? 'food' : 'foods'}`)}</Text>
-                      <Text style={{ fontFamily: fonts.display, fontSize: 16, color: c.petrol, transform: [{ rotate: isCat ? (isEn() ? '90deg' : '-90deg') : '0deg' }] }}>{L('‹', '›')}</Text>
-                    </Pressable>
-                    {isCat ? <View style={{ paddingHorizontal: 12 }}>{pool.map((f, i) => row(f, i < pool.length - 1))}</View> : null}
-                  </View>
-                );
-              })}
-            </View>
-          </>
-        )}
-        {q.trim().length > 1 && !web ? <Btn kind="outline" title={L(`${g('دوّر', 'دوّري')} على "${q.trim()}" أونلاين`, `Search online for "${q.trim()}"`)} onPress={searchWeb} /> : null}
-        {web ? (
-          <View style={{ gap: 8 }}>
-            <View style={[styles.row, { gap: 8 }]}>
-              <T kind="h3" style={{ flex: 1 }}>{L('نتايج أونلاين', 'Online results')}</T>
-              <T kind="small">{L('الوزن', 'Weight')}</T>
-              <TextInput value={web.grams} onChangeText={(v) => setWeb({ ...web, grams: v.replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel={L('الوزن بالجرام', 'Weight in grams')}
-                style={[input, { width: 64, textAlign: 'center', paddingHorizontal: 4 }]} />
-              <T kind="small">{L('جم', 'g')}</T>
-            </View>
-            {web.loading ? <ActivityIndicator color={c.petrol} /> : web.hits.length ? web.hits.map((h, i) => {
-              const f = toFood(h, +web.grams || 100, web.q);
-              return (
-                <View key={h.id} style={[styles.row, { gap: 10, paddingVertical: 6, borderBottomWidth: i < web.hits.length - 1 ? 1 : 0, borderColor: c.line }]}>
-                  <Dot level={foodLevel(profile, f)} />
-                  <View style={{ flex: 1 }}>
-                    <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{h.name}</T>
-                    <T kind="small">{L(`${f.u} · ${fmt(f.kcal)} سعرة · ب ${fmt(f.p)} ك ${fmt(f.c)} د ${fmt(f.f)} · ${h.src}`, `${showU(f.u)} · ${fmt(f.kcal)} kcal · P ${fmt(f.p)} C ${fmt(f.c)} F ${fmt(f.f)} · ${h.src}`)}</T>
-                  </View>
-                  <IconBtn label="+" a11y={L(`إضافة ${h.name}`, `Add ${h.name}`)} onPress={() => { add(f); remember(f); }} silent />
-                </View>
-              );
-            }) : <T kind="small" color={c.warn}>{L(`ملقيناش حاجة أونلاين. ${g('جرب', 'جربي')} كلمة تانية أو ${g('ضيفها', 'ضيفيها')} كأكلة خاصة تحت.`, "Couldn't find anything online. Try another word or add it as your own food below.")}</T>}
-          </View>
-        ) : null}
-        <T kind="small">{L(`النقطة الخضرا يعني مناسب ${g('ليك', 'ليكي')}، والصفرا خلي بالك، والحمرا مش مناسب لحالتك. ${g('دوس', 'دوسي')} على الأكلة ${g('تشوف', 'تشوفي')} السبب والبدايل.`, 'Green dot means good for you, yellow means be careful, and red means not suitable for your condition. Tap a food to see why and the alternatives.')}</T>
-      </Card>
-
-      <Card>
-        <T kind="h2">{L(`أكلة خاصة ${g('بيك', 'بيكي')}`, 'Your own food')}</T>
-        <TextInput value={form.n} onChangeText={(n) => setForm({ ...form, n })} placeholder={L('الاسم، مثلًا: سلطة تونة', 'Name, e.g. tuna salad')} placeholderTextColor={c.muted} style={input} />
-        <View style={[styles.row, { gap: 8 }]}>
-          <TextInput value={form.u} onChangeText={(u) => setForm({ ...form, u })} placeholder={L('الكمية: طبق', 'Portion: plate')} placeholderTextColor={c.muted} style={[input, { flex: 1 }]} />
-          <TextInput value={form.kcal} onChangeText={(kcal) => setForm({ ...form, kcal })} placeholder={L('السعرات', 'Calories')} keyboardType="numeric" placeholderTextColor={c.muted} style={[input, { flex: 1 }]} />
-        </View>
-        <View style={[styles.row, { gap: 8 }]}>
-          {(['p', 'c', 'f'] as const).map((k) => (
-            <TextInput key={k} value={form[k]} onChangeText={(v) => setForm({ ...form, [k]: v })} keyboardType="numeric"
-              placeholder={{ p: L('بروتين g', 'Protein g'), c: L('كارب g', 'Carbs g'), f: L('دهون g', 'Fat g') }[k]} placeholderTextColor={c.muted} style={[input, { flex: 1 }]} />
-          ))}
-        </View>
-        <Btn kind="secondary" title={L(g('احفظها وضيفها للنهارده', 'احفظيها وضيفيها للنهارده'), 'Save and add to today')} onPress={saveCustom} disabled={!form.n.trim() || !form.kcal} />
-      </Card>
+      {loose.length ? (
+        <Card>
+          <T kind="h3">{L('أكل من غير وجبة', 'Other food')}</T>
+          {loose.map((f, k) => foodRow(f, k === loose.length - 1))}
+        </Card>
+      ) : null}
     </Screen>
   );
 }

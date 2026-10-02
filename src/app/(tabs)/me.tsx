@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { Btn, Card, Chip, NoteView, Screen, T, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
+import { notifyOn, onNotifyChange, setNotifyOn } from '../../lib/notify.ts';
 import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { fmt } from '../../lib/day.ts';
 import { L, tx } from '../../lib/i18n.ts';
@@ -18,6 +19,8 @@ export default function Me() {
   const [confirm, setConfirm] = useState(false);
   const [sound, setSound] = useState(soundOn());
   useEffect(() => onSoundChange(setSound), []);
+  const [notify, setNotify] = useState(notifyOn());
+  useEffect(() => onNotifyChange(setNotify), []);
   if (!profile) return null;
   const p = profile;
   const g = genderFor(p.sex);
@@ -70,6 +73,16 @@ export default function Me() {
             <T kind="small">{L('صوت خفيف مع الأزرار وإضافة الأكل وتعليم التمارين. بيسكت لو الموبايل على الصامت.', 'A soft sound for buttons, adding food and ticking off exercises. Muted when your phone is on silent.')}</T>
           </View>
           <Chip label={sound ? L('شغالة', 'On') : L('مقفولة', 'Off')} on={sound} onPress={() => { setSoundOn(!sound); setSound(!sound); }} />
+        </View>
+      </Card>
+
+      <Card>
+        <View style={styles.rowBetween}>
+          <View style={{ flex: 1 }}>
+            <T kind="h3">{L('التنبيهات', 'Reminders')}</T>
+            <T kind="small">{L(`تنبيه على الموبايل يفكرك بالفطار والغدا والعشا والمياه والتمرين، ولو ${g('مسجلتش', 'مسجلتيش')} أكل في اليوم.`, "Phone reminders for breakfast, lunch, dinner, water and your workout, and when you haven't logged any food.")}</T>
+          </View>
+          <Chip label={notify ? L('شغالة', 'On') : L('مقفولة', 'Off')} on={notify} onPress={() => { setNotifyOn(!notify); setNotify(!notify); }} />
         </View>
       </Card>
 

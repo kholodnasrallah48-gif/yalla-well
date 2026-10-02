@@ -1,6 +1,6 @@
 // Barcode scanner: reads a product barcode and shows its calories with personal advice.
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { addFood, fmt, totals } from '../lib/day.ts';
 import { foodAdvice, type Food } from '../lib/foods.ts';
 import { L, tx } from '../lib/i18n.ts';
 import { genderFor, targets } from '../lib/plan.ts';
+import type { Meal } from '../lib/recipes-data.ts';
 import { useStore } from '../store/AppStore.tsx';
 import { useColors } from '../theme.ts';
 
@@ -20,6 +21,7 @@ export default function Scan() {
   const insets = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
   const { profile, day, custom, updateDay, addCustomFood } = useStore();
+  const { meal } = useLocalSearchParams<{ meal?: Meal }>();
   const [state, setState] = useState<'scan' | 'loading' | 'found' | 'missing' | 'error'>('scan');
   const [food, setFood] = useState<Food | null>(null);
   const busy = useRef(false);
@@ -42,7 +44,7 @@ export default function Scan() {
   const again = () => { busy.current = false; setFood(null); setState('scan'); };
   const add = (f: Food) => {
     if (f.id.startsWith('bc') && !custom.some((x) => x.id === f.id)) addCustomFood(f);
-    updateDay((d) => addFood(d, f));
+    updateDay((d) => addFood(d, f, meal || undefined));
     router.back();
   };
 

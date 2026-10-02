@@ -68,7 +68,7 @@ export default function RecipeScreen() {
       </Card>
       <Btn kind="outline" title={L(g('شوف فيديو الطريقة', 'شوفي فيديو الطريقة'), 'Watch the how-to video')} onPress={video} />
       <Btn title={added ? L('اتضافت لأكل النهارده ✓', "Added to today's food ✓") : L(g('ضيفها لأكل النهارده', 'ضيفيها لأكل النهارده'), "Add to today's food")} disabled={added}
-        onPress={() => { updateDay((d) => addFood(d, food)); router.back(); }} />
+        onPress={() => { updateDay((d) => addFood(d, food, r.meal)); router.back(); }} />
     </ScrollView>
   );
 }

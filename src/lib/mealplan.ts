@@ -76,10 +76,10 @@ export type PlanEntry = {
 
 /**
  * The plan for a day. Meals the person ticked (`doneMeals`) or whose suggested dish they logged count as eaten;
- * the calories left today are split over the meals not ticked yet by their usual share.
+ * the calories left today are split over the meals not ticked or started yet by their usual share.
  * `shuffle[meal]` moves that meal to the next option.
  */
-export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, number>> = {}, loggedRefs: string[] = [], eatenKcal = 0, doneMeals: Meal[] = []): PlanEntry[] {
+export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, number>> = {}, loggedRefs: string[] = [], eatenKcal = 0, doneMeals: Meal[] = [], startedMeals: Meal[] = []): PlanEntry[] {
   const target = targets(p).kcal;
   const used = new Set<string>();
   // The day's dish for each meal from the best-suited few, so it changes daily but stays a good fit.
@@ -97,15 +97,17 @@ export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, 
   };
   const loggedDish = (m: Meal) => RECIPES.find((r) => r.meal === m && loggedRefs.includes('r_' + r.id)) ?? null;
   const eaten = (m: Meal) => doneMeals.includes(m) || !!loggedDish(m);
-  const leftShare = MEALS.filter((m) => !eaten(m)).reduce((a, m) => a + SHARE[m], 0) || 1;
+  // Meals with food logged already are being eaten: the calories left go to the meals not started yet.
+  const open = (m: Meal) => !eaten(m) && !startedMeals.includes(m);
+  const leftShare = MEALS.filter(open).reduce((a, m) => a + SHARE[m], 0) || 1;
   const left = Math.max(0, target - eatenKcal);
   return MEALS.map((meal) => {
     const done = eaten(meal);
-    const budget = done ? 0 : (left * SHARE[meal]) / leftShare;
+    const budget = open(meal) ? (left * SHARE[meal]) / leftShare : 0;
     let recipe: Recipe | null = null;
     let portion = 1;
     if (done) recipe = loggedDish(meal);
-    else if (left >= 80) {
+    else if (open(meal) && left >= 80) {
       recipe = pick(meal, budget);
       if (!recipe) {
         recipe = lightest(meal);
@@ -116,5 +118,8 @@ export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, 
     return { meal, recipe, budget: Math.round(budget), eaten: done, portion, why: recipe ? suitability(p, recipe).why : [] };
   });
 }
+
+/** "للفطار": Arabic "for the meal" (لـ + الفطار contracts to للفطار). */
+export const toMeal = (m: Meal) => 'لل' + MEAL_NAME[m].replace(/^ال/, '');
 
 export const videoURL = (r: Recipe) => `https://www.youtube.com/results?search_query=${encodeURIComponent(r.video)}`;

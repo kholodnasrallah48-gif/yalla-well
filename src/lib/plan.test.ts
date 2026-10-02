@@ -5,7 +5,7 @@ import { test } from 'node:test';
 
 import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
 import { FOODS, findSwaps, foodAdvice, itemAlerts, parseMeal } from './foods.ts';
-import { dayPlan } from './mealplan.ts';
+import { dayPlan, mealOptions, suitability } from './mealplan.ts';
 import { reportHTML, weekReport, weekStart } from './report.ts';
 import { fromOFF } from './barcode.ts';
 import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
@@ -254,10 +254,23 @@ test('swaps stay in the same craving and suit the person', () => {
   assert.notDeepEqual(chips.map((x) => x.n), pastry.map((x) => x.n));
 });
 
-test('meal plan fits conditions, changes by day and on shuffle', () => {
+test('meal plan fits conditions, ranks by them, follows calories left and shuffles', () => {
   const p: Profile = { ...base, conditions: ['celiac', 'ir'] };
   const a = dayPlan(p, '2026-10-02');
-  for (const r of Object.values(a)) assert.ok(r && !(r.avoid ?? []).some((x) => p.conditions.includes(x)), r?.id);
-  assert.notEqual(dayPlan(p, '2026-10-02', { lunch: 1 }).lunch!.id, a.lunch!.id);
-  assert.ok(['2026-10-03', '2026-10-04', '2026-10-05'].some((d) => dayPlan(p, d).breakfast!.id !== a.breakfast!.id));
+  for (const e of a) assert.ok(e.recipe && !(e.recipe.avoid ?? []).some((x) => p.conditions.includes(x)), e.meal);
+  const lunch = (x: ReturnType<typeof dayPlan>) => x.find((e) => e.meal === 'lunch')!;
+  assert.notEqual(lunch(dayPlan(p, '2026-10-02', { lunch: 1 })).recipe!.id, lunch(a).recipe!.id);
+  // MS: lunches with omega-3 come before red meat.
+  const ms: Profile = { ...base, conditions: ['ms'] };
+  const opts = mealOptions(ms, 'lunch');
+  const firstRed = opts.findIndex((r) => r.tags.includes('redmeat'));
+  const firstOmega = opts.findIndex((r) => r.tags.includes('omega3'));
+  assert.ok(firstOmega >= 0 && (firstRed < 0 || firstOmega < firstRed));
+  assert.ok(suitability(ms, opts[firstOmega]).why[0].includes('أوميجا'));
+  // Eating a suggested breakfast marks it eaten; eating a lot shrinks the rest.
+  const bf = a.find((e) => e.meal === 'breakfast')!.recipe!;
+  const after = dayPlan(p, '2026-10-02', {}, ['r_' + bf.id], 1100);
+  assert.ok(after.find((e) => e.meal === 'breakfast')!.eaten);
+  const total = targets(p).kcal;
+  assert.ok(after.filter((e) => !e.eaten).reduce((s, e) => s + e.budget, 0) <= total - 1100 + 1);
 });

@@ -7,7 +7,7 @@ import { Btn, Card, Screen, START, T, styles } from '../../components/ui.tsx';
 import { addFood, changePortion, fmt, totals } from '../../lib/day.ts';
 import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, foodAdvice, foodLevel, itemAlerts, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../../lib/foods.ts';
 import { searchOnline, toFood, type OnlineFood } from '../../lib/online.ts';
-import { MEALS, MEAL_NAME, dayPlan } from '../../lib/mealplan.ts';
+import { MEAL_NAME, dayPlan } from '../../lib/mealplan.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
@@ -48,7 +48,7 @@ export default function FoodScreen() {
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
-  const plan = dayPlan(profile, today, day.shuffle);
+  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), totals(day).kcal);
   const t = totals(day);
   const remaining = T0.kcal - t.kcal;
   const female = profile.sex !== 'm';
@@ -124,21 +124,28 @@ export default function FoodScreen() {
 
       <Card>
         <T kind="h2">اقتراحات النهارده</T>
-        <T kind="small">على قد سعراتك وحالتك. {g('دوس', 'دوسي')} على الأكلة {g('تشوف', 'تشوفي')} المكونات والطريقة والفيديو.</T>
-        {MEALS.map((meal, i) => {
-          const r = plan[meal];
-          if (!r) return null;
+        <T kind="small">على قد السعرات الفاضلة {g('ليك', 'ليكي')} النهارده ومترتبة حسب حالتك وأدويتك. {g('دوس', 'دوسي')} على الأكلة {g('تشوف', 'تشوفي')} المكونات والطريقة والفيديو.</T>
+        {plan.map(({ meal, recipe: r, eaten, why }, i) => {
+          if (!r) return (
+            <View key={meal} style={{ paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line }}>
+              <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}</T>
+              <T kind="small">مفيش سعرات فاضلة كفاية النهارده. لو {g('جعت', 'جعتي')} خليها خضار أو زبادي لايت.</T>
+            </View>
+          );
           return (
-            <View key={meal} style={[styles.row, { gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line }]}>
+            <View key={meal} style={[styles.row, { gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line, opacity: eaten ? 0.6 : 1 }]}>
               <Pressable style={{ flex: 1, gap: 2 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button" accessibilityLabel={`${MEAL_NAME[meal]}: ${r.n}`}>
-                <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}</T>
+                <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}{eaten ? ' · اتاكلت ✓' : ''}</T>
                 <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{r.n}</T>
                 <T kind="small">{fmt(r.kcal)} سعرة · {r.mins} دقيقة</T>
+                {why.length && !eaten ? <T kind="small" color={c.ok}>{why.join('، ')}</T> : null}
               </Pressable>
-              <Pressable onPress={() => updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } }))} accessibilityRole="button" accessibilityLabel={`اقتراح تاني لـ${MEAL_NAME[meal]}`}
-                style={{ borderWidth: 1, borderColor: c.line, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface }}>
-                <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>غيّر</Text>
-              </Pressable>
+              {eaten ? null : (
+                <Pressable onPress={() => updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } }))} accessibilityRole="button" accessibilityLabel={`اقتراح تاني لـ${MEAL_NAME[meal]}`}
+                  style={{ borderWidth: 1, borderColor: c.line, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface }}>
+                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>غيّر</Text>
+                </Pressable>
+              )}
             </View>
           );
         })}

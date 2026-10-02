@@ -8,7 +8,7 @@ import { AdviceView, MacroChips, arNum } from '../../components/food.tsx';
 import { Btn, Card, T, styles } from '../../components/ui.tsx';
 import { addFood, fmt, totals } from '../../lib/day.ts';
 import { foodAdvice, recipeFood } from '../../lib/foods.ts';
-import { MEAL_NAME, videoURL } from '../../lib/mealplan.ts';
+import { MEAL_NAME, suitability, videoURL } from '../../lib/mealplan.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
 import { RECIPES } from '../../lib/recipes-data.ts';
 import { useStore } from '../../store/AppStore.tsx';
@@ -42,6 +42,7 @@ export default function RecipeScreen() {
           <T kind="small">سعرة · {r.serving}</T>
         </View>
         <MacroChips p={r.p} c={r.c} f={r.f} />
+        {suitability(profile, r).why.map((w) => <T key={w} kind="small" color={c.ok}>✓ {w}</T>)}
       </Card>
       {adv.level === 'warn' || adv.level === 'bad' ? <AdviceView advice={adv} female={profile.sex !== 'm'} /> : null}
       <Card>

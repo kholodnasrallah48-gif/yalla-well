@@ -13,6 +13,7 @@
     "expo-localization": "~57.0.2",
     "expo-router": "~57.0.24",
     "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.24",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",

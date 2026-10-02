@@ -2,7 +2,8 @@ import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansA
 import { ReadexPro_600SemiBold, ReadexPro_700Bold, useFonts } from '@expo-google-fonts/readex-pro';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import * as Updates from 'expo-updates';
+import { ActivityIndicator, I18nManager, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppStoreProvider, useStore } from '../store/AppStore.tsx';
@@ -11,6 +12,13 @@ import { useColors } from '../theme.ts';
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   document.documentElement.dir = 'rtl';
   document.documentElement.lang = 'ar';
+}
+
+// The expo-localization plugin forces RTL in real builds; Expo Go ignores plugins, so force it once at runtime.
+if (Platform.OS !== 'web' && !I18nManager.isRTL) {
+  I18nManager.allowRTL(true);
+  I18nManager.forceRTL(true);
+  Updates.reloadAsync().catch(() => {});
 }
 
 function Gate() {

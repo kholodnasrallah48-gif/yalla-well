@@ -35,6 +35,9 @@
       ]
     ],
     "scheme": "yallawell",
-    "backgroundColor": "#F1F6F7"
+    "backgroundColor": "#F1F6F7",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    }
   }
 }

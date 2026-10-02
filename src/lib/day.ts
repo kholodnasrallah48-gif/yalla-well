@@ -1,10 +1,11 @@
 // One day's log and date helpers.
-import type { Food } from './data.ts';
+import type { Food } from './foods.ts';
+import type { SetLog } from './progress.ts';
 
 export type LoggedFood = { ref: string; n: string; u: string; kcal: number; p: number; c: number; f: number; q: number };
-export type DayLog = { foods: LoggedFood[]; water: number; flare: boolean; done: string[] };
+export type DayLog = { foods: LoggedFood[]; water: number; flare: boolean; done: string[]; sets: Record<string, SetLog[]> };
 
-export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [] });
+export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });
 
 const pad = (n: number) => String(n).padStart(2, '0');
 export const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

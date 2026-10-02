@@ -7,7 +7,7 @@ import { ActivityIndicator, I18nManager, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppStoreProvider, useStore } from '../store/AppStore.tsx';
-import { useColors } from '../theme.ts';
+import { ThemeProvider, useColors, useTheme } from '../theme.ts';
 
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   document.documentElement.dir = 'rtl';
@@ -23,16 +23,19 @@ if (Platform.OS !== 'web' && !I18nManager.isRTL) {
 
 function Gate() {
   const c = useColors();
+  const { isDark } = useTheme();
   const { ready } = useStore();
   if (!ready) {
     return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg }}><ActivityIndicator color={c.petrol} /></View>;
   }
   return (
     <>
-      <StatusBar style="auto" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="exercise/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="scan" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );
@@ -46,9 +49,11 @@ export default function RootLayout() {
   if (!loaded) return null;
   return (
     <SafeAreaProvider>
-      <AppStoreProvider>
-        <Gate />
-      </AppStoreProvider>
+      <ThemeProvider>
+        <AppStoreProvider>
+          <Gate />
+        </AppStoreProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

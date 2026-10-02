@@ -20,7 +20,7 @@ export default function Me() {
   const M = medical(p);
   const conds = [...p.conditions.map((id) => CONDITIONS.find((x) => x.id === id)?.n), p.otherCond].filter(Boolean);
   const meds = [...p.meds.map((id) => MEDS.find((x) => x.id === id)?.n), p.otherMeds].filter(Boolean);
-  const pains = p.pains.map((id) => PAINS.find((x) => x.id === id)?.n);
+  const pains = [...p.pains.map((id) => PAINS.find((x) => x.id === id)?.n), p.otherPain].filter(Boolean);
 
   return (
     <Screen title="ملفي">

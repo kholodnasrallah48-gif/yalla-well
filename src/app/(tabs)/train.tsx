@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -5,6 +6,7 @@ import { Card, NoteView, Screen, T, styles } from '../../components/ui.tsx';
 import { SCHEDULES, SESSIONS, WEEK_SHORT } from '../../lib/data.ts';
 import { weekIndex } from '../../lib/day.ts';
 import { genderFor, medical, sessionFor } from '../../lib/plan.ts';
+import { programWeek } from '../../lib/progress.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
@@ -16,7 +18,8 @@ export default function Train() {
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const isToday = sel === todayIdx;
-  const ses = sessionFor(profile, sel, isToday && day.flare);
+  const week = programWeek(profile.start, new Date());
+  const ses = sessionFor(profile, sel, isToday && day.flare, week);
   const map = SCHEDULES[profile.schedule].map;
   const done = isToday ? day.done : [];
   const n = ses ? ses.items.filter((x) => done.includes(x.id)).length : 0;
@@ -40,6 +43,14 @@ export default function Train() {
         })}
       </View>
 
+      {ses && !ses.flare ? (
+        <Card tone="petrol">
+          <T kind="label" color={c.onPetrol}>الأسبوع {(week + 1).toLocaleString('ar-EG')} · {ses.variant === 'A' ? 'الأجهزة الأساسية' : 'أجهزة بديلة'}</T>
+          <T kind="h3" color={c.onPetrol}>{ses.phase.n}</T>
+          <T kind="small" color={c.onPetrol}>{ses.phase.text} {g('دوس', 'دوسي')} على أي تمرين تشوف{g('', 'ي')} شرحه و{g('تسجل', 'تسجلي')} الأوزان.</T>
+        </Card>
+      ) : null}
+
       {ses ? (
         <Card>
           <View style={styles.rowBetween}>
@@ -58,18 +69,20 @@ export default function Train() {
           ) : null}
           {ses.items.map((x, i) => {
             const on = done.includes(x.id);
+            const logged = isToday ? (day.sets[x.id]?.length ?? 0) : 0;
             return (
-              <Pressable key={x.id} disabled={!isToday} onPress={() => toggle(x.id)} accessibilityRole="checkbox" accessibilityState={{ checked: on, disabled: !isToday }}
-                style={[styles.row, { gap: 12, alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: i < ses.items.length - 1 ? 1 : 0, borderColor: c.line }]}>
-                <View style={{ width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: c.petrol, backgroundColor: on ? c.petrol : 'transparent', opacity: isToday ? 1 : 0.35, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+              <View key={x.id} style={[styles.row, { gap: 12, alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: i < ses.items.length - 1 ? 1 : 0, borderColor: c.line }]}>
+                <Pressable disabled={!isToday} onPress={() => toggle(x.id)} accessibilityRole="checkbox" accessibilityLabel={x.ex.n} accessibilityState={{ checked: on, disabled: !isToday }} hitSlop={8}
+                  style={{ width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: c.petrol, backgroundColor: on ? c.petrol : 'transparent', opacity: isToday ? 1 : 0.35, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                   {on ? <Text style={{ color: c.onPetrol, fontSize: 14, fontWeight: '700' }}>✓</Text> : null}
-                </View>
-                <View style={{ flex: 1 }}>
+                </Pressable>
+                <Pressable style={{ flex: 1 }} accessibilityRole="button" onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: x.id, day: String(sel) } })}>
                   <T kind="h3" style={on ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>{x.ex.n}</T>
-                  <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>{x.rx}</T>
+                  <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>{x.rx}{logged ? ` · ${g('سجلت', 'سجلتي')} ${logged.toLocaleString('ar-EG')} مجموعات` : ''}</T>
                   {x.why ? <T kind="label" color={c.warn}>اتبدل: {x.why}</T> : null}
-                </View>
-              </Pressable>
+                </Pressable>
+                <Text style={{ fontFamily: fonts.display, fontSize: 18, color: c.muted, marginTop: 2 }}>‹</Text>
+              </View>
             );
           })}
           {isToday && ses.items.length > 0 && n === ses.items.length ? (

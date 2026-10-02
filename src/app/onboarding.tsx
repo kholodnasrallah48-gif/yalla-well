@@ -21,6 +21,7 @@ export default function Onboarding() {
   const [d, setD] = useState<Draft>(() => profile ? { ...profile } : { sex: 'f', conditions: [], meds: [], pains: [], level: 'beg' });
   const [nums, setNums] = useState({ age: profile ? String(profile.age) : '', height: profile ? String(profile.height) : '', weight: profile ? String(profile.weight) : '' });
   const [err, setErr] = useState('');
+  const [otherPain, setOtherPain] = useState(!!profile?.otherPain);
   const scroll = useRef<ScrollView>(null);
   const g = genderFor(d.sex);
   const st = STEPS[step];
@@ -45,7 +46,7 @@ export default function Onboarding() {
     const e = validate();
     if (e) { setErr(e); return; }
     if (st === 'done') {
-      saveProfile({ name: '', ...d } as Profile);
+      saveProfile({ name: '', start: profile?.start ?? new Date().toISOString().slice(0, 10), ...d } as Profile);
       router.replace('/');
       return;
     }
@@ -120,7 +121,12 @@ export default function Onboarding() {
       {st === 'pain' && <>
         <T kind="h1">في مكان بيوجعك في التمرين؟</T>
         <T kind="body" color={c.muted}>هنبدل التمارين اللي بتضغط عليه بتمارين ألطف.</T>
-        <View style={styles.wrap}>{PAINS.map((x) => <Chip key={x.id} label={x.n} on={d.pains.includes(x.id)} onPress={() => toggle('pains', x.id)} />)}</View>
+        <View style={styles.wrap}>
+          <Chip label="مفيش، الحمد لله" on={!d.pains.length && !otherPain} onPress={() => { setOtherPain(false); set({ pains: [], otherPain: '' }); }} />
+          {PAINS.map((x) => <Chip key={x.id} label={x.n} on={d.pains.includes(x.id)} onPress={() => toggle('pains', x.id)} />)}
+          <Chip label="أخرى" on={otherPain} onPress={() => { if (otherPain) set({ otherPain: '' }); setOtherPain(!otherPain); }} />
+        </View>
+        {otherPain ? <View style={{ gap: 4 }}><T kind="label">فين بالظبط؟</T><TextInput value={d.otherPain ?? ''} onChangeText={(v) => set({ otherPain: v })} style={input} /></View> : null}
       </>}
 
       {st === 'done' && full && (() => {

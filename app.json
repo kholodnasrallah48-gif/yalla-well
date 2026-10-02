@@ -32,6 +32,14 @@
           "supportsRTL": true,
           "forcesRTL": true
         }
+      ],
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "يلا ويل محتاج الكاميرا عشان يقرا باركود المنتجات ويجيب سعراتها.",
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "scheme": "yallawell",

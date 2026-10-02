@@ -3,9 +3,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { EXERCISES, FOODS, SCHEDULES, SESSIONS } from './data.ts';
+import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
+import { FOODS, foodAdvice, parseMeal } from './foods.ts';
+import { fromOFF } from './barcode.ts';
 import { addFood, blankDay, changePortion, totals, weekIndex } from './day.ts';
 import { medical, sessionFor, targets, type Profile } from './plan.ts';
+import { PHASES, programWeek, suggestWeight } from './progress.ts';
 
 const base: Profile = {
   name: 'تجربة', sex: 'f', age: 28, height: 165, weight: 70, activity: 'low', goal: 'lose',
@@ -14,7 +17,7 @@ const base: Profile = {
 
 test('every exercise alternative and session exercise exists', () => {
   for (const [id, e] of Object.entries(EXERCISES)) if (e.alt) assert.ok(EXERCISES[e.alt], `${id} → ${e.alt}`);
-  for (const [id, s] of Object.entries(SESSIONS)) for (const ex of s.ex) assert.ok(EXERCISES[ex], `${id}: ${ex}`);
+  for (const [id, s] of Object.entries(SESSIONS)) for (const ex of [...s.ex, ...(s.exB ?? [])]) assert.ok(EXERCISES[ex], `${id}: ${ex}`);
   for (const s of Object.values(SCHEDULES)) for (const sid of Object.values(s.map)) assert.ok(SESSIONS[sid], sid);
 });
 
@@ -42,7 +45,7 @@ test('calories never go below the floor', () => {
 });
 
 test('knee pain swaps squats and lunges for gentler exercises', () => {
-  const s = sessionFor({ ...base, pains: ['knee'] }, 2, false)!; // Monday: lower body
+  const s = sessionFor({ ...base, pains: ['knee'] }, 5, false)!; // Thursday: legs
   const ids = s.items.map((x) => x.id);
   for (const id of ids) assert.ok(!EXERCISES[id].stress.includes('knee'), id);
   assert.ok(s.items.some((x) => x.why?.includes('الركبة')));
@@ -66,6 +69,8 @@ test('flare day becomes a recovery session; rest days have none', () => {
 test('celiac turns on gluten flags; notes appear for each med', () => {
   const m = medical({ ...base, conditions: ['celiac'], meds: ['thyroxine', 'insulin'] });
   assert.ok(m.mod.glutenFree);
+  const bread = FOODS.find((f) => f.n === 'عيش بلدي')!;
+  assert.equal(foodAdvice({ ...base, conditions: ['celiac'] }, bread, 2000).level, 'bad');
   assert.ok(m.food.some((n) => n.title === 'دوا الغدة'));
   assert.ok(m.train.some((n) => n.title === 'السكر'));
 });
@@ -89,4 +94,75 @@ test('food log adds, merges and removes portions', () => {
 test('week starts on Saturday', () => {
   assert.equal(weekIndex(new Date(2026, 9, 3)), 0); // Sat 3 Oct 2026
   assert.equal(weekIndex(new Date(2026, 9, 2)), 6); // Fri
+});
+
+test('program week counts whole weeks from the start date', () => {
+  assert.equal(programWeek('2026-10-03', new Date(2026, 9, 9)), 0);
+  assert.equal(programWeek('2026-10-03', new Date(2026, 9, 10)), 1);
+  assert.equal(programWeek(undefined, new Date()), 0);
+});
+
+test('weight goes up only after every set hit the top reps; deload week is lighter', () => {
+  const last = { date: '2026-10-01', w: 40, reps: [12, 12, 12], top: 12 };
+  assert.equal(suggestWeight('g_legpress', last, PHASES[1]), 42.5);
+  assert.equal(suggestWeight('g_lateral', { ...last, w: 5 }, PHASES[1]), 6);
+  assert.equal(suggestWeight('g_legpress', { ...last, reps: [12, 10, 9] }, PHASES[0]), 40);
+  assert.equal(suggestWeight('g_legpress', { ...last, reps: [10] }, PHASES[3]), 32);
+});
+
+test('3-day plan is push / pull / legs and odd weeks swap machines', () => {
+  const p3 = { ...base, schedule: '3' as const };
+  assert.equal(sessionFor(p3, 0, false, 0)!.id, 'push');
+  assert.equal(sessionFor(p3, 2, false, 0)!.id, 'pull');
+  assert.equal(sessionFor(p3, 4, false, 0)!.id, 'legs');
+  const a = sessionFor(p3, 0, false, 0)!.items.map((x) => x.id);
+  const b = sessionFor(p3, 0, false, 1)!.items.map((x) => x.id);
+  assert.notDeepEqual(a, b);
+  assert.equal(sessionFor(p3, 0, false, 2)!.items[0].sets, sessionFor(p3, 0, false, 0)!.items[0].sets + 1);
+});
+
+
+test('soda is flagged for autoimmune conditions with healthier swaps', () => {
+  const soda = FOODS.find((f) => f.tags?.includes('soda'))!;
+  const a = foodAdvice({ ...base, conditions: ['ms'] }, soda, 2000);
+  assert.equal(a.level, 'bad');
+  assert.ok(a.notes.some((n) => n.text.includes('الالتهاب')));
+  assert.ok(a.swaps.length > 0);
+  assert.ok(a.swaps.every((s) => !s.tags?.includes('soda') && !s.tags?.includes('sugary')));
+});
+
+test('insulin resistance warns on high-GI foods and praises low-GI ones', () => {
+  const p = { ...base, conditions: ['ir'] };
+  const high = FOODS.find((f) => f.gi === 'high' && !f.tags?.includes('soda'))!;
+  const low = FOODS.find((f) => f.gi === 'low' && f.c > 5)!;
+  assert.equal(foodAdvice(p, high, 2000).level, 'bad');
+  assert.equal(foodAdvice(p, low, 2000).notes.some((n) => n.level === 'good'), true);
+});
+
+test('going over the calorie budget is a warning', () => {
+  const f = FOODS.find((x) => x.kcal > 300)!;
+  assert.ok(foodAdvice(base, f, 100).notes.some((n) => n.text.includes('هتعدي')));
+});
+
+test('free-text meals are split into foods with quantities', () => {
+  const r = parseMeal('٢ بيض وعيش بلدي وجبنة قريش');
+  assert.deepEqual(r.unknown, []);
+  assert.equal(r.items.length, 3);
+  assert.ok(r.items[0].food.n.includes('بيض'));
+  assert.equal(r.items[0].q, 2);
+  assert.equal(r.items[1].food.n, 'عيش بلدي');
+  assert.ok(r.items[2].food.n.includes('قريش'));
+  const r2 = parseMeal('نص رغيف عيش بلدي، كوباية شاي بلبن، وطبق كشري');
+  assert.equal(r2.items[0].q, 0.5);
+  assert.ok(r2.items.some((x) => x.food.n.includes('كشري')));
+  assert.ok(r2.items.some((x) => x.food.n.includes('شاي')));
+  assert.equal(parseMeal('حاجة غريبة خالص').items.length, 0);
+  assert.equal(parseMeal('بيبسي و٢ بيض').items[1].q, 2);
+});
+
+test('barcode products map to one serving with health tags', () => {
+  const f = fromOFF('1', { product_name: 'Cola', serving_quantity: 330, categories_tags: ['en:sodas'], nova_group: 4,
+    nutriments: { 'energy-kcal_100g': 42, 'sugars_100g': 10.6, 'carbohydrates_100g': 10.6 } })!;
+  assert.equal(f.kcal, 139);
+  assert.ok(f.tags?.includes('soda') && f.tags.includes('processed'));
 });

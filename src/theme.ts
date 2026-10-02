@@ -1,4 +1,6 @@
 // Brand tokens: petrol & lime, light and dark. Fonts: Readex Pro (display) + IBM Plex Sans Arabic (body).
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
 const light = {
@@ -23,6 +25,27 @@ export const fonts = {
   bodySemi: 'IBMPlexSansArabic_600SemiBold',
 };
 
+export type ThemePref = 'system' | 'light' | 'dark';
+const THEME_KEY = 'yallawell:theme';
+const ThemeCtx = createContext<{ pref: ThemePref; setPref: (p: ThemePref) => void }>({ pref: 'system', setPref: () => {} });
+
+/** Keeps the person's light/dark choice; 'system' follows the phone. */
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [pref, setPrefState] = useState<ThemePref>('system');
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_KEY).then((v) => { if (v === 'light' || v === 'dark') setPrefState(v); }).catch(() => {});
+  }, []);
+  const setPref = (p: ThemePref) => { setPrefState(p); AsyncStorage.setItem(THEME_KEY, p).catch(() => {}); };
+  return createElement(ThemeCtx.Provider, { value: { pref, setPref } }, children);
+}
+
+export function useTheme() {
+  const { pref, setPref } = useContext(ThemeCtx);
+  const system = useColorScheme();
+  const isDark = pref === 'system' ? system === 'dark' : pref === 'dark';
+  return { isDark, pref, toggle: () => setPref(isDark ? 'light' : 'dark') };
+}
+
 export function useColors(): Colors {
-  return useColorScheme() === 'dark' ? dark : light;
+  return useTheme().isDark ? dark : light;
 }

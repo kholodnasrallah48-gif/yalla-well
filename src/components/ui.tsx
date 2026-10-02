@@ -2,11 +2,11 @@
 import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { WEEK, WEEK_SHORT, SESSIONS, SCHEDULES } from '../lib/data.ts';
 import type { Note, Profile } from '../lib/plan.ts';
-import { fonts, useColors } from '../theme.ts';
+import { fonts, useColors, useTheme } from '../theme.ts';
 
 // Native forces RTL, which swaps left/right text alignment; web keeps physical sides under dir=rtl.
 export const START = Platform.OS === 'web' ? 'right' : 'left';
@@ -30,7 +30,22 @@ export function T({ children, style, kind = 'body', color, numberOfLines }: {
   return <Text numberOfLines={numberOfLines} style={[base, { color: color ?? defaultColor, textAlign: START, writingDirection: 'rtl' }, style]}>{children}</Text>;
 }
 
-export function Screen({ title, children }: { title: string; children: ReactNode }) {
+function ThemeToggle() {
+  const c = useColors();
+  const { isDark, toggle } = useTheme();
+  return (
+    <Pressable onPress={toggle} accessibilityRole="switch" accessibilityState={{ checked: isDark }} accessibilityLabel="الوضع الليلي"
+      style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c.petrol} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        {isDark
+          ? <><Circle cx={12} cy={12} r={4} /><Path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>
+          : <Path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />}
+      </Svg>
+    </Pressable>
+  );
+}
+
+export function Screen({ title, children, themeToggle }: { title: string; children: ReactNode; themeToggle?: boolean }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const d = new Date();
@@ -41,7 +56,10 @@ export function Screen({ title, children }: { title: string; children: ReactNode
           <T kind="h1">{title}</T>
           <T kind="small">{WEEK[(d.getDay() + 1) % 7]} {d.getDate()}/{d.getMonth() + 1}</T>
         </View>
-        <T kind="h3" color={c.petrol}>يلا ويل</T>
+        <View style={[styles.row, { gap: 10 }]}>
+          <T kind="h3" color={c.petrol}>يلا ويل</T>
+          {themeToggle ? <ThemeToggle /> : null}
+        </View>
       </View>
       {children}
     </ScrollView>

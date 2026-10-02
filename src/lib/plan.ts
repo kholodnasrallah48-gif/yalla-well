@@ -1,5 +1,6 @@
 // Calorie targets, medical adjustments and weekly training sessions, derived from the profile.
 import { EXERCISES, PAINS, SCHEDULES, SESSIONS, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
+import { phaseFor, variantFor, type Phase } from './progress.ts';
 
 export type Sex = 'f' | 'm';
 export type Goal = 'lose' | 'maintain' | 'gain';
@@ -21,6 +22,9 @@ export type Profile = {
   pains: Joint[];
   otherCond?: string;
   otherMeds?: string;
+  otherPain?: string;
+  /** Day the plan started (YYYY-MM-DD); drives the weekly progression. */
+  start?: string;
 };
 
 /** Picks the masculine or feminine form of a phrase for the person. */
@@ -117,6 +121,9 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
     const names = p.pains.map((id) => PAINS.find((x) => x.id === id)?.n).join(' و');
     train.push({ tone: 'warn', title: 'الألم', text: `بدلنا التمارين اللي بتضغط على ${names} بتمارين ألطف. لو ${g('حسيت', 'حسيتي')} بألم حاد ${g('وقف', 'وقفي')} فورًا.` });
   }
+  if (p.otherPain) {
+    train.push({ tone: 'warn', title: 'الألم', text: `${g('كتبت', 'كتبتي')} إن عندك ألم في (${p.otherPain}). أي تمرين يضغط عليه ${g('خففه أو بدله', 'خففيه أو بدليه')}، و${g('اسأل', 'اسألي')} دكتور علاج طبيعي.` });
+  }
   const other = [p.otherCond, p.otherMeds].filter(Boolean).join('، ');
   if (other) {
     train.push({ tone: 'info', title: 'حالات تانية', text: `سجلنا اللي ${g('كتبته', 'كتبتيه')} (${other}). ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل ما ${g('تبدأ', 'تبدأي')}.` });
@@ -146,18 +153,31 @@ export function targets(p: Profile): Targets {
   return { kcal, protein, fat, carbs, waterCups: Math.ceil((p.weight * 35) / 250), tdee: Math.round(tdee) };
 }
 
-export type PlannedExercise = { id: string; ex: Exercise; why: string | null; rx: string };
-export type DaySession = { id: string; n: string; place: Place; flare: boolean; rpe: string; items: PlannedExercise[] };
+export type PlannedExercise = {
+  id: string; ex: Exercise; why: string | null; rx: string;
+  /** Strength work only: sets, rep range and rest; 0 sets for timed work. */
+  sets: number; reps: [number, number]; rest: number;
+};
+export type DaySession = {
+  id: string; n: string; place: Place; flare: boolean; rpe: string; items: PlannedExercise[];
+  week: number; variant: 'A' | 'B'; phase: Phase;
+};
 
-function prescription(p: Profile, e: Exercise, m: Modifiers): string {
+const ar = (n: number) => n.toLocaleString('ar-EG');
+
+function prescription(p: Profile, e: Exercise, m: Modifiers, phase: Phase): Omit<PlannedExercise, 'id' | 'ex' | 'why'> {
   const beginner = p.level === 'beg';
-  if (e.k === 'cardio') return m.shortSessions ? '١٠ دقايق، مجهود متوسط' : p.goal === 'lose' ? '٢٠ دقيقة، مجهود متوسط' : '١٥ دقيقة، مجهود متوسط';
-  if (e.k === 'mob') return '١٠ دقايق براحة';
-  if (e.k === 'core') return `${beginner ? '٢' : '٣'} × ٣٠ ثانية`;
-  const sets = beginner ? '٣' : p.goal === 'gain' ? '٤' : '٣';
-  const reps = p.goal === 'gain' ? '٨-١٠' : p.goal === 'lose' ? '١٢-١٥' : '١٠-١٢';
-  const rest = p.goal === 'gain' ? '٩٠ ثانية' : '٦٠ ثانية';
-  return `${sets} × ${reps} عدة · راحة ${rest}`;
+  const timed = (rx: string) => ({ rx, sets: 0, reps: [0, 0] as [number, number], rest: 0 });
+  if (e.k === 'cardio') return timed(m.shortSessions ? '١٠ دقايق، مجهود متوسط' : p.goal === 'lose' ? '٢٠ دقيقة، مجهود متوسط' : '١٥ دقيقة، مجهود متوسط');
+  if (e.k === 'mob') return timed('١٠ دقايق براحة');
+  if (e.k === 'core') {
+    const sets = Math.max(2, (beginner ? 2 : 3) + phase.setsDelta);
+    return { rx: `${ar(sets)} × ٣٠ ثانية`, sets, reps: [30, 30], rest: 45 };
+  }
+  const sets = Math.max(2, (beginner ? 3 : p.goal === 'gain' ? 4 : 3) + phase.setsDelta);
+  const reps: [number, number] = p.goal === 'gain' ? [8, 10] : p.goal === 'lose' ? [12, 15] : [10, 12];
+  const rest = p.goal === 'gain' ? 90 : 60;
+  return { rx: `${ar(sets)} مجموعات × ${ar(reps[0])} لـ ${ar(reps[1])} عدة · راحة ${ar(rest)} ثانية`, sets, reps, rest };
 }
 
 /** Follows the exercise's gentler alternatives until one fits the person, or drops it. */
@@ -180,15 +200,17 @@ export function resolveExercise(id: string, p: Profile, m: Modifiers): { id: str
   return null;
 }
 
-/** The session for a Saturday-first day index, or null on rest days. */
-export function sessionFor(p: Profile, dayIndex: number, flare: boolean): DaySession | null {
+/** The session for a Saturday-first day index in a program week, or null on rest days. */
+export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 0): DaySession | null {
   const sid = SCHEDULES[p.schedule]?.map[dayIndex];
   if (!sid) return null;
   const m = medical(p).mod;
   const s = flare ? SESSIONS.gentle : SESSIONS[sid];
+  const variant = variantFor(week);
+  const phase = phaseFor(week);
   const seen = new Set<string>();
   let list: { id: string; ex: Exercise; why: string | null }[] = [];
-  for (const id of s.ex) {
+  for (const id of variant === 'B' && s.exB ? s.exB : s.ex) {
     const r = resolveExercise(id, p, m);
     if (r && !seen.has(r.id)) { seen.add(r.id); list.push(r); }
   }
@@ -200,6 +222,7 @@ export function sessionFor(p: Profile, dayIndex: number, flare: boolean): DaySes
   return {
     id: flare ? 'gentle' : sid, n: s.n, place: s.pl, flare,
     rpe: flare ? '٤-٥ من ١٠' : m.rpe,
-    items: list.map((x) => ({ ...x, rx: prescription(p, x.ex, m) })),
+    items: list.map((x) => ({ ...x, ...prescription(p, x.ex, m, phase) })),
+    week, variant, phase,
   };
 }

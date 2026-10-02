@@ -1,10 +1,12 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { AdviceView, Dot } from '../../components/food.tsx';
 import { Btn, Card, Screen, START, T, styles } from '../../components/ui.tsx';
-import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, type Food } from '../../lib/data.ts';
 import { addFood, changePortion, fmt, totals } from '../../lib/day.ts';
-import { genderFor, medical, targets } from '../../lib/plan.ts';
+import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, foodAdvice, foodLevel, norm, parseMeal, type Food, type ParsedItem } from '../../lib/foods.ts';
+import { genderFor, targets } from '../../lib/plan.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
@@ -24,18 +26,35 @@ export default function FoodScreen() {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState(ALL_CAT);
   const [form, setForm] = useState({ n: '', u: '', kcal: '', p: '', c: '', f: '' });
+  const [meal, setMeal] = useState('');
+  const [parsed, setParsed] = useState<{ items: ParsedItem[]; unknown: string[] } | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const all = useMemo(() => [...FOODS, ...custom.map((f) => ({ ...f, cat: MY_FOODS_CAT }))], [custom]);
   const pool = useMemo(() => {
-    let list: Food[] = [...FOODS, ...custom.map((f) => ({ ...f, cat: MY_FOODS_CAT }))];
+    let list = all;
     if (cat !== ALL_CAT) list = list.filter((f) => f.cat === cat);
-    const s = q.trim();
-    if (s) list = list.filter((f) => f.n.includes(s) || f.u.includes(s));
-    return list;
-  }, [q, cat, custom]);
+    const s = norm(q);
+    if (s) list = list.filter((f) => norm(f.n).includes(s) || norm(f.u).includes(s));
+    return list.slice(0, 80);
+  }, [q, cat, all]);
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
   const t = totals(day);
-  const gf = medical(profile).mod.glutenFree;
+  const remaining = T0.kcal - t.kcal;
+  const female = profile.sex !== 'm';
+  const add = (f: Food) => { updateDay((d) => addFood(d, f)); setOpen(null); };
+  const addParsed = () => {
+    if (!parsed) return;
+    updateDay((d) => parsed.items.reduce((acc, it) => {
+      let next = addFood(acc, it.food);
+      const i = next.foods.findIndex((x) => x.ref === it.food.id);
+      if (it.q !== 1) next = changePortion(next, i, it.q - 1);
+      return next;
+    }, d));
+    setMeal(''); setParsed(null);
+  };
+  const mealKcal = parsed ? parsed.items.reduce((a, it) => a + it.food.kcal * it.q, 0) : 0;
   const input = { borderWidth: 1.5, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START } as const;
 
   const saveCustom = () => {
@@ -59,6 +78,42 @@ export default function FoodScreen() {
       </Card>
 
       <Card>
+        <T kind="h2">{g('اكتب', 'اكتبي')} {g('أكلت', 'أكلتي')} إيه</T>
+        <TextInput value={meal} onChangeText={(v) => { setMeal(v); setParsed(null); }} multiline placeholder="مثلًا: ٢ بيض وعيش بلدي وجبنة قريش وكوباية شاي بلبن" placeholderTextColor={c.muted}
+          style={[input, { minHeight: 64, textAlignVertical: 'top' }]} />
+        <View style={[styles.row, { gap: 8 }]}>
+          <Btn kind="secondary" title="احسب" onPress={() => setParsed(parseMeal(meal, all))} disabled={!meal.trim()} style={{ flex: 1 }} />
+          <Btn kind="outline" title={g('صوّر باركود', 'صوّري باركود')} onPress={() => router.push('/scan')} style={{ flex: 1 }} />
+        </View>
+        {parsed ? (
+          <View style={{ gap: 8 }}>
+            {parsed.items.map((it, i) => {
+              const adv = foodAdvice(profile, it.food, remaining);
+              return (
+                <View key={i} style={{ gap: 6, paddingVertical: 6, borderBottomWidth: 1, borderColor: c.line }}>
+                  <View style={[styles.row, { gap: 8 }]}>
+                    <Dot level={adv.level} />
+                    <View style={{ flex: 1 }}>
+                      <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{it.q !== 1 ? `${it.q} × ` : ''}{it.food.n}</T>
+                      <T kind="small">{it.food.u} · {fmt(it.food.kcal * it.q)} سعرة · ب {fmt(it.food.p * it.q)} ك {fmt(it.food.c * it.q)} د {fmt(it.food.f * it.q)}</T>
+                    </View>
+                  </View>
+                  {adv.level === 'warn' || adv.level === 'bad' ? <AdviceView advice={adv} female={female} /> : null}
+                </View>
+              );
+            })}
+            {parsed.unknown.length ? <T kind="small" color={c.warn}>ملقيناش: {parsed.unknown.join('، ')}. {g('دور', 'دوري')} عليها تحت أو {g('ضيفها', 'ضيفيها')} كأكلة خاصة.</T> : null}
+            {parsed.items.length ? (
+              <>
+                <T kind="h3">المجموع: {fmt(mealKcal)} سعرة</T>
+                <Btn title={g('ضيفهم لأكل النهارده', 'ضيفيهم لأكل النهارده')} onPress={addParsed} />
+              </>
+            ) : null}
+          </View>
+        ) : null}
+      </Card>
+
+      <Card>
         <T kind="h2">أكل النهارده</T>
         {day.foods.length ? day.foods.map((f, i) => (
           <View key={f.ref} style={[styles.row, { gap: 10, paddingVertical: 8, borderBottomWidth: i < day.foods.length - 1 ? 1 : 0, borderColor: c.line }]}>
@@ -75,7 +130,7 @@ export default function FoodScreen() {
 
       <Card>
         <T kind="h2">{g('ضيف أكلة', 'ضيفي أكلة')}</T>
-        <TextInput value={q} onChangeText={setQ} placeholder={g('دور: فول، فراخ، رز...', 'دوري: فول، فراخ، رز...')} placeholderTextColor={c.muted} style={input} />
+        <TextInput value={q} onChangeText={setQ} placeholder={g('دور: فول، فراخ، بيبسي...', 'دوري: فول، فراخ، بيبسي...')} placeholderTextColor={c.muted} style={input} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
           {FOOD_CATS.map((k) => (
             <Pressable key={k} onPress={() => setCat(k)} accessibilityRole="button"
@@ -84,18 +139,25 @@ export default function FoodScreen() {
             </Pressable>
           ))}
         </ScrollView>
-        {pool.length ? pool.map((f, i) => (
-          <View key={f.id} style={[styles.row, { gap: 10, paddingVertical: 8, borderBottomWidth: i < pool.length - 1 ? 1 : 0, borderColor: c.line }]}>
-            <View style={{ flex: 1 }}>
-              <View style={[styles.row, { gap: 6, flexWrap: 'wrap' }]}>
-                <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{f.n}</T>
-                {gf && f.gluten ? <Text style={{ fontFamily: fonts.body, fontSize: 11, color: c.warn, backgroundColor: c.warnBg, borderRadius: 99, paddingHorizontal: 8, overflow: 'hidden' }}>فيه جلوتين</Text> : null}
+        {pool.length ? pool.map((f, i) => {
+          const isOpen = open === f.id;
+          return (
+            <View key={f.id} style={{ gap: 8, paddingVertical: 8, borderBottomWidth: i < pool.length - 1 ? 1 : 0, borderColor: c.line }}>
+              <View style={[styles.row, { gap: 10 }]}>
+                <Pressable style={[styles.row, { flex: 1, gap: 8 }]} onPress={() => setOpen(isOpen ? null : f.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}>
+                  <Dot level={foodLevel(profile, f)} />
+                  <View style={{ flex: 1 }}>
+                    <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{f.n}</T>
+                    <T kind="small">{f.u} · {fmt(f.kcal)} سعرة · ب {f.p} ك {f.c} د {f.f}</T>
+                  </View>
+                </Pressable>
+                <IconBtn label="+" a11y={`إضافة ${f.n}`} onPress={() => add(f)} />
               </View>
-              <T kind="small">{f.u} · {fmt(f.kcal)} سعرة · ب {f.p} ك {f.c} د {f.f}</T>
+              {isOpen ? <AdviceView advice={foodAdvice(profile, f, remaining, all)} onSwap={add} female={female} /> : null}
             </View>
-            <IconBtn label="+" a11y={`إضافة ${f.n}`} onPress={() => updateDay((d) => addFood(d, f))} />
-          </View>
-        )) : <T kind="small">مفيش نتيجة. {g('ضيفها', 'ضيفيها')} من تحت كأكلة خاصة {g('بيك', 'بيكي')}.</T>}
+          );
+        }) : <T kind="small">مفيش نتيجة. {g('اكتبها', 'اكتبيها')} فوق أو {g('ضيفها', 'ضيفيها')} من تحت كأكلة خاصة {g('بيك', 'بيكي')}.</T>}
+        <T kind="small">النقطة الخضرا يعني مناسب {g('ليك', 'ليكي')}، والصفرا خلي بالك، والحمرا مش مناسب لحالتك. {g('دوس', 'دوسي')} على الأكلة {g('تشوف', 'تشوفي')} السبب والبدايل.</T>
       </Card>
 
       <Card>

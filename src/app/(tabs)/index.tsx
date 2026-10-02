@@ -5,6 +5,7 @@ import { Btn, Card, MacroBar, NoteView, Ring, Screen, T, WeekStrip, styles } fro
 import { SCHEDULES } from '../../lib/data.ts';
 import { fmt, totals, weekIndex } from '../../lib/day.ts';
 import { genderFor, medical, sessionFor, targets, type Note } from '../../lib/plan.ts';
+import { programWeek } from '../../lib/progress.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { useColors } from '../../theme.ts';
 
@@ -19,13 +20,13 @@ export default function Home() {
   const t = totals(day);
   const M = medical(profile);
   const todayIdx = weekIndex(new Date());
-  const ses = sessionFor(profile, todayIdx, day.flare);
+  const ses = sessionFor(profile, todayIdx, day.flare, programWeek(profile.start, new Date()));
   const left = T0.kcal - t.kcal;
   const notes = [...M.train, ...M.food].sort((a, b) => RANK[a.tone] - RANK[b.tone]).slice(0, 2);
   const greet = new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير';
 
   return (
-    <Screen title={`${greet}${profile.name ? ' يا ' + profile.name : ''}`}>
+    <Screen title={`${greet}${profile.name ? ' يا ' + profile.name : ''}`} themeToggle>
       <Card>
         <View style={[styles.row, { gap: 16 }]}>
           <Ring value={t.kcal} max={T0.kcal} />

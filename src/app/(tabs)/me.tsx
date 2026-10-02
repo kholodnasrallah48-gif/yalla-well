@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
+import { PhotoPicker } from '../../components/Photo.tsx';
 import { Btn, Card, Chip, NoteView, Screen, T, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
 import { notifyOn, onNotifyChange, setNotifyOn } from '../../lib/notify.ts';
@@ -9,13 +10,17 @@ import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { fmt } from '../../lib/day.ts';
 import { L, tx } from '../../lib/i18n.ts';
 import { genderFor, medical, targets } from '../../lib/plan.ts';
+import { logWeight, weightChange } from '../../lib/weight.ts';
 import { useStore } from '../../store/AppStore.tsx';
+import { fonts, useColors } from '../../theme.ts';
 
 const GOALS = { lose: 'نزول وزن', maintain: 'ثبات الوزن وشد', gain: 'زيادة عضل' };
 const GOALS_EN = { lose: 'Lose weight', maintain: 'Maintain & tone', gain: 'Build muscle' };
 
 export default function Me() {
-  const { profile, resetAll } = useStore();
+  const { profile, resetAll, saveProfile } = useStore();
+  const c = useColors();
+  const [kg, setKg] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [sound, setSound] = useState(soundOn());
   useEffect(() => onSoundChange(setSound), []);
@@ -26,6 +31,8 @@ export default function Me() {
   const g = genderFor(p.sex);
   const T0 = targets(p);
   const M = medical(p);
+  const W = weightChange(p);
+  const okKg = Number(kg) >= 30 && Number(kg) <= 300;
   const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? '')), p.otherCond].filter(Boolean);
   const meds = [...p.meds.map((id) => tx(MEDS.find((x) => x.id === id)?.n ?? '')), p.otherMeds].filter(Boolean);
   const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '')), p.otherPain].filter(Boolean);
@@ -33,10 +40,21 @@ export default function Me() {
   return (
     <Screen title={L('ملفي', 'Me')}>
       <Card>
-        <T kind="h2">{p.name || L('بياناتي', 'My details')}</T>
+        <PhotoPicker photo={p.photo} name={p.name} onChange={(photo) => saveProfile({ ...p, photo })} />
+        <T kind="h2" style={{ textAlign: 'center' }}>{p.name || L('بياناتي', 'My details')}</T>
         <T kind="small">{L(`${p.sex === 'm' ? 'ذكر' : 'أنثى'} · ${p.age} سنة · ${p.height} سم · ${p.weight} كجم`, `${p.sex === 'm' ? 'Male' : 'Female'} · ${p.age} yrs · ${p.height} cm · ${p.weight} kg`)}</T>
         <T kind="small">{L('الهدف:', 'Goal:')} {L(GOALS[p.goal], GOALS_EN[p.goal])} · {tx(SCHEDULES[p.schedule].n)}</T>
         <Btn kind="outline" title={L(g('عدّل بياناتي', 'عدّلي بياناتي'), 'Edit my details')} onPress={() => router.push('/onboarding')} />
+      </Card>
+
+      <Card>
+        <T kind="h2">{L(g('سجّل وزنك', 'سجّلي وزنك'), 'Log your weight')}</T>
+        {W.diff !== 0 ? <T kind="small" color={W.diff < 0 ? c.ok : c.muted}>{L(`بدأت ${W.start} كجم، دلوقتي ${W.now} كجم (${W.diff > 0 ? '+' : ''}${W.diff} كجم)`, `Started ${W.start} kg, now ${W.now} kg (${W.diff > 0 ? '+' : ''}${W.diff} kg)`)}</T> : null}
+        <View style={[styles.row, { gap: 8 }]}>
+          <TextInput value={kg} onChangeText={setKg} keyboardType="decimal-pad" placeholder={String(p.weight)} placeholderTextColor={c.muted}
+            style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, textAlign: 'center' }} />
+          <Btn title={L('حفظ', 'Save')} disabled={!okKg} onPress={() => { saveProfile(logWeight(p, Number(kg))); setKg(''); }} />
+        </View>
       </Card>
 
       <Card>

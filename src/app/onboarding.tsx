@@ -3,7 +3,8 @@ import { useRef, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { logWeight } from '../lib/avatar.ts';
+import { logWeight } from '../lib/weight.ts';
+import { PhotoPicker } from '../components/Photo.tsx';
 import { Bg, Btn, Card, Chip, Choice, NoteView, Ring, START, T, WeekStrip, styles } from '../components/ui.tsx';
 import { CONDITIONS, MEDS, PAINS, SCHEDULES, type ScheduleId } from '../lib/data.ts';
 import { fmt } from '../lib/day.ts';
@@ -49,7 +50,7 @@ export default function Onboarding() {
     if (e) { setErr(e); return; }
     if (st === 'done') {
       const next = { name: '', start: profile?.start ?? new Date().toISOString().slice(0, 10), ...d } as Profile;
-      // A changed weight counts as a weigh-in, so the avatar and progress follow it.
+      // A changed weight counts as a weigh-in, so progress follows it.
       saveProfile(profile && profile.weight !== next.weight ? logWeight({ ...next, weight: profile.weight }, next.weight) : next);
       router.replace('/');
       return;
@@ -69,6 +70,8 @@ export default function Onboarding() {
       {st === 'basics' && <>
         <T kind="h1">{profile ? L('تعديل بياناتك', 'Edit your details') : L(`أهلًا ${g('بيك', 'بيكي')} في يلا ويل`, 'Welcome to Yalla Well')}</T>
         <T kind="body" color={c.muted}>{L(`محتاجين شوية بيانات عشان نحسب السعرات ونعمل خطة تمرين مناسبة ${g('ليك', 'ليكي')}.`, 'We need a few details to work out your calories and build a workout plan that fits you.')}</T>
+        <PhotoPicker photo={d.photo} name={d.name} onChange={(photo) => set({ photo })} />
+        <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L('الصورة اختيارية، تقدر تضيفها بعدين من ملفي.', 'Photo is optional; you can add it later from Me.')}</T>
         <View style={{ gap: 4 }}><T kind="label">{L('الاسم', 'Name')}</T><TextInput value={d.name ?? ''} onChangeText={(name) => set({ name })} style={input} autoComplete="given-name" /></View>
         <View style={[styles.row, { gap: 8 }]}>
           <Choice title={L('أنثى', 'Female')} on={d.sex === 'f'} onPress={() => set({ sex: 'f' })} style={{ flex: 1 }} />

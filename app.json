@@ -48,6 +48,13 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 120
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "يلا ويل محتاج يوصل لصورك عشان تختاري صورة لملفك.",
+          "cameraPermission": "يلا ويل محتاج الكاميرا عشان تصوّري صورة لملفك."
+        }
       ]
     ],
     "scheme": "yallawell",

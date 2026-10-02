@@ -2,8 +2,6 @@ import { router } from 'expo-router';
 import { Pressable, Switch, View } from 'react-native';
 
 import { Btn, Card, MacroBar, NoteView, Ring, Screen, T, WeekStrip, styles } from '../../components/ui.tsx';
-import { AvatarView } from '../../components/Avatar.tsx';
-import { avatarOf, bmi, weightChange } from '../../lib/avatar.ts';
 import { SCHEDULES } from '../../lib/data.ts';
 import { fmt, totals, weekIndex } from '../../lib/day.ts';
 import { genderFor, medical, sessionFor, targets, type Note } from '../../lib/plan.ts';
@@ -29,8 +27,6 @@ export default function Home() {
   const left = T0.kcal - t.kcal;
   const notes = [...M.train, ...M.food].sort((a, b) => RANK[a.tone] - RANK[b.tone]).slice(0, 2);
   const st = streaks(profile, { ...history, [today]: day }, new Date());
-  const wc = weightChange(profile);
-  const female = profile.sex === 'f';
   const greet = new Date().getHours() < 12 ? L('صباح الخير', 'Good morning') : L('مساء الخير', 'Good evening');
 
   return (
@@ -51,19 +47,6 @@ export default function Home() {
         </View>
         <Btn kind="primary" title={L(g('سجّل أكل', 'سجّلي أكل'), 'Log food')} onPress={() => router.navigate('/food')} style={{ marginTop: 6 }} />
       </Card>
-
-      <Pressable onPress={() => router.push('/avatar')} accessibilityRole="button" accessibilityLabel={L('الأفاتار', 'Avatar')}>
-        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}>
-          <AvatarView id="home" a={avatarOf(profile)} bmi={bmi(profile.weight, profile.height)} sex={profile.sex} size={190} />
-          <View style={{ flex: 1, gap: 4 }}>
-            <T kind="h2">{L('شخصيتك', 'Your avatar')}</T>
-            <T kind="small">{L(`${num(profile.weight)} كجم دلوقتي`, `${profile.weight} kg now`)}</T>
-            {wc.diff < 0 ? <T kind="small" color={c.ok}>{L(`${g('نزلت', 'نزلتي')} ${num(-wc.diff)} كجم من البداية 🎉`, `${-wc.diff} kg down since the start 🎉`)}</T> : null}
-            <T kind="small">{L(`${g('سجّل', 'سجّلي')} وزنك والأفاتار هيتغير معاك. ${g('غيّر', 'غيّري')} الشعر واللبس${female ? ' والميكب' : ''} زي ما ${g('تحب', 'تحبي')}.`, 'Log your weight and your avatar changes with you. Change hair, clothes and makeup any time.')}</T>
-            <Btn kind="outline" title={L(g('افتح شخصيتك', 'افتحي شخصيتك'), 'Open avatar')} onPress={() => router.push('/avatar')} style={{ paddingVertical: 8 }} />
-          </View>
-        </Card>
-      </Pressable>
 
       <Card>
         <View style={[styles.row, { gap: 8 }]}>

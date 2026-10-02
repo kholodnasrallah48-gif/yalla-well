@@ -1,7 +1,6 @@
 // Calorie targets, medical adjustments and weekly training sessions, derived from the profile.
 import { EXERCISES, PAINS, SCHEDULES, SESSIONS, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
 import { L, num, tx } from './i18n.ts';
-import type { Avatar } from './avatar.ts';
 import { phaseFor, variantFor, type Phase } from './progress.ts';
 
 export type Sex = 'f' | 'm';
@@ -29,8 +28,8 @@ export type Profile = {
   start?: string;
   /** The person's own pick per weekday (Saturday = 0): gym, home or rest. Missing days follow the schedule. */
   places?: Partial<Record<number, DayPlace>>;
-  /** Avatar choices (see avatar.ts). */
-  avatar?: Partial<Avatar>;
+  /** Profile picture as a small JPEG data URI. */
+  photo?: string;
   /** Weigh-ins, oldest first; the first one is the starting weight. */
   weights?: { d: string; kg: number }[];
 };

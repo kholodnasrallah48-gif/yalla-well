@@ -53,7 +53,6 @@ function Gate() {
         <Stack.Screen name="scan" options={{ presentation: 'modal' }} />
         <Stack.Screen name="add" options={{ presentation: 'modal' }} />
         <Stack.Screen name="report" />
-        <Stack.Screen name="avatar" />
         <Stack.Screen name="recipe/[id]" options={{ presentation: 'modal' }} />
       </Stack>
     </View>

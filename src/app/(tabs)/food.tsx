@@ -48,7 +48,7 @@ export default function FoodScreen() {
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
-  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), totals(day).kcal);
+  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), totals(day).kcal, new Date().getHours());
   const t = totals(day);
   const remaining = T0.kcal - t.kcal;
   const female = profile.sex !== 'm';
@@ -125,11 +125,13 @@ export default function FoodScreen() {
       <Card>
         <T kind="h2">اقتراحات النهارده</T>
         <T kind="small">على قد السعرات الفاضلة {g('ليك', 'ليكي')} النهارده ومترتبة حسب حالتك وأدويتك. {g('دوس', 'دوسي')} على الأكلة {g('تشوف', 'تشوفي')} المكونات والطريقة والفيديو.</T>
-        {plan.map(({ meal, recipe: r, eaten, why }, i) => {
+        {plan.map(({ meal, recipe: r, eaten, why, passed, portion }, i) => {
           if (!r) return (
-            <View key={meal} style={{ paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line }}>
+            <View key={meal} style={[styles.row, { gap: 8, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line, opacity: passed ? 0.55 : 1 }]}>
               <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}</T>
-              <T kind="small">مفيش سعرات فاضلة كفاية النهارده. لو {g('جعت', 'جعتي')} خليها خضار أو زبادي لايت.</T>
+              <T kind="small" style={{ flex: 1 }}>{passed
+                ? 'وقتها عدّى، وسعراتها اتنقلت للوجبات الجاية.'
+                : `مفيش سعرات فاضلة كفاية النهارده. لو ${g('جعت', 'جعتي')} خليها خضار أو زبادي لايت.`}</T>
             </View>
           );
           return (
@@ -137,7 +139,8 @@ export default function FoodScreen() {
               <Pressable style={{ flex: 1, gap: 2 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button" accessibilityLabel={`${MEAL_NAME[meal]}: ${r.n}`}>
                 <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}{eaten ? ' · اتاكلت ✓' : ''}</T>
                 <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{r.n}</T>
-                <T kind="small">{fmt(r.kcal)} سعرة · {r.mins} دقيقة</T>
+                <T kind="small">{fmt(Math.round(r.kcal * portion))} سعرة · {r.mins} دقيقة</T>
+                {portion < 1 && !eaten ? <T kind="small" color={c.warn}>{g('خد', 'خدي')} {portion === 0.5 ? 'نص' : 'تلات تربع'} الكمية عشان تفضل{g('', 'ي')} في حدود سعراتك</T> : null}
                 {why.length && !eaten ? <T kind="small" color={c.ok}>{why.join('، ')}</T> : null}
               </Pressable>
               {eaten ? null : (

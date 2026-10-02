@@ -274,3 +274,22 @@ test('meal plan fits conditions, ranks by them, follows calories left and shuffl
   const total = targets(p).kcal;
   assert.ok(after.filter((e) => !e.eaten).reduce((s, e) => s + e.budget, 0) <= total - 1100 + 1);
 });
+
+test('evening plan gives the calories left to the meals still to come', () => {
+  // 733 eaten of the target at 7:41 PM: breakfast and lunch are over, snack and dinner get the rest.
+  const p: Profile = { ...base, conditions: ['hashimoto'] };
+  const total = targets(p).kcal;
+  const x = dayPlan(p, '2026-10-02', {}, [], total - 557, 19);
+  const get = (m: string) => x.find((e) => e.meal === m)!;
+  assert.ok(get('breakfast').passed && !get('breakfast').recipe);
+  assert.ok(get('lunch').passed && !get('lunch').recipe);
+  assert.ok(get('dinner').recipe, 'dinner');
+  assert.ok(get('snack').recipe, 'snack');
+  assert.ok(Math.abs(get('dinner').budget + get('snack').budget - 557) <= 2);
+  // Late at night with little left: only dinner, and a part of it when even the lightest is too much.
+  const late = dayPlan(p, '2026-10-02', {}, [], total - 150, 22);
+  const d = late.find((e) => e.meal === 'dinner')!;
+  assert.ok(d.recipe && d.portion < 1);
+  // Morning: all four meals.
+  assert.ok(dayPlan(p, '2026-10-02', {}, [], 0, 8).every((e) => e.recipe && !e.passed));
+});

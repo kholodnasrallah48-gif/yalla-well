@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Card, NoteView, Screen, T, styles } from '../../components/ui.tsx';
 import { SCHEDULES, SESSIONS, WEEK_SHORT } from '../../lib/data.ts';
-import { weekIndex } from '../../lib/day.ts';
+import { dayKey, weekIndex, type DayLog } from '../../lib/day.ts';
 import { genderFor, medical, sessionFor } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
 import { useStore } from '../../store/AppStore.tsx';
@@ -12,19 +12,34 @@ import { fonts, useColors } from '../../theme.ts';
 
 export default function Train() {
   const c = useColors();
-  const { profile, day, updateDay } = useStore();
+  const { profile, day, readDay, writeDay } = useStore();
   const todayIdx = weekIndex(new Date());
   const [sel, setSel] = useState(todayIdx);
+  // Earlier days of this week can still be ticked (a workout done yesterday but not marked); later days can't.
+  const selDate = new Date(); selDate.setDate(selDate.getDate() + sel - todayIdx);
+  const selKey = dayKey(selDate);
+  const [other, setOther] = useState<DayLog | null>(null);
+  useEffect(() => {
+    let live = true;
+    setOther(null);
+    if (sel < todayIdx) readDay(selKey).then((d) => { if (live) setOther(d); });
+    return () => { live = false; };
+  }, [selKey]);
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const isToday = sel === todayIdx;
-  const week = programWeek(profile.start, new Date());
-  const ses = sessionFor(profile, sel, isToday && day.flare, week);
+  const canTick = sel <= todayIdx;
+  const log = isToday ? day : other;
+  const week = programWeek(profile.start, selDate);
+  const ses = sessionFor(profile, sel, !!log?.flare, week);
   const map = SCHEDULES[profile.schedule].map;
-  const done = isToday ? day.done : [];
+  const done = log?.done ?? [];
   const n = ses ? ses.items.filter((x) => done.includes(x.id)).length : 0;
   const M = medical(profile);
-  const toggle = (id: string) => updateDay((d) => ({ ...d, done: d.done.includes(id) ? d.done.filter((x) => x !== id) : [...d.done, id] }));
+  const toggle = (id: string) => {
+    const flip = (d: DayLog) => ({ ...d, done: d.done.includes(id) ? d.done.filter((x) => x !== id) : [...d.done, id] });
+    writeDay(selKey, flip).then((d) => { if (!isToday) setOther(d); });
+  };
 
   return (
     <Screen title="التمرين">
@@ -59,21 +74,21 @@ export default function Train() {
               backgroundColor: ses.place === 'gym' ? c.petrol : c.lime, color: ses.place === 'gym' ? c.onPetrol : c.onLime }}>{ses.place === 'gym' ? 'جيم' : 'بيت'}</Text>
           </View>
           <T kind="small">{ses.flare ? `يوم تعافي عشان ${g('قلت', 'قلتي')} إنك ${g('تعبان', 'تعبانة')} النهارده. ` : ''}المجهود المطلوب: {ses.rpe} (لازم {g('تكون قادر تكمل', 'تكوني قادرة تكملي')} جملة وانت {g('بتتمرن', 'بتتمرني')}).</T>
-          {isToday ? (
+          {canTick ? (
             <>
               <View style={{ height: 6, borderRadius: 99, backgroundColor: c.soft, overflow: 'hidden' }}>
                 <View style={{ height: '100%', width: `${ses.items.length ? (n / ses.items.length) * 100 : 0}%`, backgroundColor: c.lime }} />
               </View>
-              <T kind="small">{g('خلصت', 'خلصتي')} {n} من {ses.items.length}</T>
+              <T kind="small">{g('خلصت', 'خلصتي')} {n} من {ses.items.length}{isToday ? '' : ` يوم ${WEEK_SHORT[sel]}`}</T>
             </>
-          ) : null}
+          ) : <T kind="small" color={c.warn}>ده يوم جاي، {g('هتقدر تعلّم', 'هتقدري تعلّمي')} على التمارين يومها. {g('اختار', 'اختاري')} النهارده من فوق.</T>}
           {ses.items.map((x, i) => {
             const on = done.includes(x.id);
-            const logged = isToday ? (day.sets[x.id]?.length ?? 0) : 0;
+            const logged = log?.sets?.[x.id]?.length ?? 0;
             return (
               <View key={x.id} style={[styles.row, { gap: 12, alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: i < ses.items.length - 1 ? 1 : 0, borderColor: c.line }]}>
-                <Pressable disabled={!isToday} onPress={() => toggle(x.id)} accessibilityRole="checkbox" accessibilityLabel={x.ex.n} accessibilityState={{ checked: on, disabled: !isToday }} hitSlop={8}
-                  style={{ width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: c.petrol, backgroundColor: on ? c.petrol : 'transparent', opacity: isToday ? 1 : 0.35, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                <Pressable disabled={!canTick} onPress={() => toggle(x.id)} accessibilityRole="checkbox" accessibilityLabel={x.ex.n} accessibilityState={{ checked: on, disabled: !canTick }} hitSlop={8}
+                  style={{ width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: c.petrol, backgroundColor: on ? c.petrol : 'transparent', opacity: canTick ? 1 : 0.35, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                   {on ? <Text style={{ color: c.onPetrol, fontSize: 14, fontWeight: '700' }}>✓</Text> : null}
                 </Pressable>
                 <Pressable style={{ flex: 1 }} accessibilityRole="button" onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: x.id, day: String(sel) } })}>
@@ -85,7 +100,7 @@ export default function Train() {
               </View>
             );
           })}
-          {isToday && ses.items.length > 0 && n === ses.items.length ? (
+          {canTick && ses.items.length > 0 && n === ses.items.length ? (
             <NoteView note={{ tone: 'info', title: 'برافو!', text: `${g('خلصت', 'خلصتي')} تمرين النهارده.` }} />
           ) : null}
         </Card>

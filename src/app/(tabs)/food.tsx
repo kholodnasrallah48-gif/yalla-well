@@ -2,11 +2,12 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { AdviceView, Dot } from '../../components/food.tsx';
+import { AdviceView, Dot, MacroChips } from '../../components/food.tsx';
 import { Btn, Card, Screen, START, T, styles } from '../../components/ui.tsx';
 import { addFood, changePortion, fmt, totals } from '../../lib/day.ts';
 import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, foodAdvice, foodLevel, itemAlerts, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../../lib/foods.ts';
 import { searchOnline, toFood, type OnlineFood } from '../../lib/online.ts';
+import { MEALS, MEAL_NAME, dayPlan } from '../../lib/mealplan.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
@@ -23,11 +24,9 @@ function IconBtn({ label, a11y, onPress }: { label: string; a11y: string; onPres
 
 type Found = { loading: boolean; hits: OnlineFood[]; pick: number; grams: string };
 
-const fmt1 = (n: number) => String(Math.round(n * 10) / 10);
-
 export default function FoodScreen() {
   const c = useColors();
-  const { profile, day, custom, updateDay, addCustomFood } = useStore();
+  const { profile, day, today, custom, updateDay, addCustomFood } = useStore();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState(ALL_CAT);
   const [form, setForm] = useState({ n: '', u: '', kcal: '', p: '', c: '', f: '' });
@@ -49,6 +48,7 @@ export default function FoodScreen() {
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
+  const plan = dayPlan(profile, today, day.shuffle);
   const t = totals(day);
   const remaining = T0.kcal - t.kcal;
   const female = profile.sex !== 'm';
@@ -123,6 +123,28 @@ export default function FoodScreen() {
       </Card>
 
       <Card>
+        <T kind="h2">اقتراحات النهارده</T>
+        <T kind="small">على قد سعراتك وحالتك. {g('دوس', 'دوسي')} على الأكلة {g('تشوف', 'تشوفي')} المكونات والطريقة والفيديو.</T>
+        {MEALS.map((meal, i) => {
+          const r = plan[meal];
+          if (!r) return null;
+          return (
+            <View key={meal} style={[styles.row, { gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line }]}>
+              <Pressable style={{ flex: 1, gap: 2 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button" accessibilityLabel={`${MEAL_NAME[meal]}: ${r.n}`}>
+                <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}</T>
+                <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{r.n}</T>
+                <T kind="small">{fmt(r.kcal)} سعرة · {r.mins} دقيقة</T>
+              </Pressable>
+              <Pressable onPress={() => updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } }))} accessibilityRole="button" accessibilityLabel={`اقتراح تاني لـ${MEAL_NAME[meal]}`}
+                style={{ borderWidth: 1, borderColor: c.line, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface }}>
+                <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>غيّر</Text>
+              </Pressable>
+            </View>
+          );
+        })}
+      </Card>
+
+      <Card>
         <T kind="h2">{g('اكتب', 'اكتبي')} {g('أكلت', 'أكلتي')} إيه</T>
         <TextInput value={meal} onChangeText={(v) => { setMeal(v); setParsed(null); setFound({}); }} multiline placeholder="مثلًا: ٢ بيض وعيش بلدي وجبنة قريش وكوباية شاي بلبن" placeholderTextColor={c.muted}
           style={[input, { minHeight: 64, textAlignVertical: 'top' }]} />
@@ -140,9 +162,10 @@ export default function FoodScreen() {
                     <Dot level={adv.level} />
                     <View style={{ flex: 1 }}>
                       <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{it.q !== 1 ? `${it.q} × ` : ''}{it.food.n}</T>
-                      <T kind="small">{it.food.u} · {fmt(it.food.kcal * it.q)} سعرة · ب {fmt(it.food.p * it.q)} ك {fmt(it.food.c * it.q)} د {fmt(it.food.f * it.q)}</T>
+                      <T kind="small">{it.food.u} · {fmt(it.food.kcal * it.q)} سعرة</T>
                     </View>
                   </View>
+                  <MacroChips p={it.food.p * it.q} c={it.food.c * it.q} f={it.food.f * it.q} />
                   {adv.level === 'warn' || adv.level === 'bad' ? <AdviceView advice={adv} female={female} /> : null}
                 </View>
               );
@@ -168,12 +191,13 @@ export default function FoodScreen() {
                     {adv ? <Dot level={adv.level} /> : null}
                     <View style={{ flex: 1 }}>
                       <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{u.text}</T>
-                      <T kind="small">{f ? `${f.u} · ${fmt(f.kcal)} سعرة · ب ${fmt(f.p)} ك ${fmt(f.c)} د ${fmt(f.f)}` : 'اكتبي الوزن'}</T>
+                      <T kind="small">{f ? `${f.u} · ${fmt(f.kcal)} سعرة` : 'اكتبي الوزن'}</T>
                     </View>
                     <TextInput value={x.grams} onChangeText={(v) => set({ grams: v.replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel="الوزن بالجرام"
                       style={[input, { width: 64, textAlign: 'center', paddingHorizontal: 4 }]} />
                     <T kind="small">جم</T>
                   </View>
+                  {f ? <MacroChips p={f.p} c={f.c} f={f.f} /> : null}
                   <T kind="small">من {hit.src}: {hit.name} · {fmt(hit.per100.kcal)} سعرة لكل ١٠٠ جم</T>
                   {x.hits.length > 1 ? (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
@@ -218,13 +242,7 @@ export default function FoodScreen() {
                 <T kind="h3" style={{ minWidth: 28, textAlign: 'center' }}>{f.q}</T>
                 <IconBtn label="+" a11y="أكتر" onPress={() => updateDay((d) => changePortion(d, i, 0.5))} />
               </View>
-              <View style={[styles.wrap, { gap: 6 }]}>
-                {([['بروتين', f.p], ['كارب', f.c], ['دهون', f.f]] as const).map(([k, v]) => (
-                  <View key={k} style={{ backgroundColor: c.bg, borderRadius: 99, paddingHorizontal: 9, paddingVertical: 2 }}>
-                    <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>{k} {fmt1(v * f.q)} جم</T>
-                  </View>
-                ))}
-              </View>
+              <MacroChips p={f.p * f.q} c={f.c * f.q} f={f.f * f.q} />
               {alerts.map((a, k) => (
                 <View key={k} accessibilityRole="alert" style={{ backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
                   <T kind="small" color={c.bad} style={a.level === 'bad' ? { fontFamily: fonts.bodyMedium } : undefined}>{a.level === 'bad' ? '⛔ ' : '⚠️ '}{a.text}</T>

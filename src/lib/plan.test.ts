@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
-import { FOODS, foodAdvice, itemAlerts, parseMeal } from './foods.ts';
+import { FOODS, findSwaps, foodAdvice, itemAlerts, parseMeal } from './foods.ts';
+import { dayPlan } from './mealplan.ts';
 import { reportHTML, weekReport, weekStart } from './report.ts';
 import { fromOFF } from './barcode.ts';
 import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
@@ -241,4 +242,22 @@ test('logged items warn in red when they cross the fat limit or are salty', () =
   assert.equal(a[0].level, 'bad');
   assert.ok(a[0].text.includes('الدهون'));
   assert.ok(a.some((x) => x.text.includes('ملح')));
+});
+
+test('swaps stay in the same craving and suit the person', () => {
+  const p: Profile = { ...base, conditions: ['celiac'] };
+  const chips = findSwaps(p, { id: 'x', cat: 'أكلاتي', n: 'Pringles Paprika', u: '30 g', kcal: 157, p: 2, c: 15, f: 10, tags: ['processed'] });
+  assert.ok(chips.length >= 2);
+  assert.ok(chips.every((x) => !/فراخ|سمك|لحم/.test(x.n)), chips.map((x) => x.n).join());
+  const pastry = findSwaps(p, FOODS.find((f) => f.n === 'فطير مشلتت')!);
+  assert.ok(pastry.every((x) => !(x.tags ?? []).includes('gluten')));
+  assert.notDeepEqual(chips.map((x) => x.n), pastry.map((x) => x.n));
+});
+
+test('meal plan fits conditions, changes by day and on shuffle', () => {
+  const p: Profile = { ...base, conditions: ['celiac', 'ir'] };
+  const a = dayPlan(p, '2026-10-02');
+  for (const r of Object.values(a)) assert.ok(r && !(r.avoid ?? []).some((x) => p.conditions.includes(x)), r?.id);
+  assert.notEqual(dayPlan(p, '2026-10-02', { lunch: 1 }).lunch!.id, a.lunch!.id);
+  assert.ok(['2026-10-03', '2026-10-04', '2026-10-05'].some((d) => dayPlan(p, d).breakfast!.id !== a.breakfast!.id));
 });

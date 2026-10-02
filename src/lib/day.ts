@@ -1,9 +1,14 @@
 // One day's log and date helpers.
 import type { Food, FoodTag, GI } from './foods.ts';
 import type { SetLog } from './progress.ts';
+import type { Meal } from './recipes-data.ts';
 
 export type LoggedFood = { ref: string; n: string; u: string; kcal: number; p: number; c: number; f: number; q: number; gi?: GI; tags?: FoodTag[] };
-export type DayLog = { foods: LoggedFood[]; water: number; flare: boolean; done: string[]; sets: Record<string, SetLog[]> };
+export type DayLog = {
+  foods: LoggedFood[]; water: number; flare: boolean; done: string[]; sets: Record<string, SetLog[]>;
+  /** How many times each suggested meal was swapped for another today. */
+  shuffle?: Partial<Record<Meal, number>>;
+};
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });
 

@@ -49,3 +49,23 @@ export function AdviceView({ advice, onSwap, female }: { advice: Advice; onSwap?
     </View>
   );
 }
+
+const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+/** 12.5 → "١٢٫٥" (one decimal at most, Arabic digits). */
+export const arNum = (n: number) => String(Math.round(n * 10) / 10).replace(/\d/g, (d) => AR_DIGITS[+d]).replace('.', '٫');
+
+/** Protein / carbs / fat for one food, as three soft pills in the app's rounded font. */
+export function MacroChips({ p, c: carbs, f }: { p: number; c: number; f: number }) {
+  const c = useColors();
+  const items: [string, number, string][] = [['بروتين', p, c.petrol], ['كارب', carbs, c.lime], ['دهون', f, c.aqua]];
+  return (
+    <View style={[styles.wrap, { gap: 6 }]}>
+      {items.map(([k, v, dot]) => (
+        <View key={k} style={[styles.row, { gap: 6, backgroundColor: c.soft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 }]}>
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: dot }} />
+          <Text style={{ fontFamily: fonts.displayMedium, fontSize: 13, lineHeight: 20, color: c.ink }}>{k} {arNum(v)} جم</Text>
+        </View>
+      ))}
+    </View>
+  );
+}

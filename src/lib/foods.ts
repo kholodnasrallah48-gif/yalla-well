@@ -1,6 +1,7 @@
 // Food list, personal food advice (conditions, blood sugar, calorie budget) and a free-text meal parser.
 import { AR_EN } from './food-words.ts';
 import { FOOD_ROWS } from './foods-data.ts';
+import { RECIPES, type Meal, type Recipe } from './recipes-data.ts';
 import { genderFor, type Profile } from './plan.ts';
 
 export type GI = 'low' | 'mid' | 'high' | 'none';
@@ -103,18 +104,69 @@ export function foodAdvice(p: Profile, f: Food, remaining: number, pool: Food[] 
     notes.push({ level: 'warn', text: remaining > 0 ? `هتعدي هدف النهارده بـ ${Math.round(f.kcal - remaining)} سعرة.` : `${g('خلصت', 'خلصتي')} سعرات النهارده، فأي زيادة هتعدي الهدف.` });
   }
   const level = worst(notes);
-  let swaps: Food[] = [];
-  if (RANK[level] >= RANK.warn) {
-    const sameCat = f.tags?.includes('soda') ? 'مشروبات' : f.cat;
-    swaps = pool
-      .filter((x) => x.id !== f.id && x.cat === sameCat && x.kcal <= Math.max(f.kcal, 60) * 1.1)
-      .map((x) => ({ x, s: RANK[worst(judge(p, x))] }))
-      .filter(({ x, s }) => s <= RANK.ok && !(x.tags ?? []).some((t) => ['soda', 'sugary', 'processed', 'fried'].includes(t)))
-      .sort((a, b) => a.s - b.s || (sameCat === 'مشروبات' ? a.x.kcal - b.x.kcal : b.x.p / Math.max(b.x.kcal, 1) - a.x.p / Math.max(a.x.kcal, 1)))
-      .slice(0, 3)
-      .map(({ x }) => x);
-  }
+  const swaps = RANK[level] >= RANK.warn ? findSwaps(p, f, pool) : [];
   return { level, notes: notes.sort((a, b) => RANK[b.level] - RANK[a.level]), swaps };
+}
+
+// ---- Swaps that fit what the person wanted to eat ----
+
+const MEAL_CAT: Record<Meal, string> = { breakfast: 'فطار', lunch: 'غدا', dinner: 'عشا', snack: 'سناك' };
+/** A recipe as a loggable food. */
+export const recipeFood = (r: Recipe): Food => ({ id: 'r_' + r.id, cat: MEAL_CAT[r.meal], n: r.n, u: r.serving, kcal: r.kcal, p: r.p, c: r.c, f: r.f, gi: r.gi, tags: r.tags });
+export const recipeFits = (p: Profile, r: Recipe) => !(r.avoid ?? []).some((x) => p.conditions.includes(x));
+
+type Kind = { re: RegExp; alts: string[]; recipes?: RegExp; meal?: Meal; drink?: boolean };
+// What the food is, so a swap stays in the same craving: crunchy snack → crunchy snack, dessert → something sweet.
+const KINDS: Kind[] = [
+  { re: /شيبس|برينجلز|pringles|chips|crisps|تورتيلا شيبس|doritos|دوريتوس|كرانشي|فرايز|fries|بطاطس محمره|لب |سوداني محمص|سناك|snack|popcorn|كراكرز|crackers/,
+    alts: ['فشار', 'ترمس', 'حمص الشام', 'لوز'], recipes: /فشار|مقرمش|شيبس|ترمس|مكسرات/ },
+  { re: /شوكولا|chocolate|كيك|cake|جاتوه|دونات|donut|كنافه|قطايف|بسبوسه|جلاش|بقلاوه|حلاوه|رز بلبن|مهلبيه|كريم كراميل|بسكوت|biscuit|cookie|wafer|ويفر|نوتيلا|nutella|ايس ?كريم|ice cream|حلويات|candy|بونبون|تورته|كب ?كيك/,
+    alts: ['زبادي يوناني لايت', 'فراولة', 'بلح سيوي', 'تفاح'], recipes: /تمر|بلح|زبادي|موز|ايس كريم|فاكه|شوفان|بان ?كيك/ },
+  { re: /فطير|مشلتت|كرواسون|croissant|بان ?كيك|pancake|وافل|waffle|باتيه|كورن ?فليكس|cereal|بليله|كسكسي|معجنات|pastry|muffin|مافن|دوناتس/,
+    alts: ['شوفان باللبن', 'توست حبوب كاملة', 'بيضة مسلوقة', 'جبنة قريش'], meal: 'breakfast' },
+  { re: /عصير|juice|ريد ?بول|سحلب|سوبيا|قصب|فراوله باللبن|لبن بالشوكولاته|فرابتشينو|كولا|cola|soda|بيبسي|سبرايت|فانتا|fanta|ميرندا|شويبس|نسكافيه ٣|energy drink/,
+    alts: ['شاي من غير سكر', 'شاي أخضر', 'قهوة تركي سادة', 'نسكافيه بلبن من غير سكر'], drink: true },
+  { re: /برجر|burger|بيتزا|pizza|شاورما|shawarma|كريسبي|نجتس|nugget|هوت ?دوج|كشري|حواوشي|ساندوتش|sandwich|بانيه|كنتاكي|kfc|فاست ?فود|وجبه/,
+    alts: ['صدر فراخ مشوي', 'كفتة مشوية', 'سمك بلطي مشوي'], recipes: /ساندوتش|كباب|شيش|كفته|مشوي|فرن|طاووق/ },
+  { re: /توست ابيض|عيش فينو|عيش شامي|white bread|تورتيلا|بقسماط/, alts: ['عيش سن', 'توست حبوب كاملة', 'عيش شوفان'] },
+  { re: /رز ابيض|رز بالشعريه|رز معمر|مكرونه|pasta|spaghetti|بطاطس|potato|rice/, alts: ['رز بني', 'كينوا', 'مكرونة قمح كامل', 'بطاطس بالفرن'], recipes: /رز بني|كينوا|سن|بطاطا/ },
+];
+
+/** Up to 3 healthier foods in the same craving as `f`, suited to this person's conditions. */
+export function findSwaps(p: Profile, f: Food, pool: Food[] = FOODS): Food[] {
+  const text = norm(f.n);
+  const kind = KINDS.find((k) => k.re.test(text)) ?? (f.tags?.includes('soda') ? KINDS[3] : undefined);
+  const byName = new Map(pool.map((x) => [norm(x.n), x]));
+  const healthy = (x: Food) => x.id !== f.id && RANK[worst(judge(p, x))] <= RANK.ok && !(x.tags ?? []).some((t) => ['soda', 'sugary', 'processed', 'fried'].includes(t));
+  let cands: Food[] = [];
+  if (kind) {
+    const recipes = RECIPES.filter((r) => recipeFits(p, r) && (kind.meal ? r.meal === kind.meal : kind.recipes ? kind.recipes.test(norm(r.n)) : false)).map(recipeFood);
+    cands = [...recipes, ...kind.alts.map((n) => byName.get(norm(n))).filter((x): x is Food => !!x)];
+    if (kind.drink) cands.push(...pool.filter((x) => x.cat === 'مشروبات' && x.kcal <= 20));
+  } else if (f.tags?.includes('fried')) {
+    cands = pool.filter((x) => x.cat === f.cat && /مشوي|فرن|مسلوق|سوتيه/.test(norm(x.n)));
+  }
+  if (!cands.length) {
+    // Same section, closest in what it's made of (share of energy from protein, carbs and fat) and in name.
+    const mix = (x: Food) => { const e = Math.max(x.kcal, 1); return [(x.p * 4) / e, (x.c * 4) / e, (x.f * 9) / e]; };
+    const [a, b, c] = mix(f);
+    const words = new Set(norm(f.n).split(/\s+/));
+    cands = pool.filter((x) => x.cat === f.cat).map((x) => {
+      const [d, e, g] = mix(x);
+      const shared = norm(x.n).split(/\s+/).filter((w) => words.has(w)).length;
+      return { x, s: Math.abs(a - d) + Math.abs(b - e) + Math.abs(c - g) - shared * 0.4 };
+    }).sort((u, v) => u.s - v.s).map((u) => u.x);
+  }
+  const seen = new Set<string>();
+  // Prefer swaps that share words with the original (كفتة → ساندوتش كفتة فراخ), then the healthier, then list order.
+  const words = norm(f.n).split(/\s+/).filter((w) => w.length > 2);
+  const shared = (x: Food) => norm(x.n).split(/\s+/).filter((w) => words.some((v) => v === w || (w.length > 3 && v.length > 3 && (v.startsWith(w) || w.startsWith(v))))).length;
+  return cands
+    .filter((x) => healthy(x) && x.kcal <= Math.max(f.kcal * 1.3, 150) && !seen.has(x.n) && seen.add(x.n))
+    .map((x, i) => ({ x, i, s: RANK[worst(judge(p, x))], w: shared(x) }))
+    .sort((u, v) => v.w - u.w || u.s - v.s || u.i - v.i)
+    .slice(0, 3)
+    .map((u) => u.x);
 }
 
 /** The colour-dot level for the food list, ignoring the calorie budget. */

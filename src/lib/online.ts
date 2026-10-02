@@ -102,12 +102,14 @@ export function toFood(o: OnlineFood, grams: number, label?: string): Food {
   };
 }
 
-async function getJSON<T>(url: string, ms = 12000): Promise<T | null> {
+async function getJSON<T>(url: string, ms = 12000, body?: unknown): Promise<T | null> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
   const host = new URL(url).host;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: ctl.signal });
+    const res = await fetch(url, body === undefined
+      ? { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: ctl.signal }
+      : { method: 'POST', headers: { 'User-Agent': UA, Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
     if (!res.ok) { lastError[host] = `HTTP ${res.status}`; return null; }
     return (await res.json()) as T;
   } catch (e) {
@@ -119,9 +121,10 @@ async function getJSON<T>(url: string, ms = 12000): Promise<T | null> {
 }
 
 export async function searchUSDA(en: string, key = USDA_KEY): Promise<OnlineFood[]> {
-  const base = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${key}&pageSize=12&dataType=${encodeURIComponent('Foundation,SR Legacy,Survey (FNDDS)')}&query=`;
-  // One request per search keeps us inside the key's hourly limit; USDA ranks the best word matches first.
-  const j = await getJSON<{ foods?: USDAFood[] }>(base + encodeURIComponent(en));
+  // The JSON (POST) form of the search is the documented one; the GET form answers 400 for some queries.
+  const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${key}`;
+  let j = await getJSON<{ foods?: USDAFood[] }>(url, 12000, { query: en, dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)'], pageSize: 12 });
+  if (!j) j = await getJSON<{ foods?: USDAFood[] }>(`${url}&pageSize=12&query=${encodeURIComponent(en)}`);
   return (Array.isArray(j?.foods) ? j.foods : []).map((x) => { try { return fromUSDA(x); } catch { return null; } }).filter((x): x is OnlineFood => !!x);
 }
 

@@ -7,7 +7,7 @@ import type { Food } from '../lib/data.ts';
 import { blankDay, dayKey, type DayLog } from '../lib/day.ts';
 import type { Profile } from '../lib/plan.ts';
 
-const K = { profile: 'nabd:profile', custom: 'nabd:custom', day: (k: string) => 'nabd:day:' + k };
+const K = { profile: 'yallawell:profile', custom: 'yallawell:custom', day: (k: string) => 'yallawell:day:' + k };
 
 type Store = {
   ready: boolean;
@@ -75,7 +75,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setDay((prev) => { const next = fn(prev); writeJSON(K.day(todayRef.current), next); return next; });
   }, []);
   const resetAll = useCallback(async () => {
-    const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('nabd:'));
+    const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('yallawell:'));
     await AsyncStorage.multiRemove(keys);
     setProfile(null); setCustom([]); setDay(blankDay());
   }, []);

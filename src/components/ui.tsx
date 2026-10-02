@@ -41,7 +41,7 @@ export function Screen({ title, children }: { title: string; children: ReactNode
           <T kind="h1">{title}</T>
           <T kind="small">{WEEK[(d.getDay() + 1) % 7]} {d.getDate()}/{d.getMonth() + 1}</T>
         </View>
-        <T kind="h3" color={c.petrol}>نَبض</T>
+        <T kind="h3" color={c.petrol}>يلا ويل</T>
       </View>
       {children}
     </ScrollView>

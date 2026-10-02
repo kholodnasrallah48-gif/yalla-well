@@ -62,7 +62,7 @@ export default function Onboarding() {
       </View>
 
       {st === 'basics' && <>
-        <T kind="h1">{profile ? 'تعديل بياناتك' : `أهلًا ${g('بيك', 'بيكي')} في نَبض`}</T>
+        <T kind="h1">{profile ? 'تعديل بياناتك' : `أهلًا ${g('بيك', 'بيكي')} في يلا ويل`}</T>
         <T kind="body" color={c.muted}>محتاجين شوية بيانات عشان نحسب السعرات ونعمل خطة تمرين مناسبة {g('ليك', 'ليكي')}.</T>
         <View style={{ gap: 4 }}><T kind="label">الاسم</T><TextInput value={d.name ?? ''} onChangeText={(name) => set({ name })} style={input} autoComplete="given-name" /></View>
         <View style={[styles.row, { gap: 8 }]}>

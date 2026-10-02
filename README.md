@@ -1,4 +1,4 @@
-# نَبض (Nabd)
+# يلا ويل (Yalla Well)
 
 Arabic (Egyptian dialect, RTL) fitness app: calorie tracking with Egyptian foods, weekly training plans, and adjustments for autoimmune conditions and ongoing medications.
 

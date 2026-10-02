@@ -1,14 +1,14 @@
 // Avatar builder: pick skin, body type, hair, makeup and clothes; log weight and watch the body change.
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AvatarView } from '../components/Avatar.tsx';
 import { Bg, Btn, Card, Chip, START, T, lift, styles } from '../components/ui.tsx';
 import {
-  BODIES, BOTTOMS, CLOTHES, EYE_COLORS, HAIRS_F, HAIRS_M, HAIR_COLORS, LIPS, SHADOWS, SKINS, TOPS,
-  avatarOf, bmi, logWeight, weightChange, type Avatar,
+  BODIES, BOTTOMS, BOTTOMS_M, CLOTHES, EYE_COLORS, HAIRS_F, HAIRS_M, HAIR_COLORS, HIJABS, LIPS, SHADOWS, SKINS, TOPS, TOPS_M,
+  avatarOf, bmi, logWeight, weightChange, type Avatar, type Bottom, type HairStyle, type Top,
 } from '../lib/avatar.ts';
 import { L, num } from '../lib/i18n.ts';
 import { genderFor } from '../lib/plan.ts';
@@ -17,12 +17,10 @@ import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
 
 const BODY_N = { hourglass: ['ساعة رملية', 'Hourglass'], pear: ['كمثرى', 'Pear'], apple: ['تفاحة', 'Apple'], straight: ['مستقيم', 'Straight'], athletic: ['رياضي', 'Athletic'] } as const;
-const HAIR_N = {
-  long: ['طويل ناعم', 'Long'], wavy: ['طويل مموج', 'Wavy'], pony: ['ديل حصان', 'Ponytail'], bun: ['كعكة', 'Bun'], curly: ['كيرلي', 'Curly'],
-  bob: ['بوب', 'Bob'], short: ['قصير', 'Short'], hijab: ['حجاب', 'Hijab'], bald: ['صلعة', 'Bald'],
-} as const;
-const TOP_N = { bra: ['سبورت برا', 'Sports bra'], tank: ['تانك توب', 'Tank top'], tee: ['تيشيرت', 'T-shirt'], long: ['كم طويل', 'Long sleeve'], hoodie: ['هودي', 'Hoodie'] } as const;
-const BOT_N = { leggings: ['ليجن', 'Leggings'], shorts: ['شورت', 'Shorts'], joggers: ['سويت بانتس', 'Joggers'], skirt: ['جيبة', 'Skirt'] } as const;
+// Names are only read out by screen readers; the tiles show the look itself.
+const HAIR_N: Record<HairStyle, string> = { long: 'Long', wavy: 'Wavy', pony: 'Ponytail', bun: 'Bun', curly: 'Curly', bob: 'Bob', short: 'Short', braid: 'Braid', hijab: 'Hijab', quiff: 'Quiff', buzz: 'Buzz cut', bald: 'Bald' };
+const TOP_N: Record<Top, string> = { bra: 'Sports bra', tank: 'Tank top', crop: 'Crop top', tee: 'T-shirt', oversized: 'Oversized tee', long: 'Long sleeve', hoodie: 'Hoodie', jacket: 'Zip jacket', tunic: 'Long tunic' };
+const BOT_N: Record<Bottom, string> = { leggings: 'Leggings', biker: 'Biker shorts', shorts: 'Shorts', joggers: 'Joggers', wide: 'Wide trousers', skirt: 'Skirt', maxi: 'Long skirt' };
 type Tab = 'body' | 'face' | 'hair' | 'clothes';
 
 function Swatches({ colors, value, onPick, label }: { colors: string[]; value: string; onPick: (c: string) => void; label: string }) {
@@ -46,11 +44,25 @@ function Swatches({ colors, value, onPick, label }: { colors: string[]; value: s
   );
 }
 
-function Options<K extends string>({ keys, names, value, onPick, label }: { keys: readonly K[]; names: Record<K, readonly [string, string]>; value: K; onPick: (k: K) => void; label: string }) {
+/** Picture tiles: each one shows the avatar wearing that option. */
+function Tiles<K extends string>({ keys, value, onPick, label, render, names, cols = 3 }: {
+  keys: readonly K[]; value: K; onPick: (k: K) => void; label: string; render: (k: K) => ReactNode; names: Record<K, string>; cols?: number;
+}) {
+  const c = useColors();
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: 8 }}>
       <T kind="label">{label}</T>
-      <View style={styles.wrap}>{keys.map((k) => <Chip key={k} label={L(names[k][0], names[k][1])} on={k === value} onPress={() => onPick(k)} />)}</View>
+      <View style={[styles.wrap, { gap: 8 }]}>
+        {keys.map((k) => {
+          const on = k === value;
+          return (
+            <Pressable key={k} onPress={() => { play('tap'); onPick(k); }} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={names[k]}
+              style={({ pressed }) => [{ width: `${100 / cols - 3}%`, aspectRatio: 1, borderRadius: 16, borderWidth: on ? 2.5 : 1, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.soft : c.surface, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, lift(c, on ? 'glow' : 'sm'), pressed && styles.pressed]}>
+              {render(k)}
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -135,7 +147,8 @@ export default function AvatarScreen() {
           {tab === 'body' ? (
             <>
               <Swatches label={L('لون البشرة', 'Skin tone')} colors={SKINS} value={a.skin} onPick={(skin) => set({ skin })} />
-              <Options label={L('شكل الجسم', 'Body type')} keys={BODIES} names={BODY_N} value={a.body} onPick={(body) => set({ body })} />
+              <Tiles label={L('شكل الجسم', 'Body type')} keys={BODIES} names={Object.fromEntries(BODIES.map((k) => [k, L(BODY_N[k][0], BODY_N[k][1])])) as Record<typeof a.body, string>} value={a.body} onPick={(body) => set({ body })}
+                render={(k) => <View style={{ alignItems: 'center' }}><AvatarView id={`b${k}`} a={{ ...a, body: k }} bmi={nowBmi} sex={p.sex} size={78} /><T kind="label" style={{ textAlign: 'center', fontSize: 11 }}>{L(BODY_N[k][0], BODY_N[k][1])}</T></View>} />
               <T kind="small">{L('الطول والوزن بيتحسبوا من بياناتك، وشكل الجسم بيحدد الوزن بيتوزع فين.', 'Height and weight come from your details; body type decides where the weight sits.')}</T>
             </>
           ) : tab === 'face' ? (
@@ -146,20 +159,24 @@ export default function AvatarScreen() {
               <View style={styles.wrap}>
                 <Chip label={L('بلاشر', 'Blush')} on={a.blush} onPress={() => set({ blush: !a.blush })} />
                 <Chip label={L('آيلاينر', 'Eyeliner')} on={a.liner} onPress={() => set({ liner: !a.liner })} />
-                <Chip label={L('دقن', 'Beard')} on={a.beard} onPress={() => set({ beard: !a.beard })} />
+                {female ? null : <Chip label={L('دقن', 'Beard')} on={a.beard} onPress={() => set({ beard: !a.beard })} />}
               </View>
             </>
           ) : tab === 'hair' ? (
             <>
-              <Options label={L('التسريحة', 'Style')} keys={female ? HAIRS_F : HAIRS_M} names={HAIR_N} value={a.hair} onPick={(hair) => set({ hair })} />
-              <Swatches label={a.hair === 'hijab' ? L('لون الحجاب', 'Hijab colour') : L('لون الشعر', 'Hair colour')}
-                colors={a.hair === 'hijab' ? [...CLOTHES, ...HAIR_COLORS.slice(0, 4)] : HAIR_COLORS} value={a.hairColor} onPick={(hairColor) => set({ hairColor })} />
+              <Tiles label={L('التسريحة', 'Style')} keys={female ? HAIRS_F : HAIRS_M} names={HAIR_N} value={a.hair} onPick={(hair) => set({ hair })}
+                render={(k) => <AvatarView id={`h${k}`} crop="head" a={{ ...a, hair: k }} bmi={nowBmi} sex={p.sex} size={92} />} />
+              {a.hair === 'hijab'
+                ? <Swatches label={L('لون الحجاب', 'Hijab colour')} colors={HIJABS} value={a.hijabColor} onPick={(hijabColor) => set({ hijabColor })} />
+                : <Swatches label={L('لون الشعر', 'Hair colour')} colors={HAIR_COLORS} value={a.hairColor} onPick={(hairColor) => set({ hairColor })} />}
             </>
           ) : (
             <>
-              <Options label={L('فوق', 'Top')} keys={TOPS} names={TOP_N} value={a.top} onPick={(top) => set({ top })} />
+              <Tiles label={L('فوق', 'Top')} keys={female ? TOPS : TOPS_M} names={TOP_N} value={a.top} onPick={(top) => set({ top })}
+                render={(k) => <AvatarView id={`t${k}`} crop="top" a={{ ...a, top: k }} bmi={nowBmi} sex={p.sex} size={92} />} />
               <Swatches label={L('لونه', 'Colour')} colors={CLOTHES} value={a.topColor} onPick={(topColor) => set({ topColor })} />
-              <Options label={L('تحت', 'Bottom')} keys={BOTTOMS} names={BOT_N} value={a.bottom} onPick={(bottom) => set({ bottom })} />
+              <Tiles label={L('تحت', 'Bottom')} keys={female ? BOTTOMS : BOTTOMS_M} names={BOT_N} value={a.bottom} onPick={(bottom) => set({ bottom })}
+                render={(k) => <AvatarView id={`p${k}`} crop="bottom" a={{ ...a, bottom: k }} bmi={nowBmi} sex={p.sex} size={92} />} />
               <Swatches label={L('لونه', 'Colour')} colors={CLOTHES} value={a.bottomColor} onPick={(bottomColor) => set({ bottomColor })} />
               <Swatches label={L('الكوتشي', 'Trainers')} colors={CLOTHES} value={a.shoes} onPick={(shoes) => set({ shoes })} />
             </>

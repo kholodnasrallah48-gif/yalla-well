@@ -1,10 +1,10 @@
 // The person's avatar: what they pick (skin, hair, makeup, clothes) and the body shape that follows their weight.
 import type { Profile } from './plan.ts';
 
-export type HairStyle = 'long' | 'wavy' | 'pony' | 'bun' | 'curly' | 'bob' | 'short' | 'hijab' | 'bald';
+export type HairStyle = 'long' | 'wavy' | 'pony' | 'bun' | 'curly' | 'bob' | 'short' | 'braid' | 'hijab' | 'quiff' | 'buzz' | 'bald';
 export type BodyType = 'hourglass' | 'pear' | 'apple' | 'straight' | 'athletic';
-export type Top = 'bra' | 'tank' | 'tee' | 'long' | 'hoodie';
-export type Bottom = 'leggings' | 'shorts' | 'joggers' | 'skirt';
+export type Top = 'bra' | 'tank' | 'crop' | 'tee' | 'oversized' | 'long' | 'hoodie' | 'jacket' | 'tunic';
+export type Bottom = 'leggings' | 'biker' | 'shorts' | 'joggers' | 'wide' | 'skirt' | 'maxi';
 
 export type Avatar = {
   skin: string;
@@ -12,6 +12,7 @@ export type Avatar = {
   eyes: string;
   hair: HairStyle;
   hairColor: string;
+  hijabColor: string;
   /** Lipstick colour, '' = none. */
   lips: string;
   blush: boolean;
@@ -31,17 +32,20 @@ export const HAIR_COLORS = ['#1B1210', '#3B2416', '#5E3A21', '#8A5A33', '#B9874E
 export const EYE_COLORS = ['#3B2416', '#6B4423', '#5C7A3A', '#3F6E9E', '#7C8A96'];
 export const LIPS = ['', '#C2566B', '#A3253A', '#D9787A', '#8C3B4F', '#B5655A'];
 export const SHADOWS = ['', '#B88A6A', '#8E6BB5', '#D49A6A', '#5F8FB8', '#C2788E'];
+export const HIJABS = ['#C9A27E', '#E8D9C4', '#0E1621', '#FFFFFF', '#7C8A96', '#F2A0C0', '#8C3B4F', '#2E9BFF', '#4F6B4A', '#8B7CFF'];
 export const CLOTHES = ['#0E1621', '#2E9BFF', '#FFD60A', '#19C37D', '#FF5C6C', '#F2A0C0', '#8B7CFF', '#FFFFFF', '#7C8A96', '#C9A27E'];
-export const HAIRS_F: HairStyle[] = ['long', 'wavy', 'pony', 'bun', 'curly', 'bob', 'short', 'hijab'];
-export const HAIRS_M: HairStyle[] = ['short', 'curly', 'bob', 'bald', 'long', 'bun'];
+export const HAIRS_F: HairStyle[] = ['long', 'wavy', 'pony', 'bun', 'curly', 'bob', 'braid', 'short', 'hijab'];
+export const HAIRS_M: HairStyle[] = ['short', 'quiff', 'curly', 'buzz', 'long', 'bun', 'bald'];
 export const BODIES: BodyType[] = ['hourglass', 'pear', 'apple', 'straight', 'athletic'];
-export const TOPS: Top[] = ['bra', 'tank', 'tee', 'long', 'hoodie'];
-export const BOTTOMS: Bottom[] = ['leggings', 'shorts', 'joggers', 'skirt'];
+export const TOPS: Top[] = ['bra', 'tank', 'crop', 'tee', 'oversized', 'long', 'hoodie', 'jacket', 'tunic'];
+export const TOPS_M: Top[] = ['tank', 'tee', 'oversized', 'long', 'hoodie', 'jacket'];
+export const BOTTOMS: Bottom[] = ['leggings', 'biker', 'shorts', 'joggers', 'wide', 'skirt', 'maxi'];
+export const BOTTOMS_M: Bottom[] = ['shorts', 'joggers', 'wide'];
 
 export function defaultAvatar(sex: 'f' | 'm'): Avatar {
   return sex === 'm'
-    ? { skin: SKINS[3], body: 'straight', eyes: EYE_COLORS[0], hair: 'short', hairColor: HAIR_COLORS[0], lips: '', blush: false, liner: false, shadow: '', beard: true, top: 'tee', topColor: CLOTHES[1], bottom: 'joggers', bottomColor: CLOTHES[0], shoes: CLOTHES[7] }
-    : { skin: SKINS[2], body: 'hourglass', eyes: EYE_COLORS[1], hair: 'long', hairColor: HAIR_COLORS[1], lips: LIPS[1], blush: true, liner: true, shadow: '', beard: false, top: 'tank', topColor: CLOTHES[1], bottom: 'leggings', bottomColor: CLOTHES[0], shoes: CLOTHES[7] };
+    ? { skin: SKINS[3], body: 'straight', eyes: EYE_COLORS[0], hair: 'short', hairColor: HAIR_COLORS[0], hijabColor: '#C9A27E', lips: '', blush: false, liner: false, shadow: '', beard: true, top: 'tee', topColor: CLOTHES[1], bottom: 'joggers', bottomColor: CLOTHES[0], shoes: CLOTHES[7] }
+    : { skin: SKINS[2], body: 'hourglass', eyes: EYE_COLORS[1], hair: 'long', hairColor: HAIR_COLORS[1], hijabColor: '#C9A27E', lips: LIPS[1], blush: true, liner: true, shadow: '', beard: false, top: 'tank', topColor: CLOTHES[1], bottom: 'leggings', bottomColor: CLOTHES[0], shoes: CLOTHES[7] };
 }
 
 export const avatarOf = (p: Profile): Avatar => ({ ...defaultAvatar(p.sex), ...(p.avatar ?? {}) });
@@ -50,27 +54,28 @@ export const bmi = (kg: number, cm: number) => (cm > 0 ? kg / (cm / 100) ** 2 : 
 
 /** Half-widths (from the body's centre line) of each part of the figure, in a 200 x 400 drawing. */
 export type Shape = {
-  shoulder: number; chest: number; waist: number; hip: number; thigh: number; knee: number;
-  arm: number; forearm: number; cheek: number; neck: number; belly: number;
+  shoulder: number; chest: number; under: number; waist: number; belly: number; hip: number;
+  thigh: number; knee: number; calf: number; ankle: number; arm: number; forearm: number; cheek: number; neck: number;
 };
 
 /** Body proportions for a BMI: 18 draws slim, 38 draws full; the body type shifts where the weight sits. */
 export function shapeFor(b: number, body: BodyType, sex: 'f' | 'm'): Shape {
   const t = Math.max(0, Math.min(1, (b - 18) / 20));
   const s: Shape = {
-    shoulder: 30 + t * 10, chest: 26 + t * 14, waist: 19 + t * 21, hip: 29 + t * 17, thigh: 13 + t * 9, knee: 8.5 + t * 3.5,
-    arm: 6.5 + t * 5, forearm: 5 + t * 3, cheek: 22 + t * 5, neck: 7.5 + t * 2.5, belly: t * 6,
+    shoulder: 30 + t * 10, chest: 25 + t * 14, under: 21.5 + t * 14, waist: 18 + t * 20, belly: t * 6, hip: 28 + t * 16,
+    thigh: 12.5 + t * 9, knee: 8 + t * 3.5, calf: 8.5 + t * 4, ankle: 4.6 + t * 1.4, arm: 5.6 + t * 4.4, forearm: 4.6 + t * 2.6,
+    cheek: 24.5 + t * 4, neck: 8 + t * 2.5,
   };
   const adj: Record<BodyType, Partial<Shape>> = {
     hourglass: { waist: s.waist - 3, chest: s.chest + 1.5, hip: s.hip + 1.5 },
     pear: { hip: s.hip + 4, thigh: s.thigh + 2, shoulder: s.shoulder - 2, chest: s.chest - 1.5 },
-    apple: { waist: s.waist + 4, belly: s.belly + 4, hip: s.hip - 1.5, thigh: s.thigh - 1 },
+    apple: { waist: s.waist + 4, under: s.under + 2, belly: s.belly + 4, hip: s.hip - 1.5, thigh: s.thigh - 1 },
     straight: { waist: s.waist + 2, hip: s.hip - 2 },
-    athletic: { shoulder: s.shoulder + 3, arm: s.arm + 1.5, waist: s.waist - 1, thigh: s.thigh + 1 },
+    athletic: { shoulder: s.shoulder + 3, arm: s.arm + 1.2, waist: s.waist - 1, thigh: s.thigh + 1, calf: s.calf + 1 },
   };
   Object.assign(s, adj[body]);
-  if (sex === 'm') { s.shoulder += 4; s.chest += 2; s.hip -= 4; s.waist += 1; s.neck += 1.5; }
-  s.waist = Math.min(s.waist, Math.max(s.chest, s.hip) + 2);
+  if (sex === 'm') { s.shoulder += 5; s.chest += 3; s.under += 3; s.hip -= 4; s.waist += 2; s.neck += 2; s.arm += 1; }
+  s.waist = Math.min(s.waist, Math.max(s.under, s.hip) + 2);
   return s;
 }
 

@@ -27,3 +27,12 @@ test('avatar body gets slimmer as BMI drops, for every body type', () => {
     assert.ok(after.waist < before.waist && after.hip < before.hip && after.arm < before.arm, body);
   }
 });
+
+test('every hair, top and bottom draws a valid picture', async () => {
+  const { avatarSVG } = await import('./avatar-svg.ts');
+  const { HAIRS_F, HAIRS_M, TOPS, BOTTOMS, defaultAvatar } = await import('./avatar.ts');
+  for (const sex of ['f', 'm'] as const) for (const hair of [...HAIRS_F, ...HAIRS_M]) for (const top of TOPS) for (const bottom of BOTTOMS) {
+    const svg = avatarSVG({ ...defaultAvatar(sex), hair, top, bottom }, 27, sex);
+    assert.ok(svg.startsWith('<svg') && !svg.includes('NaN') && !svg.includes('undefined'), `${sex} ${hair} ${top} ${bottom}`);
+  }
+});

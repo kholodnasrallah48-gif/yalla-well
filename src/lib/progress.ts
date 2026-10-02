@@ -1,13 +1,18 @@
 // Weekly progression: alternating machines every other week and a 4-week load cycle.
+import { L } from './i18n.ts';
 
 export type Phase = { n: string; text: string; setsDelta: number; load: number };
 
+// Getters, so the text follows the app language at read time.
+const phase = (ar: string, en: string, arText: string, enText: string, setsDelta: number, load: number): Phase => ({
+  get n() { return L(ar, en); }, get text() { return L(arText, enText); }, setsDelta, load,
+});
 /** 4-week cycle: base, heavier, more volume, lighter recovery week. */
 export const PHASES: Phase[] = [
-  { n: 'أسبوع أساس', text: 'نثبت الحركة والوزن.', setsDelta: 0, load: 1 },
-  { n: 'أسبوع تقيل', text: 'نفس العدات بوزن أتقل شوية.', setsDelta: 0, load: 1 },
-  { n: 'أسبوع حجم', text: 'مجموعة زيادة في كل تمرين.', setsDelta: 1, load: 1 },
-  { n: 'أسبوع خفيف', text: 'وزن أخف ومجموعات أقل عشان الجسم يرتاح ويستعد للدورة الجاية.', setsDelta: -1, load: 0.8 },
+  phase('أسبوع أساس', 'Base week', 'نثبت الحركة والوزن.', 'Lock in the movement and the weight.', 0, 1),
+  phase('أسبوع تقيل', 'Heavy week', 'نفس العدات بوزن أتقل شوية.', 'Same reps with a slightly heavier weight.', 0, 1),
+  phase('أسبوع حجم', 'Volume week', 'مجموعة زيادة في كل تمرين.', 'One extra set on every exercise.', 1, 1),
+  phase('أسبوع خفيف', 'Light week', 'وزن أخف ومجموعات أقل عشان الجسم يرتاح ويستعد للدورة الجاية.', 'Lighter weights and fewer sets so your body recovers and gets ready for the next cycle.', -1, 0.8),
 ];
 
 const DAY = 86400000;

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 
+import { L as lang } from '../lib/i18n.ts';
 import { fonts } from '../theme.ts';
 
 const P = '#0E4C5A';
@@ -89,7 +90,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
           <Animated.Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, letterSpacing: 4, color: A, opacity: v.lat, writingDirection: 'ltr' }}>YALLA WELL</Animated.Text>
         </View>
       </View>
-      <Text accessibilityRole="header" style={{ position: 'absolute', opacity: 0 }}>يلا ويل</Text>
+      <Text accessibilityRole="header" style={{ position: 'absolute', opacity: 0 }}>{lang('يلا ويل', 'Yalla Well')}</Text>
     </Animated.View>
   );
 }

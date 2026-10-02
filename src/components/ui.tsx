@@ -1,5 +1,5 @@
 // Shared building blocks styled from the brand tokens.
-import { isEn, setLang } from '../lib/i18n.ts';
+import { isEn, L, setLang, tx } from '../lib/i18n.ts';
 import { play } from '../lib/sound.ts';
 import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
@@ -38,7 +38,7 @@ function ThemeToggle() {
   const c = useColors();
   const { isDark, toggle } = useTheme();
   return (
-    <Pressable onPress={() => { play('tap'); toggle(); }} accessibilityRole="switch" accessibilityState={{ checked: isDark }} accessibilityLabel="الوضع الليلي"
+    <Pressable onPress={() => { play('tap'); toggle(); }} accessibilityRole="switch" accessibilityState={{ checked: isDark }} accessibilityLabel={L('الوضع الليلي', 'Dark mode')}
       style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c.petrol} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         {isDark
@@ -58,10 +58,10 @@ export function Screen({ title, children, themeToggle }: { title: string; childr
       <View style={styles.rowBetween}>
         <View style={{ flexShrink: 1 }}>
           <T kind="h1">{title}</T>
-          <T kind="small">{WEEK[(d.getDay() + 1) % 7]} {d.getDate()}/{d.getMonth() + 1}</T>
+          <T kind="small">{tx(WEEK[(d.getDay() + 1) % 7])} {d.getDate()}/{d.getMonth() + 1}</T>
         </View>
         <View style={[styles.row, { gap: 10 }]}>
-          <T kind="h3" color={c.petrol}>يلا ويل</T>
+          <T kind="h3" color={c.petrol}>{L('يلا ويل', 'Yalla Well')}</T>
           {themeToggle ? <LangToggle /> : null}
           {themeToggle ? <ThemeToggle /> : null}
         </View>
@@ -151,7 +151,7 @@ export function MacroBar({ label, value, target }: { label: string; value: numbe
       <View style={[styles.track, { backgroundColor: c.soft }]}>
         <View style={{ width: `${Math.min(100, target ? (value / target) * 100 : 0)}%`, height: '100%', borderRadius: 99, backgroundColor: c.petrol }} />
       </View>
-      <T kind="small" style={{ width: 78, textAlign: END(), fontVariant: ['tabular-nums'] }}>{Math.round(value)} / {target} جم</T>
+      <T kind="small" style={{ width: 78, textAlign: END(), fontVariant: ['tabular-nums'] }}>{Math.round(value)} / {target} {L('جم', 'g')}</T>
     </View>
   );
 }
@@ -189,7 +189,7 @@ export function WeekStrip({ profile, today }: { profile: Profile; today: number 
         const fg = pl === 'gym' ? c.petrol : pl === 'home' ? c.onLime : c.onPetrol;
         return (
           <View key={w} style={[styles.dayTile, { backgroundColor: bg, borderWidth: i === today ? 2 : 0, borderColor: c.lime }]}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 10.5, color: fg }}>{w}</Text>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 10.5, color: fg }}>{tx(w)}</Text>
           </View>
         );
       })}

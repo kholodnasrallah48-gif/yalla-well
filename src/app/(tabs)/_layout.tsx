@@ -3,6 +3,7 @@ import Tabs from 'expo-router/js-tabs';
 import type { ColorValue } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { L } from '../../lib/i18n.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
@@ -37,10 +38,10 @@ export default function TabsLayout() {
         tabBarIcon: ({ color }) => <Icon name={route.name} color={color} />,
       })}
     >
-      <Tabs.Screen name="index" options={{ title: 'الرئيسية' }} />
-      <Tabs.Screen name="food" options={{ title: 'الأكل' }} />
-      <Tabs.Screen name="train" options={{ title: 'التمرين' }} />
-      <Tabs.Screen name="me" options={{ title: 'ملفي' }} />
+      <Tabs.Screen name="index" options={{ title: L('الرئيسية', 'Home') }} />
+      <Tabs.Screen name="food" options={{ title: L('الأكل', 'Food') }} />
+      <Tabs.Screen name="train" options={{ title: L('التمرين', 'Train') }} />
+      <Tabs.Screen name="me" options={{ title: L('ملفي', 'Me') }} />
     </Tabs>
   );
 }

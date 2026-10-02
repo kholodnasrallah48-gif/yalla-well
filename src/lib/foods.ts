@@ -2,6 +2,7 @@
 import { AR_EN } from './food-words.ts';
 import { FOOD_ROWS } from './foods-data.ts';
 import { RECIPES, type Meal, type Recipe } from './recipes-data.ts';
+import { L, num } from './i18n.ts';
 import { genderFor, type Profile } from './plan.ts';
 
 export type GI = 'low' | 'mid' | 'high' | 'none';
@@ -36,46 +37,52 @@ const COND_NAME: Record<string, string> = {
   hashimoto: 'الهاشيموتو', graves: 'الغدة', ra: 'الروماتويد', psoriasis: 'الصدفية', lupus: 'اللوبس', ms: 'الـ MS',
   ibd: 'القولون', celiac: 'السيلياك', t1d: 'السكر',
 };
+const COND_NAME_EN: Record<string, string> = {
+  hashimoto: "Hashimoto's", graves: 'your thyroid', ra: 'rheumatoid arthritis', psoriasis: 'psoriasis', lupus: 'lupus', ms: 'MS',
+  ibd: 'your bowel condition', celiac: 'celiac disease', t1d: 'diabetes',
+};
 
 export type Level = 'good' | 'ok' | 'warn' | 'bad';
 export type Advice = { level: Level; notes: { level: Level; text: string }[]; swaps: Food[] };
 const RANK: Record<Level, number> = { good: 0, ok: 1, warn: 2, bad: 3 };
+/** `salt`: the note already warns about salt (internal, so itemAlerts doesn't repeat it). */
+type Note = { level: Level; text: string; salt?: boolean };
 
 /** Health notes for one food and this person, without calorie budget or swaps. */
-function judge(p: Profile, f: Food): { level: Level; text: string }[] {
+function judge(p: Profile, f: Food): Note[] {
   const g = genderFor(p.sex);
   const t = new Set(f.tags ?? []);
   const has = (id: string) => p.conditions.includes(id) || p.meds.includes(id);
   const auto = p.conditions.filter((x) => AUTOIMMUNE.includes(x));
   const sugar = SUGAR.some(has) || has('insulin');
-  const disease = auto.length ? COND_NAME[auto[0]] : '';
-  const out: { level: Level; text: string }[] = [];
+  const disease = auto.length ? L(COND_NAME[auto[0]], COND_NAME_EN[auto[0]]) : '';
+  const out: Note[] = [];
 
-  if (has('celiac') && t.has('gluten')) out.push({ level: 'bad', text: 'فيه جلوتين، وده ممنوع مع السيلياك.' });
+  if (has('celiac') && t.has('gluten')) out.push({ level: 'bad', text: L('فيه جلوتين، وده ممنوع مع السيلياك.', 'Contains gluten, which is off-limits with celiac disease.') });
   if (auto.length) {
-    if (t.has('soda')) out.push({ level: 'bad', text: `المياه الغازية فيها سكر وإضافات ممكن تزود الالتهاب في الجسم وتهيج ${disease}.` });
-    else if (t.has('sugary')) out.push({ level: 'warn', text: `السكر الكتير بيزود الالتهاب، وده مش في صالح ${disease}.` });
-    if (t.has('processed') || t.has('canned')) out.push({ level: 'warn', text: `أكل مصنّع أو معلب، فيه مواد حافظة وملح ممكن يزودوا الالتهاب. ${g('خليه', 'خليه')} مرة على قد ما ${g('تقدر', 'تقدري')}.` });
-    if (t.has('fried')) out.push({ level: 'warn', text: 'المقلي بيزود الالتهاب. المشوي أو اللي في الفرن أحسن.' });
-    if (t.has('redmeat')) out.push({ level: 'ok', text: 'اللحمة الحمرا كويسة مرة أو مرتين في الأسبوع، والفراخ والسمك أحسن لباقي الأيام.' });
-    if (t.has('omega3')) out.push({ level: 'good', text: 'فيه أوميجا ٣، وده بيقلل الالتهاب.' });
-    if (has('ibd') && t.has('fiber')) out.push({ level: 'ok', text: `لو القولون نشط النهارده ${g('قلل', 'قللي')} الألياف الخشنة.` });
+    if (t.has('soda')) out.push({ level: 'bad', text: L(`المياه الغازية فيها سكر وإضافات ممكن تزود الالتهاب في الجسم وتهيج ${disease}.`, `Soft drinks have sugar and additives that can raise inflammation and flare up ${disease}.`) });
+    else if (t.has('sugary')) out.push({ level: 'warn', text: L(`السكر الكتير بيزود الالتهاب، وده مش في صالح ${disease}.`, `A lot of sugar raises inflammation, which is bad for ${disease}.`) });
+    if (t.has('processed') || t.has('canned')) out.push({ level: 'warn', text: L(`أكل مصنّع أو معلب، فيه مواد حافظة وملح ممكن يزودوا الالتهاب. ${g('خليه', 'خليه')} مرة على قد ما ${g('تقدر', 'تقدري')}.`, 'Processed or canned, with preservatives and salt that can raise inflammation. Keep it occasional if you can.'), salt: true });
+    if (t.has('fried')) out.push({ level: 'warn', text: L('المقلي بيزود الالتهاب. المشوي أو اللي في الفرن أحسن.', 'Fried food raises inflammation. Grilled or baked is better.') });
+    if (t.has('redmeat')) out.push({ level: 'ok', text: L('اللحمة الحمرا كويسة مرة أو مرتين في الأسبوع، والفراخ والسمك أحسن لباقي الأيام.', 'Red meat is fine once or twice a week; chicken and fish are better the rest of the time.') });
+    if (t.has('omega3')) out.push({ level: 'good', text: L('فيه أوميجا ٣، وده بيقلل الالتهاب.', 'Has omega-3, which lowers inflammation.') });
+    if (has('ibd') && t.has('fiber')) out.push({ level: 'ok', text: L(`لو القولون نشط النهارده ${g('قلل', 'قللي')} الألياف الخشنة.`, 'If your bowel is flaring today, cut back on coarse fiber.') });
   }
   if (sugar) {
-    if (t.has('soda') || t.has('sugary') || f.gi === 'high') out.push({ level: 'bad', text: `هيرفع السكر في الدم بسرعة. لو ${g('هتاكله', 'هتاكليه')} خليه كمية صغيرة وبعد أكل فيه بروتين.` });
-    else if (f.gi === 'mid') out.push({ level: 'warn', text: `بيرفع السكر بدرجة متوسطة. ${g('كله', 'كليه')} مع بروتين أو سلطة عشان يبطأ الامتصاص.` });
-    else if (f.gi === 'low' && f.c > 5) out.push({ level: 'good', text: 'مناسب للسكر ومقاومة الإنسولين، بيرفع السكر ببطء.' });
-    if (t.has('sweetener')) out.push({ level: 'ok', text: 'من غير سكر وده أحسن، بس المحليات بتزود الرغبة في الحلو. المياه أحسن.' });
+    if (t.has('soda') || t.has('sugary') || f.gi === 'high') out.push({ level: 'bad', text: L(`هيرفع السكر في الدم بسرعة. لو ${g('هتاكله', 'هتاكليه')} خليه كمية صغيرة وبعد أكل فيه بروتين.`, 'Raises blood sugar fast. If you eat it, keep it small and have it after some protein.') });
+    else if (f.gi === 'mid') out.push({ level: 'warn', text: L(`بيرفع السكر بدرجة متوسطة. ${g('كله', 'كليه')} مع بروتين أو سلطة عشان يبطأ الامتصاص.`, 'Raises blood sugar moderately. Eat it with protein or salad to slow it down.') });
+    else if (f.gi === 'low' && f.c > 5) out.push({ level: 'good', text: L('مناسب للسكر ومقاومة الإنسولين، بيرفع السكر ببطء.', 'Good for diabetes and insulin resistance: raises blood sugar slowly.') });
+    if (t.has('sweetener')) out.push({ level: 'ok', text: L('من غير سكر وده أحسن، بس المحليات بتزود الرغبة في الحلو. المياه أحسن.', 'Sugar-free is better, but sweeteners feed sweet cravings. Water is best.') });
   }
-  if (has('steroids') && (t.has('salty') || t.has('sugary') || t.has('soda'))) out.push({ level: 'warn', text: 'مع الكورتيزون قللي الملح والسكر عشان الضغط والسكر والمياه في الجسم.' });
-  if (has('thyroxine') && t.has('caffeine')) out.push({ level: 'ok', text: `القهوة والشاي بعد دوا الغدة بساعة على الأقل.` });
-  if (!auto.length && !sugar && (t.has('soda') || t.has('sugary'))) out.push({ level: 'warn', text: 'سكر كتير وقيمة غذائية قليلة.' });
-  if (f.p >= 20 && !out.some((x) => x.level === 'bad')) out.push({ level: 'good', text: 'مصدر بروتين كويس.' });
+  if (has('steroids') && (t.has('salty') || t.has('sugary') || t.has('soda'))) out.push({ level: 'warn', text: L('مع الكورتيزون قللي الملح والسكر عشان الضغط والسكر والمياه في الجسم.', 'On steroids, cut back on salt and sugar for your blood pressure, blood sugar and water retention.'), salt: true });
+  if (has('thyroxine') && t.has('caffeine')) out.push({ level: 'ok', text: L(`القهوة والشاي بعد دوا الغدة بساعة على الأقل.`, 'Coffee and tea at least an hour after your thyroid medicine.') });
+  if (!auto.length && !sugar && (t.has('soda') || t.has('sugary'))) out.push({ level: 'warn', text: L('سكر كتير وقيمة غذائية قليلة.', 'Lots of sugar, little nutrition.') });
+  if (f.p >= 20 && !out.some((x) => x.level === 'bad')) out.push({ level: 'good', text: L('مصدر بروتين كويس.', 'A good source of protein.') });
   return out;
 }
 
 /** Health notes for one food and this person (conditions, meds, blood sugar), without the calorie budget. */
-export const healthNotes = judge;
+export const healthNotes = (p: Profile, f: Food): { level: Level; text: string }[] => judge(p, f).map(({ level, text }) => ({ level, text }));
 
 type Macros = { kcal: number; p: number; c: number; f: number };
 type Limits = { kcal: number; protein: number; carbs: number; fat: number };
@@ -87,21 +94,20 @@ export function itemAlerts(p: Profile, f: Food, q: number, before: Macros, T: Li
   const g = genderFor(p.sex);
   const out = judge(p, f).filter((n) => n.level === 'warn' || n.level === 'bad');
   const t = new Set(f.tags ?? []);
-  if (t.has('salty') && !out.some((n) => n.text.includes('ملح'))) out.push({ level: 'warn', text: 'فيها ملح كتير، وده بيحبس المياه في الجسم ويرفع الضغط.' });
+  if (t.has('salty') && !out.some((n) => n.salt)) out.push({ level: 'warn', text: L('فيها ملح كتير، وده بيحبس المياه في الجسم ويرفع الضغط.', 'Very salty: it makes your body hold water and raises blood pressure.') });
   const fat = f.f * q, carbs = f.c * q, kcal = f.kcal * q;
   const pct = (a: number, b: number) => Math.round((a / Math.max(b, 1)) * 100);
   const after = { kcal: before.kcal + kcal, c: before.c + carbs, f: before.f + fat };
-  const crossed = (name: string, was: number, now: number, lim: number, unit: string) =>
-    was <= lim && now > lim ? { level: 'bad' as Level, text: `مع دي ${g('عديت', 'عديتي')} المسموح ${g('ليك', 'ليكي')} من ${name} النهارده (${Math.round(now)} من ${lim}${unit}).` } : null;
-  const over = [
-    crossed('السعرات', before.kcal, after.kcal, T.kcal, ' سعرة'),
-    crossed('الدهون', before.f, after.f, T.fat, ' جم'),
-    crossed('الكارب', before.c, after.c, T.carbs, ' جم'),
-  ].filter((x): x is { level: Level; text: string } => !!x);
+  const crossed = (name: string, nameEn: string, was: number, now: number, lim: number, unit: string, unitEn: string) =>
+    was <= lim && now > lim ? { level: 'bad' as Level, text: L(`مع دي ${g('عديت', 'عديتي')} المسموح ${g('ليك', 'ليكي')} من ${name} النهارده (${Math.round(now)} من ${lim}${unit}).`, `This takes you past today's ${nameEn} limit (${num(Math.round(now))} of ${num(lim)}${unitEn}).`) } : null;
+  const overFat = crossed('الدهون', 'fat', before.f, after.f, T.fat, ' جم', ' g');
+  const overCarbs = crossed('الكارب', 'carb', before.c, after.c, T.carbs, ' جم', ' g');
+  const over = [crossed('السعرات', 'calorie', before.kcal, after.kcal, T.kcal, ' سعرة', ' kcal'), overFat, overCarbs]
+    .filter((x): x is { level: Level; text: string } => !!x);
   out.push(...over);
-  if (!over.some((n) => n.text.includes('الدهون')) && fat >= T.fat * 0.4) out.push({ level: 'warn', text: `فيها دهون كتير: ${Math.round(fat)} جم، يعني ${pct(fat, T.fat)}٪ من المسموح في اليوم.` });
-  if (!over.some((n) => n.text.includes('الكارب')) && carbs >= T.carbs * 0.45) out.push({ level: 'warn', text: `فيها كارب كتير: ${Math.round(carbs)} جم، يعني ${pct(carbs, T.carbs)}٪ من المسموح في اليوم.` });
-  return out.sort((a, b) => RANK[b.level] - RANK[a.level]);
+  if (!overFat && fat >= T.fat * 0.4) out.push({ level: 'warn', text: L(`فيها دهون كتير: ${Math.round(fat)} جم، يعني ${pct(fat, T.fat)}٪ من المسموح في اليوم.`, `High in fat: ${num(Math.round(fat))} g, ${num(pct(fat, T.fat))}% of your daily allowance.`) });
+  if (!overCarbs && carbs >= T.carbs * 0.45) out.push({ level: 'warn', text: L(`فيها كارب كتير: ${Math.round(carbs)} جم، يعني ${pct(carbs, T.carbs)}٪ من المسموح في اليوم.`, `High in carbs: ${num(Math.round(carbs))} g, ${num(pct(carbs, T.carbs))}% of your daily allowance.`) });
+  return out.map(({ level, text }) => ({ level, text })).sort((a, b) => RANK[b.level] - RANK[a.level]);
 }
 
 const worst = (notes: { level: Level }[]): Level => notes.reduce<Level>((a, n) => (RANK[n.level] > RANK[a] ? n.level : a), notes.length ? 'good' : 'ok');
@@ -109,9 +115,9 @@ const worst = (notes: { level: Level }[]): Level => notes.reduce<Level>((a, n) =
 /** Verdict for adding one portion now, with better swaps when it doesn't fit. */
 export function foodAdvice(p: Profile, f: Food, remaining: number, pool: Food[] = FOODS): Advice {
   const g = genderFor(p.sex);
-  const notes = judge(p, f);
+  const notes: { level: Level; text: string }[] = healthNotes(p, f);
   if (f.kcal > remaining) {
-    notes.push({ level: 'warn', text: remaining > 0 ? `هتعدي هدف النهارده بـ ${Math.round(f.kcal - remaining)} سعرة.` : `${g('خلصت', 'خلصتي')} سعرات النهارده، فأي زيادة هتعدي الهدف.` });
+    notes.push({ level: 'warn', text: remaining > 0 ? L(`هتعدي هدف النهارده بـ ${Math.round(f.kcal - remaining)} سعرة.`, `This puts you ${num(Math.round(f.kcal - remaining))} kcal over today's target.`) : L(`${g('خلصت', 'خلصتي')} سعرات النهارده، فأي زيادة هتعدي الهدف.`, "You've used up today's calories, so anything more goes over the target.") });
   }
   const level = worst(notes);
   const swaps = RANK[level] >= RANK.warn ? findSwaps(p, f, pool) : [];
@@ -204,7 +210,7 @@ export type Unknown = { text: string; q: number; grams?: number };
 const GRAM_WORDS = new Set(['جم', 'جرام', 'جرامات', 'g', 'gm', 'مل']);
 /** Grams in one portion from its text, e.g. "طبق ٢٠٠ جم" → 200. */
 export function portionGrams(u: string): number | null {
-  const m = norm(u).match(/(\d+(?:\.\d+)?)\s*(جم|مل|جرام)/);
+  const m = norm(u).match(/(\d+(?:\.\d+)?)\s*(جم|مل|جرام|g\b|ml\b)/);
   return m ? parseFloat(m[1]) : null;
 }
 

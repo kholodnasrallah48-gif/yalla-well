@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, Card, T, styles } from '../components/ui.tsx';
 import { dayKey, fmt, type DayLog } from '../lib/day.ts';
 import { FOODS } from '../lib/foods.ts';
+import { L, tx } from '../lib/i18n.ts';
 import { genderFor, targets } from '../lib/plan.ts';
 import { dayName, reportHTML, shortDate, weekKeys, weekReport, weekStart } from '../lib/report.ts';
 import { useStore } from '../store/AppStore.tsx';
@@ -43,34 +44,34 @@ export default function Report() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }}>
       <View style={styles.rowBetween}>
-        <T kind="h1">تقرير الأسبوع</T>
-        <Btn kind="outline" title="رجوع" onPress={() => router.back()} />
+        <T kind="h1">{L('تقرير الأسبوع', 'Weekly report')}</T>
+        <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => router.back()} />
       </View>
       <View style={[styles.row, { gap: 10 }]}>
-        <Arrow label="اللي قبله" onPress={() => setOffset(offset + 1)} />
+        <Arrow label={L('اللي قبله', 'Previous')} onPress={() => setOffset(offset + 1)} />
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <T kind="h3">{offset === 0 ? 'الأسبوع ده' : offset === 1 ? 'الأسبوع اللي فات' : `من ${offset} أسابيع`}</T>
-          <T kind="small">{dayName(start)} {shortDate(start)} لـ الجمعة {shortDate(weekKeys(start)[6])}</T>
+          <T kind="h3">{offset === 0 ? L('الأسبوع ده', 'This week') : offset === 1 ? L('الأسبوع اللي فات', 'Last week') : L(`من ${offset} أسابيع`, `${offset} weeks ago`)}</T>
+          <T kind="small">{dayName(start)} {shortDate(start)} {L('لـ الجمعة', 'to Friday')} {shortDate(weekKeys(start)[6])}</T>
         </View>
-        <Arrow label="اللي بعده" onPress={() => setOffset(offset - 1)} disabled={offset === 0} />
+        <Arrow label={L('اللي بعده', 'Next')} onPress={() => setOffset(offset - 1)} disabled={offset === 0} />
       </View>
 
       {!r ? <ActivityIndicator color={c.petrol} /> : (
         <>
           <Card>
-            <T kind="h2" color={c.ok}>{g('حققت', 'حققتي')}</T>
+            <T kind="h2" color={c.ok}>{L(g('حققت', 'حققتي'), 'Wins')}</T>
             {r.wins.length ? r.wins.map((w, i) => (
               <View key={i} style={{ backgroundColor: c.okBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}><T kind="small" color={c.ok}>✓ {w}</T></View>
-            )) : <T kind="small">لسه مفيش حاجة {g('سجلتها', 'سجلتيها')} الأسبوع ده.</T>}
+            )) : <T kind="small">{L(`لسه مفيش حاجة ${g('سجلتها', 'سجلتيها')} الأسبوع ده.`, "You haven't logged anything this week yet.")}</T>}
           </Card>
           <Card>
-            <T kind="h2" color={c.bad}>محتاج يتحسن</T>
+            <T kind="h2" color={c.bad}>{L('محتاج يتحسن', 'Needs work')}</T>
             {r.misses.length ? r.misses.map((m, i) => (
               <View key={i} style={{ backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}><T kind="small" color={c.bad}>✗ {m}</T></View>
-            )) : <T kind="small">ولا حاجة، أسبوع ممتاز.</T>}
+            )) : <T kind="small">{L('ولا حاجة، أسبوع ممتاز.', 'Nothing, great week.')}</T>}
           </Card>
           <Card>
-            <T kind="h2">كل يوم</T>
+            <T kind="h2">{L('كل يوم', 'Day by day')}</T>
             {r.days.map((d, i) => (
               <View key={d.key} style={[styles.row, { gap: 8, paddingVertical: 7, borderBottomWidth: i < 6 ? 1 : 0, borderColor: c.line, opacity: d.future ? 0.45 : 1 }]}>
                 <View style={{ width: 82 }}>
@@ -78,22 +79,22 @@ export default function Report() {
                   <T kind="small">{shortDate(d.date)}</T>
                 </View>
                 <View style={{ flex: 1 }}>
-                  {d.future ? <T kind="small">لسه</T> : d.logged ? (
+                  {d.future ? <T kind="small">{L('لسه', 'Not yet')}</T> : d.logged ? (
                     <T kind="small" color={d.kcal > T0.kcal * 1.05 || d.f > T0.fat ? c.bad : undefined}>
-                      {fmt(d.kcal)} سعرة · ب {fmt(d.p)} · د {fmt(d.f)} جم
+                      {L(`${fmt(d.kcal)} سعرة · ب ${fmt(d.p)} · د ${fmt(d.f)} جم`, `${fmt(d.kcal)} kcal · P ${fmt(d.p)} · F ${fmt(d.f)} g`)}
                     </T>
-                  ) : <T kind="small" color={c.warn}>مفيش أكل متسجل</T>}
+                  ) : <T kind="small" color={c.warn}>{L('مفيش أكل متسجل', 'No food logged')}</T>}
                   {d.future ? null : (
                     <T kind="small">
-                      مياه {d.water}/{T0.waterCups} · {d.workout ? `${d.workout.done >= Math.ceil(d.workout.of / 2) ? '✓' : '✗'} ${d.workout.name}` : 'راحة'}
+                      {L('مياه', 'Water')} {d.water}/{T0.waterCups} · {d.workout ? `${d.workout.done >= Math.ceil(d.workout.of / 2) ? '✓' : '✗'} ${tx(d.workout.name)}` : L('راحة', 'Rest')}
                     </T>
                   )}
                 </View>
               </View>
             ))}
           </Card>
-          <Btn title={g('اطبع أو شارك التقرير', 'اطبعي أو شاركي التقرير')} onPress={print} />
-          <T kind="small">بيفتح صفحة الطباعة في الموبايل، ومنها {g('تقدر', 'تقدري')} {g('تحفظه', 'تحفظيه')} PDF أو {g('تبعته', 'تبعتيه')} لحد.</T>
+          <Btn title={L(g('اطبع أو شارك التقرير', 'اطبعي أو شاركي التقرير'), 'Print or share the report')} onPress={print} />
+          <T kind="small">{L(`بيفتح صفحة الطباعة في الموبايل، ومنها ${g('تقدر', 'تقدري')} ${g('تحفظه', 'تحفظيه')} PDF أو ${g('تبعته', 'تبعتيه')} لحد.`, 'This opens the print screen on your phone, where you can save it as a PDF or send it to someone.')}</T>
         </>
       )}
     </ScrollView>

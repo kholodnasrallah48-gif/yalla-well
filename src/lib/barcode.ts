@@ -1,5 +1,6 @@
 // Product lookup by barcode from Open Food Facts (free, no key), mapped onto our Food shape.
 import type { Food, FoodTag, GI } from './foods.ts';
+import { L } from './i18n.ts';
 
 type OFFProduct = {
   product_name?: string; product_name_ar?: string; brands?: string; serving_size?: string; serving_quantity?: number | string;
@@ -14,7 +15,7 @@ export function fromOFF(code: string, p: OFFProduct): Food | null {
   if (kcal100 == null) return null;
   const serving = Number(p.serving_quantity) || 0;
   const k = serving > 0 ? serving / 100 : 1;
-  const name = (p.product_name_ar || p.product_name || 'منتج').trim();
+  const name = (p.product_name_ar || p.product_name || L('منتج', 'Product')).trim();
   const cats = (p.categories_tags ?? []).join(' ');
   const sugar = n['sugars_100g'] ?? 0;
   const tags: FoodTag[] = [];
@@ -29,7 +30,7 @@ export function fromOFF(code: string, p: OFFProduct): Food | null {
   const r = (v: number | undefined) => Math.round((v ?? 0) * k * 10) / 10;
   return {
     id: 'bc' + code, cat: 'أكلاتي', n: p.brands ? `${name} (${p.brands.split(',')[0]})` : name,
-    u: serving > 0 ? `حصة ${p.serving_size ?? serving + ' جم'}` : '١٠٠ جم/مل',
+    u: serving > 0 ? L(`حصة ${p.serving_size ?? serving + ' جم'}`, `serving ${p.serving_size ?? serving + ' g'}`) : L('١٠٠ جم/مل', '100 g/ml'),
     kcal: Math.round(kcal100 * k), p: r(n['proteins_100g']), c: r(carbs), f: r(n['fat_100g']), gi, tags,
   };
 }

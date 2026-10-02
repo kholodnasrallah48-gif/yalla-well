@@ -8,13 +8,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, Card, NoteView, T, styles } from '../../components/ui.tsx';
 import { weekIndex } from '../../lib/day.ts';
 import { MEDIA } from '../../lib/exercise-media.ts';
+import { L, num, tx } from '../../lib/i18n.ts';
 import { genderFor, sessionFor } from '../../lib/plan.ts';
 import { programWeek, stepFor, suggestWeight } from '../../lib/progress.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
 const IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
-const ar = (n: number) => n.toLocaleString('ar-EG');
+const ar = (n: number) => num(n);
 
 function Stepper({ label, value, step, onChange }: { label: string; value: number; step: number; onChange: (v: number) => void }) {
   const c = useColors();
@@ -23,11 +24,11 @@ function Stepper({ label, value, step, onChange }: { label: string; value: numbe
     <View style={{ flex: 1, gap: 4, alignItems: 'center' }}>
       <T kind="label">{label}</T>
       <View style={[styles.row, { gap: 8 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`أقل ${label}`} onPress={() => onChange(Math.max(0, +(value - step).toFixed(1)))} style={btn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={L(`أقل ${label}`, `Less ${label}`)} onPress={() => onChange(Math.max(0, +(value - step).toFixed(1)))} style={btn}>
           <Text style={{ fontSize: 22, color: c.petrol, fontFamily: fonts.display }}>−</Text>
         </Pressable>
         <Text style={{ minWidth: 48, textAlign: 'center', fontFamily: fonts.display, fontSize: 24, color: c.ink, fontVariant: ['tabular-nums'] }}>{value}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={`أكتر ${label}`} onPress={() => onChange(+(value + step).toFixed(1))} style={btn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={L(`أكتر ${label}`, `More ${label}`)} onPress={() => onChange(+(value + step).toFixed(1))} style={btn}>
           <Text style={{ fontSize: 22, color: c.petrol, fontFamily: fonts.display }}>+</Text>
         </Pressable>
       </View>
@@ -67,7 +68,7 @@ export default function ExerciseScreen() {
   }, [rest]);
 
   if (!profile || !item || !ses) {
-    return <View style={{ flex: 1, backgroundColor: c.bg, padding: 24, paddingTop: insets.top + 24 }}><T kind="h2">التمرين ده مش في خطة اليوم ده.</T><Btn kind="outline" title="رجوع" onPress={() => router.back()} /></View>;
+    return <View style={{ flex: 1, backgroundColor: c.bg, padding: 24, paddingTop: insets.top + 24 }}><T kind="h2">{L('التمرين ده مش في خطة اليوم ده.', "This exercise isn't in this day's plan.")}</T><Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => router.back()} /></View>;
   }
   const g = genderFor(profile.sex);
   const strength = item.sets > 0 && item.ex.k === 'str';
@@ -82,35 +83,35 @@ export default function ExerciseScreen() {
     updateDay((d) => ({ ...d, done: d.done.includes(id) ? d.done : [...d.done, id] }));
     router.back();
   };
-  const video = () => WebBrowser.openBrowserAsync(`https://www.youtube.com/results?search_query=${encodeURIComponent((media?.en ?? item.ex.n) + ' proper form')}`, {
+  const video = () => WebBrowser.openBrowserAsync(`https://www.youtube.com/results?search_query=${encodeURIComponent((media?.en ?? tx(item.ex.n)) + ' proper form')}`, {
     presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET, controlsColor: c.petrol,
   });
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 32, gap: 12 }}>
       <View style={styles.rowBetween}>
-        <T kind="h1" style={{ flexShrink: 1 }}>{item.ex.n}</T>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="قفل" hitSlop={10}>
+        <T kind="h1" style={{ flexShrink: 1 }}>{tx(item.ex.n)}</T>
+        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={L('قفل', 'Close')} hitSlop={10}>
           <Text style={{ fontSize: 26, color: c.muted }}>×</Text>
         </Pressable>
       </View>
       <T kind="small">{item.rx}</T>
-      {item.why ? <T kind="label" color={c.warn}>اتبدل: {item.why}</T> : null}
+      {item.why ? <T kind="label" color={c.warn}>{L('اتبدل: ', 'Swapped: ')}{item.why}</T> : null}
 
       {media?.img.length ? (
         <View style={{ borderRadius: 18, overflow: 'hidden', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: c.line }}>
-          <Image source={{ uri: IMG + media.img[frame % media.img.length] }} style={{ width: '100%', aspectRatio: 4 / 3 }} resizeMode="contain" accessibilityLabel={`صورة توضيحية لـ ${item.ex.n}`} />
+          <Image source={{ uri: IMG + media.img[frame % media.img.length] }} style={{ width: '100%', aspectRatio: 4 / 3 }} resizeMode="contain" accessibilityLabel={L(`صورة توضيحية لـ ${item.ex.n}`, `How-to picture of ${tx(item.ex.n)}`)} />
         </View>
       ) : null}
-      <Btn kind="secondary" title="▶  فيديو يشرح الحركة" onPress={video} />
+      <Btn kind="secondary" title={L('▶  فيديو يشرح الحركة', '▶  Video showing the move')} onPress={video} />
 
       {media?.cues.length ? (
         <Card>
-          <T kind="h2">خلي بالك من</T>
+          <T kind="h2">{L('خلي بالك من', 'Watch your form')}</T>
           {media.cues.map((cue, i) => (
             <View key={i} style={[styles.row, { gap: 8, alignItems: 'flex-start' }]}>
               <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.lime, marginTop: 9 }} />
-              <T kind="body" style={{ flex: 1 }}>{cue}</T>
+              <T kind="body" style={{ flex: 1 }}>{tx(cue)}</T>
             </View>
           ))}
         </Card>
@@ -119,37 +120,37 @@ export default function ExerciseScreen() {
       {strength && isToday ? (
         <Card>
           <View style={styles.rowBetween}>
-            <T kind="h2">العداد</T>
-            <T kind="small">{ar(sets.length)} من {ar(item.sets)} مجموعات</T>
+            <T kind="h2">{L('العداد', 'Set tracker')}</T>
+            <T kind="small">{L(`${ar(sets.length)} من ${ar(item.sets)} مجموعات`, `${ar(sets.length)} of ${ar(item.sets)} sets`)}</T>
           </View>
           {suggested != null ? (
-            <NoteView note={{ tone: 'info', title: `الوزن المقترح: ${suggested} كجم`, text: last ? `آخر مرة ${last.w} كجم × ${last.reps.join('، ')}. ${ses.phase.n}.` : ses.phase.n }} />
+            <NoteView note={{ tone: 'info', title: L(`الوزن المقترح: ${suggested} كجم`, `Suggested weight: ${suggested} kg`), text: last ? L(`آخر مرة ${last.w} كجم × ${last.reps.join('، ')}. ${ses.phase.n}.`, `Last time ${last.w} kg × ${last.reps.join(', ')}. ${tx(ses.phase.n)}.`) : tx(ses.phase.n) }} />
           ) : (
-            <T kind="small">أول مرة؟ {g('ابدأ', 'ابدأي')} بوزن {g('تقدر', 'تقدري')} تعمل{g('', 'ي')} بيه {ar(item.reps[1])} عدة بحركة نضيفة.</T>
+            <T kind="small">{L(`أول مرة؟ ${g('ابدأ', 'ابدأي')} بوزن ${g('تقدر', 'تقدري')} تعمل${g('', 'ي')} بيه ${ar(item.reps[1])} عدة بحركة نضيفة.`, `First time? Start with a weight you can lift ${ar(item.reps[1])} times with clean form.`)}</T>
           )}
           <View style={[styles.row, { gap: 8 }]}>
-            <Stepper label="الوزن (كجم)" value={w} step={stepFor(id)} onChange={setW} />
-            <Stepper label="العدات" value={r} step={1} onChange={setR} />
+            <Stepper label={L('الوزن (كجم)', 'Weight (kg)')} value={w} step={stepFor(id)} onChange={setW} />
+            <Stepper label={L('العدات', 'Reps')} value={r} step={1} onChange={setR} />
           </View>
           {rest > 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 8, borderRadius: 14, backgroundColor: c.soft }}>
-              <T kind="label">راحة</T>
+              <T kind="label">{L('راحة', 'Rest')}</T>
               <Text style={{ fontFamily: fonts.display, fontSize: 36, color: c.petrol, fontVariant: ['tabular-nums'] }}>{Math.floor(rest / 60)}:{String(rest % 60).padStart(2, '0')}</Text>
-              <Btn kind="text" title="تخطي الراحة" onPress={() => setRest(0)} />
+              <Btn kind="text" title={L('تخطي الراحة', 'Skip rest')} onPress={() => setRest(0)} />
             </View>
           ) : null}
           {sets.map((s, i) => (
             <View key={i} style={[styles.rowBetween, { paddingVertical: 4 }]}>
-              <T kind="body">مجموعة {ar(i + 1)}</T>
-              <T kind="body" style={{ fontVariant: ['tabular-nums'] }}>{s.w} كجم × {s.r}</T>
+              <T kind="body">{L(`مجموعة ${ar(i + 1)}`, `Set ${ar(i + 1)}`)}</T>
+              <T kind="body" style={{ fontVariant: ['tabular-nums'] }}>{s.w} {L('كجم', 'kg')} × {s.r}</T>
             </View>
           ))}
-          {!done ? <Btn title={`سجّل${g('', 'ي')} مجموعة ${ar(sets.length + 1)}`} onPress={logSet} /> : null}
-          {sets.length ? <Btn kind="text" title="امسح آخر مجموعة" onPress={() => updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: (d.sets[id] ?? []).slice(0, -1) } }))} /> : null}
+          {!done ? <Btn title={L(`سجّل${g('', 'ي')} مجموعة ${ar(sets.length + 1)}`, `Log set ${ar(sets.length + 1)}`)} onPress={logSet} /> : null}
+          {sets.length ? <Btn kind="text" title={L('امسح آخر مجموعة', 'Delete last set')} onPress={() => updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: (d.sets[id] ?? []).slice(0, -1) } }))} /> : null}
         </Card>
       ) : null}
 
-      {isToday ? <Btn kind={done || !strength ? 'primary' : 'outline'} title="خلصت التمرين ده" onPress={finish} /> : null}
+      {isToday ? <Btn kind={done || !strength ? 'primary' : 'outline'} title={L('خلصت التمرين ده', 'Done with this exercise')} onPress={finish} /> : null}
     </ScrollView>
   );
 }

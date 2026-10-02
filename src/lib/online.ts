@@ -2,6 +2,7 @@
 // searched in English through a small Arabic→English food dictionary, plus Open Food Facts (packaged products).
 import { AR_EN, SKIP } from './food-words.ts';
 import { norm, type Food, type FoodTag, type GI } from './foods.ts';
+import { L } from './i18n.ts';
 
 // Free key from api.data.gov, injected at publish time from the repo secret USDA_KEY.
 // Without it DEMO_KEY works but allows only a few searches an hour per network.
@@ -97,7 +98,7 @@ export function toFood(o: OnlineFood, grams: number, label?: string): Food {
   const carbs = o.per100.c;
   const gi: GI = carbs < 5 ? 'none' : sugar >= 15 || (carbs > 50 && fiber < 3) ? 'high' : sugar >= 6 || (carbs > 30 && fiber < 2) ? 'mid' : 'low';
   return {
-    id: `${o.id}_${Math.round(grams)}`, cat: 'أكلاتي', n: label?.trim() || o.name, u: `${Math.round(grams)} جم`,
+    id: `${o.id}_${Math.round(grams)}`, cat: 'أكلاتي', n: label?.trim() || o.name, u: L(`${Math.round(grams)} جم`, `${Math.round(grams)} g`),
     kcal: Math.round(o.per100.kcal * k), p: r(o.per100.p), c: r(carbs), f: r(o.per100.f), gi, tags: o.tags,
   };
 }

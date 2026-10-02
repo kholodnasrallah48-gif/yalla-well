@@ -1,5 +1,6 @@
 // Calorie targets, medical adjustments and weekly training sessions, derived from the profile.
 import { EXERCISES, PAINS, SCHEDULES, SESSIONS, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
+import { L, num, tx } from './i18n.ts';
 import { phaseFor, variantFor, type Phase } from './progress.ts';
 
 export type Sex = 'f' | 'm';
@@ -57,79 +58,79 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
   const food: Note[] = [];
   const train: Note[] = [];
   const mod: Modifiers = {
-    lowImpact: false, machines: false, rpe: '٧ من ١٠', deficit: 0.2, proteinPerKg: null,
+    lowImpact: false, machines: false, rpe: L('٧ من ١٠', '7 of 10'), deficit: 0.2, proteinPerKg: null,
     glutenFree: false, shortSessions: false, anyCondition: p.conditions.length > 0 || !!p.otherCond,
   };
 
   if (has('steroids')) {
     mod.proteinPerKg = 2.0;
-    food.push({ tone: 'warn', title: 'الكورتيزون', text: `بروتين أعلى عشان العضل، و${g('قلل', 'قللي')} الملح والسكريات البسيطة. ${g('اسأل', 'اسألي')} دكتورك عن الكالسيوم وفيتامين د.` });
-    train.push({ tone: 'info', title: 'الكورتيزون', text: `تمارين المقاومة مهمة لحماية العضم والعضل، ${g('فمتسيبهاش', 'فمتسبيهاش')}.` });
+    food.push({ tone: 'warn', title: L('الكورتيزون', 'Steroids'), text: L(`بروتين أعلى عشان العضل، و${g('قلل', 'قللي')} الملح والسكريات البسيطة. ${g('اسأل', 'اسألي')} دكتورك عن الكالسيوم وفيتامين د.`, 'More protein to protect your muscles, and less salt and simple sugars. Ask your doctor about calcium and vitamin D.') });
+    train.push({ tone: 'info', title: L('الكورتيزون', 'Steroids'), text: L(`تمارين المقاومة مهمة لحماية العضم والعضل، ${g('فمتسيبهاش', 'فمتسبيهاش')}.`, "Strength training protects your bones and muscles, so don't skip it.") });
   }
   if (has('thyroxine')) {
-    food.push({ tone: 'info', title: 'دوا الغدة', text: `${g('خده', 'خديه')} على معدة فاضية قبل الفطار بنص ساعة لساعة. الكالسيوم والحديد بعده بـ٤ ساعات، والقهوة بعده بساعة على الأقل.` });
+    food.push({ tone: 'info', title: L('دوا الغدة', 'Thyroid medicine'), text: L(`${g('خده', 'خديه')} على معدة فاضية قبل الفطار بنص ساعة لساعة. الكالسيوم والحديد بعده بـ٤ ساعات، والقهوة بعده بساعة على الأقل.`, 'Take it on an empty stomach 30–60 minutes before breakfast. Calcium and iron 4 hours after it, and coffee at least an hour after.') });
   }
   if (has('hashimoto')) {
     mod.deficit = Math.min(mod.deficit, 0.15);
-    food.push({ tone: 'info', title: 'هاشيموتو', text: `العجز في السعرات محدود (١٥٪ بس) عشان ${g('متتعبش', 'متتعبيش')} وطاقتك تفضل كويسة.` });
-    train.push({ tone: 'info', title: 'هاشيموتو', text: `الشدة متوسطة والراحة كافية بين الجولات. لو ${g('تعبان', 'تعبانة')} ${g('استخدم', 'استخدمي')} يوم التعافي.` });
+    food.push({ tone: 'info', title: L('هاشيموتو', "Hashimoto's"), text: L(`العجز في السعرات محدود (١٥٪ بس) عشان ${g('متتعبش', 'متتعبيش')} وطاقتك تفضل كويسة.`, 'The calorie deficit is capped at 15% so you stay well and keep your energy up.') });
+    train.push({ tone: 'info', title: L('هاشيموتو', "Hashimoto's"), text: L(`الشدة متوسطة والراحة كافية بين الجولات. لو ${g('تعبان', 'تعبانة')} ${g('استخدم', 'استخدمي')} يوم التعافي.`, "Moderate intensity with enough rest between rounds. If you're tired, use the recovery day.") });
   }
   if (has('graves')) {
-    mod.deficit = 0; mod.lowImpact = true; mod.rpe = '٦ من ١٠';
-    food.push({ tone: 'bad', title: 'جريفز', text: 'مش هنعمل عجز سعرات لحد ما الغدة تتظبط مع دكتورك، لأن فرط النشاط بيحرق عضل.' });
-    train.push({ tone: 'bad', title: 'جريفز', text: 'بلاش تمارين عالية الشدة لحد ما النبض والغدة يتظبطوا. خلي الشدة خفيفة لمتوسطة.' });
+    mod.deficit = 0; mod.lowImpact = true; mod.rpe = L('٦ من ١٠', '6 of 10');
+    food.push({ tone: 'bad', title: L('جريفز', "Graves'"), text: L('مش هنعمل عجز سعرات لحد ما الغدة تتظبط مع دكتورك، لأن فرط النشاط بيحرق عضل.', 'No calorie deficit until your doctor gets your thyroid under control, because an overactive thyroid burns muscle.') });
+    train.push({ tone: 'bad', title: L('جريفز', "Graves'"), text: L('بلاش تمارين عالية الشدة لحد ما النبض والغدة يتظبطوا. خلي الشدة خفيفة لمتوسطة.', 'No high-intensity training until your heart rate and thyroid are under control. Keep it light to moderate.') });
   }
   if (has('ra') || has('psoriasis')) {
     mod.lowImpact = true; mod.machines = true;
-    train.push({ tone: 'warn', title: 'المفاصل', text: `التمارين منخفضة التأثير ومعظمها على الماكينات. ${g('سخّن', 'سخّني')} ١٠ دقايق قبل التمرين، وفي أيام الالتهاب ${g('خفف', 'خففي')} الأوزان.` });
-    food.push({ tone: 'info', title: 'المفاصل', text: 'السمك (مرتين في الأسبوع) وزيت الزيتون والخضار مفيدين للالتهاب.' });
+    train.push({ tone: 'warn', title: L('المفاصل', 'Joints'), text: L(`التمارين منخفضة التأثير ومعظمها على الماكينات. ${g('سخّن', 'سخّني')} ١٠ دقايق قبل التمرين، وفي أيام الالتهاب ${g('خفف', 'خففي')} الأوزان.`, 'Low-impact exercises, mostly on machines. Warm up for 10 minutes first, and go lighter on flare days.') });
+    food.push({ tone: 'info', title: L('المفاصل', 'Joints'), text: L('السمك (مرتين في الأسبوع) وزيت الزيتون والخضار مفيدين للالتهاب.', 'Fish (twice a week), olive oil and vegetables help with inflammation.') });
   }
   if (has('lupus')) {
-    mod.lowImpact = true; mod.rpe = '٦-٧ من ١٠';
-    train.push({ tone: 'warn', title: 'لوبس', text: `الشدة متوسطة ومن غير قفز. لو هتمشي برا، امشي بدري أو بالليل بعيد عن الشمس.` });
+    mod.lowImpact = true; mod.rpe = L('٦-٧ من ١٠', '6-7 of 10');
+    train.push({ tone: 'warn', title: L('لوبس', 'Lupus'), text: L(`الشدة متوسطة ومن غير قفز. لو هتمشي برا، امشي بدري أو بالليل بعيد عن الشمس.`, 'Moderate intensity, no jumping. If you walk outside, go early or in the evening, away from the sun.') });
   }
   if (has('t1d') || has('insulin')) {
-    train.push({ tone: 'bad', title: 'السكر', text: `${g('قيس', 'قيسي')} السكر قبل التمرين. لو أقل من ١٠٠ ${g('كل', 'كلي')} ١٥-٢٠ جرام كارب الأول، وخلي ${g('معاك', 'معاكي')} حاجة مسكرة. تمارين المقاومة قبل الكارديو بتقلل الهبوط.` });
-    food.push({ tone: 'warn', title: 'السكر', text: `خلي كمية الكارب في كل وجبة ثابتة على قد ما ${g('تقدر', 'تقدري')} عشان جرعات الإنسولين.` });
+    train.push({ tone: 'bad', title: L('السكر', 'Diabetes'), text: L(`${g('قيس', 'قيسي')} السكر قبل التمرين. لو أقل من ١٠٠ ${g('كل', 'كلي')} ١٥-٢٠ جرام كارب الأول، وخلي ${g('معاك', 'معاكي')} حاجة مسكرة. تمارين المقاومة قبل الكارديو بتقلل الهبوط.`, 'Check your blood sugar before training. If it is under 100, eat 15-20 g of carbs first, and keep something sweet with you. Strength work before cardio lowers the risk of a drop.') });
+    food.push({ tone: 'warn', title: L('السكر', 'Diabetes'), text: L(`خلي كمية الكارب في كل وجبة ثابتة على قد ما ${g('تقدر', 'تقدري')} عشان جرعات الإنسولين.`, 'Keep the carbs in each meal as steady as you can, to match your insulin doses.') });
   }
   if (has('celiac')) {
     mod.glutenFree = true;
-    food.push({ tone: 'bad', title: 'سيلياك', text: 'هنعلّم على الأكلات اللي فيها قمح أو جلوتين في قائمة الأكل.' });
+    food.push({ tone: 'bad', title: L('سيلياك', 'Celiac'), text: L('هنعلّم على الأكلات اللي فيها قمح أو جلوتين في قائمة الأكل.', 'Foods with wheat or gluten are marked in the food list.') });
   }
   if (has('ms')) {
-    mod.shortSessions = true; mod.rpe = '٦ من ١٠';
-    train.push({ tone: 'warn', title: 'MS', text: `التمرين أقصر ومكان التمرين يكون بارد. ${g('اشرب', 'اشربي')} مياه ساقعة و${g('خد', 'خدي')} راحة أطول، و${g('وقف', 'وقفي')} لو ${g('حسيت', 'حسيتي')} بحرارة زيادة.` });
+    mod.shortSessions = true; mod.rpe = L('٦ من ١٠', '6 of 10');
+    train.push({ tone: 'warn', title: 'MS', text: L(`التمرين أقصر ومكان التمرين يكون بارد. ${g('اشرب', 'اشربي')} مياه ساقعة و${g('خد', 'خدي')} راحة أطول، و${g('وقف', 'وقفي')} لو ${g('حسيت', 'حسيتي')} بحرارة زيادة.`, 'Shorter workouts in a cool place. Drink cold water, rest longer, and stop if you feel overheated.') });
   }
   if (has('ibd')) {
-    food.push({ tone: 'info', title: 'القولون', text: `وجبات صغيرة ومياه كتير. في أيام النشاط ${g('قلل', 'قللي')} الألياف الخشنة والمقليات.` });
+    food.push({ tone: 'info', title: L('القولون', 'IBD'), text: L(`وجبات صغيرة ومياه كتير. في أيام النشاط ${g('قلل', 'قللي')} الألياف الخشنة والمقليات.`, 'Small meals and plenty of water. On flare days, cut back on coarse fiber and fried food.') });
   }
   if (has('mtx')) {
-    food.push({ tone: 'warn', title: 'ميثوتركسات', text: 'ممنوع الكحول، وحمض الفوليك حسب كلام دكتورك.' });
-    train.push({ tone: 'info', title: 'ميثوتركسات', text: `لو ${g('بتتعب', 'بتتعبي')} يوم الجرعة أو اليوم اللي بعده، خليه يوم راحة أو يوم تعافي.` });
+    food.push({ tone: 'warn', title: L('ميثوتركسات', 'Methotrexate'), text: L('ممنوع الكحول، وحمض الفوليك حسب كلام دكتورك.', 'No alcohol, and take folic acid as your doctor says.') });
+    train.push({ tone: 'info', title: L('ميثوتركسات', 'Methotrexate'), text: L(`لو ${g('بتتعب', 'بتتعبي')} يوم الجرعة أو اليوم اللي بعده، خليه يوم راحة أو يوم تعافي.`, 'If you feel tired on dose day or the day after, make it a rest or recovery day.') });
   }
   if (has('bio')) {
-    train.push({ tone: 'warn', title: 'المناعة', text: `${g('امسح', 'امسحي')} الأجهزة قبل ما ${g('تستخدمها', 'تستخدميها')} في الجيم، و${g('متتمرنش', 'متتمرنيش')} لو عندك سخونية أو دور برد.` });
+    train.push({ tone: 'warn', title: L('المناعة', 'Immunity'), text: L(`${g('امسح', 'امسحي')} الأجهزة قبل ما ${g('تستخدمها', 'تستخدميها')} في الجيم، و${g('متتمرنش', 'متتمرنيش')} لو عندك سخونية أو دور برد.`, "Wipe gym equipment before you use it, and don't train if you have a fever or a cold.") });
   }
   if (has('hcq')) {
-    train.push({ tone: 'info', title: 'بلاكونيل', text: `لو ${g('بتتمرن', 'بتتمرني')} برا ${g('استخدم', 'استخدمي')} صن بلوك لأن الدوا بيزود الحساسية للشمس.` });
+    train.push({ tone: 'info', title: L('بلاكونيل', 'Plaquenil'), text: L(`لو ${g('بتتمرن', 'بتتمرني')} برا ${g('استخدم', 'استخدمي')} صن بلوك لأن الدوا بيزود الحساسية للشمس.`, 'If you train outdoors, wear sunscreen: the medicine makes you more sensitive to the sun.') });
   }
   if (has('beta')) {
-    train.push({ tone: 'warn', title: 'حاصرات بيتا', text: `النبض هيبقى أقل من الطبيعي، ${g('فاستخدم', 'فاستخدمي')} إحساسك بالمجهود مش ساعة النبض: لازم ${g('تقدر تتكلم', 'تقدري تتكلمي')} وانت ${g('بتتمرن', 'بتتمرني')}.` });
+    train.push({ tone: 'warn', title: L('حاصرات بيتا', 'Beta blockers'), text: L(`النبض هيبقى أقل من الطبيعي، ${g('فاستخدم', 'فاستخدمي')} إحساسك بالمجهود مش ساعة النبض: لازم ${g('تقدر تتكلم', 'تقدري تتكلمي')} وانت ${g('بتتمرن', 'بتتمرني')}.`, 'Your heart rate will run lower than usual, so go by how hard it feels, not by a heart-rate watch: you should be able to talk while training.') });
   }
   if (has('anticoag')) {
     mod.machines = true; mod.lowImpact = true;
-    train.push({ tone: 'bad', title: 'مسيّل الدم', text: 'بلاش أي تمرين فيه احتمال وقوع أو خبط. الماكينات أأمن من الأوزان الحرة.' });
+    train.push({ tone: 'bad', title: L('مسيّل الدم', 'Blood thinners'), text: L('بلاش أي تمرين فيه احتمال وقوع أو خبط. الماكينات أأمن من الأوزان الحرة.', 'Avoid any exercise with a risk of falling or bumps. Machines are safer than free weights.') });
   }
   if (p.pains.length) {
-    const names = p.pains.map((id) => PAINS.find((x) => x.id === id)?.n).join(' و');
-    train.push({ tone: 'warn', title: 'الألم', text: `بدلنا التمارين اللي بتضغط على ${names} بتمارين ألطف. لو ${g('حسيت', 'حسيتي')} بألم حاد ${g('وقف', 'وقفي')} فورًا.` });
+    const names = p.pains.map((id) => PAINS.find((x) => x.id === id)?.n);
+    train.push({ tone: 'warn', title: L('الألم', 'Pain'), text: L(`بدلنا التمارين اللي بتضغط على ${names.join(' و')} بتمارين ألطف. لو ${g('حسيت', 'حسيتي')} بألم حاد ${g('وقف', 'وقفي')} فورًا.`, `We swapped exercises that load your ${names.map((n) => tx(n ?? '').toLowerCase()).join(' and ')} for gentler ones. Stop right away if you feel sharp pain.`) });
   }
   if (p.otherPain) {
-    train.push({ tone: 'warn', title: 'الألم', text: `${g('كتبت', 'كتبتي')} إن عندك ألم في (${p.otherPain}). أي تمرين يضغط عليه ${g('خففه أو بدله', 'خففيه أو بدليه')}، و${g('اسأل', 'اسألي')} دكتور علاج طبيعي.` });
+    train.push({ tone: 'warn', title: L('الألم', 'Pain'), text: L(`${g('كتبت', 'كتبتي')} إن عندك ألم في (${p.otherPain}). أي تمرين يضغط عليه ${g('خففه أو بدله', 'خففيه أو بدليه')}، و${g('اسأل', 'اسألي')} دكتور علاج طبيعي.`, `You noted pain in (${p.otherPain}). Go lighter on or swap any exercise that loads it, and ask a physiotherapist.`) });
   }
-  const other = [p.otherCond, p.otherMeds].filter(Boolean).join('، ');
+  const other = [p.otherCond, p.otherMeds].filter(Boolean).join(L('، ', ', '));
   if (other) {
-    train.push({ tone: 'info', title: 'حالات تانية', text: `سجلنا اللي ${g('كتبته', 'كتبتيه')} (${other}). ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل ما ${g('تبدأ', 'تبدأي')}.` });
+    train.push({ tone: 'info', title: L('حالات تانية', 'Other conditions'), text: L(`سجلنا اللي ${g('كتبته', 'كتبتيه')} (${other}). ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل ما ${g('تبدأ', 'تبدأي')}.`, `We saved what you wrote (${other}). Show this plan to your doctor before you start.`) });
   }
   return { food, train, mod };
 }
@@ -166,21 +167,21 @@ export type DaySession = {
   week: number; variant: 'A' | 'B'; phase: Phase;
 };
 
-const ar = (n: number) => n.toLocaleString('ar-EG');
+const ar = (n: number) => num(n);
 
 function prescription(p: Profile, e: Exercise, m: Modifiers, phase: Phase): Omit<PlannedExercise, 'id' | 'ex' | 'why'> {
   const beginner = p.level === 'beg';
   const timed = (rx: string) => ({ rx, sets: 0, reps: [0, 0] as [number, number], rest: 0 });
-  if (e.k === 'cardio') return timed(m.shortSessions ? '١٠ دقايق، مجهود متوسط' : p.goal === 'lose' ? '٢٠ دقيقة، مجهود متوسط' : '١٥ دقيقة، مجهود متوسط');
-  if (e.k === 'mob') return timed('١٠ دقايق براحة');
+  if (e.k === 'cardio') return timed(m.shortSessions ? L('١٠ دقايق، مجهود متوسط', '10 min, moderate effort') : p.goal === 'lose' ? L('٢٠ دقيقة، مجهود متوسط', '20 min, moderate effort') : L('١٥ دقيقة، مجهود متوسط', '15 min, moderate effort'));
+  if (e.k === 'mob') return timed(L('١٠ دقايق براحة', '10 min, easy'));
   if (e.k === 'core') {
     const sets = Math.max(2, (beginner ? 2 : 3) + phase.setsDelta);
-    return { rx: `${ar(sets)} × ٣٠ ثانية`, sets, reps: [30, 30], rest: 45 };
+    return { rx: L(`${ar(sets)} × ٣٠ ثانية`, `${ar(sets)} × 30 sec`), sets, reps: [30, 30], rest: 45 };
   }
   const sets = Math.max(2, (beginner ? 3 : p.goal === 'gain' ? 4 : 3) + phase.setsDelta);
   const reps: [number, number] = p.goal === 'gain' ? [8, 10] : p.goal === 'lose' ? [12, 15] : [10, 12];
   const rest = p.goal === 'gain' ? 90 : 60;
-  return { rx: `${ar(sets)} مجموعات × ${ar(reps[0])} لـ ${ar(reps[1])} عدة · راحة ${ar(rest)} ثانية`, sets, reps, rest };
+  return { rx: L(`${ar(sets)} مجموعات × ${ar(reps[0])} لـ ${ar(reps[1])} عدة · راحة ${ar(rest)} ثانية`, `${ar(sets)} sets × ${ar(reps[0])}–${ar(reps[1])} reps · ${ar(rest)} sec rest`), sets, reps, rest };
 }
 
 /** Follows the exercise's gentler alternatives until one fits the person, or drops it. */
@@ -192,9 +193,9 @@ export function resolveExercise(id: string, p: Profile, m: Modifiers): { id: str
     if (!ex) return null;
     let why: string | null = null;
     const pain = PAINS.find((x) => p.pains.includes(x.id) && ex.stress.includes(x.id));
-    if (m.lowImpact && ex.impact === 'high') why = 'بدل تمرين فيه قفز';
-    else if (pain) why = 'عشان ' + pain.n;
-    else if (m.machines && ex.free) why = 'الماكينة أأمن';
+    if (m.lowImpact && ex.impact === 'high') why = L('بدل تمرين فيه قفز', 'Instead of a jumping exercise');
+    else if (pain) why = L('عشان ' + pain.n, 'Easier on your ' + tx(pain.n).toLowerCase());
+    else if (m.machines && ex.free) why = L('الماكينة أأمن', 'The machine is safer');
     if (!why) return { id: cur, ex, why: firstWhy };
     firstWhy ??= why;
     if (!ex.alt) return null;
@@ -242,7 +243,7 @@ export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 
   }
   return {
     id: flare ? 'gentle' : sid, n: s.n, place: s.pl, flare,
-    rpe: flare ? '٤-٥ من ١٠' : m.rpe,
+    rpe: flare ? L('٤-٥ من ١٠', '4-5 of 10') : m.rpe,
     items: list.map((x) => ({ ...x, ...prescription(p, x.ex, m, phase) })),
     week, variant, phase,
   };

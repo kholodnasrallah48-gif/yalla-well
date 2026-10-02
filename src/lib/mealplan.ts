@@ -1,11 +1,18 @@
 // Today's suggested meals: one recipe per meal, ranked for the person's conditions and medicines,
 // sized to the calories still left today, changing from day to day, with a per-meal "another one" counter.
 import { recipeFits } from './foods.ts';
+import { L } from './i18n.ts';
 import { genderFor, targets, type Profile } from './plan.ts';
 import { RECIPES, type Meal, type Recipe } from './recipes-data.ts';
 
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'snack', 'dinner'];
-export const MEAL_NAME: Record<Meal, string> = { breakfast: 'الفطار', lunch: 'الغدا', snack: 'السناك', dinner: 'العشا' };
+/** Meal names in the app language (getters, so `MEAL_NAME[meal]` reads the current language). */
+export const MEAL_NAME: Readonly<Record<Meal, string>> = {
+  get breakfast() { return L('الفطار', 'Breakfast'); },
+  get lunch() { return L('الغدا', 'Lunch'); },
+  get snack() { return L('السناك', 'Snack'); },
+  get dinner() { return L('العشا', 'Dinner'); },
+};
 /** Share of the day's calories for each meal. */
 const SHARE: Record<Meal, number> = { breakfast: 0.25, lunch: 0.35, snack: 0.12, dinner: 0.28 };
 const AUTOIMMUNE = ['hashimoto', 'graves', 'ra', 'psoriasis', 'lupus', 'ms', 'ibd', 'celiac', 't1d'];
@@ -21,27 +28,28 @@ export function suitability(p: Profile, r: Recipe): { score: number; why: string
   const protein = r.p >= 25 || (r.meal === 'snack' && r.p >= 8);
   let score = 0;
   const why: string[] = [];
+  let highProtein = false;
   if (p.conditions.some((x) => AUTOIMMUNE.includes(x))) {
-    if (t.has('omega3')) { score += 3; why.push('فيه أوميجا ٣ اللي بتقلل الالتهاب'); }
+    if (t.has('omega3')) { score += 3; why.push(L('فيه أوميجا ٣ اللي بتقلل الالتهاب', 'Has omega-3, which lowers inflammation')); }
     if (t.has('redmeat')) score -= 3;
     if (t.has('processed') || t.has('canned') || t.has('refined')) score -= 2;
-    if (t.has('fiber') || t.has('whole')) { score += 1; if (!why.length) why.push('أكل طبيعي وألياف، مفيد للمناعة'); }
+    if (t.has('fiber') || t.has('whole')) { score += 1; if (!why.length) why.push(L('أكل طبيعي وألياف، مفيد للمناعة', 'Whole food with fiber, good for immunity')); }
   }
   if (SUGAR.some(has) || has('insulin')) {
-    if (r.gi === 'low' || r.gi === 'none') { score += 3; why.push('بيرفع السكر ببطء'); }
+    if (r.gi === 'low' || r.gi === 'none') { score += 3; why.push(L('بيرفع السكر ببطء', 'Raises blood sugar slowly')); }
     if (r.gi === 'mid') score -= 2;
     if (t.has('fiber')) score += 1;
   }
   if (has('steroids')) {
     if (t.has('salty') || t.has('sugary') || r.gi === 'high') score -= 3;
-    if (protein) { score += 2; why.push('بروتين عالي، مهم مع الكورتيزون'); }
-    if (t.has('dairy')) { score += 1; why.push('فيه كالسيوم للعضم'); }
+    if (protein) { score += 2; highProtein = true; why.push(L('بروتين عالي، مهم مع الكورتيزون', 'High protein, important with steroids')); }
+    if (t.has('dairy')) { score += 1; why.push(L('فيه كالسيوم للعضم', 'Has calcium for your bones')); }
   }
   if (has('thyroxine') && r.meal === 'breakfast' && (t.has('caffeine') || t.has('dairy') || t.has('fiber'))) {
-    score -= 2; why.push(`${g('خده', 'خديه')} بعد دوا الغدة بساعة على الأقل`);
+    score -= 2; why.push(L(`${g('خده', 'خديه')} بعد دوا الغدة بساعة على الأقل`, 'Have it at least an hour after your thyroid medicine'));
   }
   if (has('ibd') && t.has('fiber')) score -= 1;
-  if (p.goal === 'lose' && protein) { score += 1; if (!why.some((w) => w.includes('بروتين'))) why.push(`بروتين عالي يشبّع${g('ك', 'كي')}`); }
+  if (p.goal === 'lose' && protein) { score += 1; if (!highProtein) why.push(L(`بروتين عالي يشبّع${g('ك', 'كي')}`, 'High protein, keeps you full')); }
   if (p.goal === 'gain' && r.kcal >= 450) score += 1;
   return { score, why: why.slice(0, 2) };
 }

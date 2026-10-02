@@ -6,10 +6,12 @@ import { Btn, Card, Chip, NoteView, Screen, T, styles } from '../../components/u
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
 import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { fmt } from '../../lib/day.ts';
+import { L, tx } from '../../lib/i18n.ts';
 import { genderFor, medical, targets } from '../../lib/plan.ts';
 import { useStore } from '../../store/AppStore.tsx';
 
 const GOALS = { lose: 'نزول وزن', maintain: 'ثبات الوزن وشد', gain: 'زيادة عضل' };
+const GOALS_EN = { lose: 'Lose weight', maintain: 'Maintain & tone', gain: 'Build muscle' };
 
 export default function Me() {
   const { profile, resetAll } = useStore();
@@ -21,27 +23,27 @@ export default function Me() {
   const g = genderFor(p.sex);
   const T0 = targets(p);
   const M = medical(p);
-  const conds = [...p.conditions.map((id) => CONDITIONS.find((x) => x.id === id)?.n), p.otherCond].filter(Boolean);
-  const meds = [...p.meds.map((id) => MEDS.find((x) => x.id === id)?.n), p.otherMeds].filter(Boolean);
-  const pains = [...p.pains.map((id) => PAINS.find((x) => x.id === id)?.n), p.otherPain].filter(Boolean);
+  const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? '')), p.otherCond].filter(Boolean);
+  const meds = [...p.meds.map((id) => tx(MEDS.find((x) => x.id === id)?.n ?? '')), p.otherMeds].filter(Boolean);
+  const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '')), p.otherPain].filter(Boolean);
 
   return (
-    <Screen title="ملفي">
+    <Screen title={L('ملفي', 'Me')}>
       <Card>
-        <T kind="h2">{p.name || 'بياناتي'}</T>
-        <T kind="small">{p.sex === 'm' ? 'ذكر' : 'أنثى'} · {p.age} سنة · {p.height} سم · {p.weight} كجم</T>
-        <T kind="small">الهدف: {GOALS[p.goal]} · {SCHEDULES[p.schedule].n}</T>
-        <Btn kind="outline" title={g('عدّل بياناتي', 'عدّلي بياناتي')} onPress={() => router.push('/onboarding')} />
+        <T kind="h2">{p.name || L('بياناتي', 'My details')}</T>
+        <T kind="small">{L(`${p.sex === 'm' ? 'ذكر' : 'أنثى'} · ${p.age} سنة · ${p.height} سم · ${p.weight} كجم`, `${p.sex === 'm' ? 'Male' : 'Female'} · ${p.age} yrs · ${p.height} cm · ${p.weight} kg`)}</T>
+        <T kind="small">{L('الهدف:', 'Goal:')} {L(GOALS[p.goal], GOALS_EN[p.goal])} · {tx(SCHEDULES[p.schedule].n)}</T>
+        <Btn kind="outline" title={L(g('عدّل بياناتي', 'عدّلي بياناتي'), 'Edit my details')} onPress={() => router.push('/onboarding')} />
       </Card>
 
       <Card>
-        <T kind="h2">هدفك اليومي</T>
+        <T kind="h2">{L('هدفك اليومي', 'Your daily target')}</T>
         <View style={[styles.wrap, { rowGap: 12 }]}>
           {[
-            [fmt(T0.kcal), `سعرة (حرقك ${fmt(T0.tdee)})`],
-            [`${T0.protein}g`, 'بروتين'],
-            [`${T0.carbs}g`, 'كارب'],
-            [`${T0.fat}g`, 'دهون'],
+            [fmt(T0.kcal), L(`سعرة (حرقك ${fmt(T0.tdee)})`, `kcal (you burn ${fmt(T0.tdee)})`)],
+            [`${T0.protein}g`, L('بروتين', 'Protein')],
+            [`${T0.carbs}g`, L('كارب', 'Carbs')],
+            [`${T0.fat}g`, L('دهون', 'Fat')],
           ].map(([v, l]) => (
             <View key={l} style={{ width: '47%' }}>
               <T kind="big" style={{ fontSize: 22 }}>{v}</T>
@@ -52,36 +54,36 @@ export default function Me() {
       </Card>
 
       <Card>
-        <T kind="h2">الهيستوري الطبي</T>
-        <T kind="small">الأمراض: {conds.length ? conds.join('، ') : 'مفيش'}</T>
-        <T kind="small">الأدوية المستمرة: {meds.length ? meds.join('، ') : 'مفيش'}</T>
-        <T kind="small">أماكن الألم: {pains.length ? pains.join('، ') : 'مفيش'}</T>
+        <T kind="h2">{L('الهيستوري الطبي', 'Medical history')}</T>
+        <T kind="small">{L('الأمراض:', 'Conditions:')} {conds.length ? conds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
+        <T kind="small">{L('الأدوية المستمرة:', 'Regular medications:')} {meds.length ? meds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
+        <T kind="small">{L('أماكن الألم:', 'Pain areas:')} {pains.length ? pains.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
       </Card>
 
-      {M.food.length ? <Card><T kind="h2">ملاحظات الأكل</T>{M.food.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
-      {M.train.length ? <Card><T kind="h2">ملاحظات التمرين</T>{M.train.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
+      {M.food.length ? <Card><T kind="h2">{L('ملاحظات الأكل', 'Food notes')}</T>{M.food.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
+      {M.train.length ? <Card><T kind="h2">{L('ملاحظات التمرين', 'Training notes')}</T>{M.train.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
 
       <Card>
         <View style={styles.rowBetween}>
           <View style={{ flex: 1 }}>
-            <T kind="h3">الأصوات</T>
-            <T kind="small">صوت خفيف مع الأزرار وإضافة الأكل وتعليم التمارين. بيسكت لو الموبايل على الصامت.</T>
+            <T kind="h3">{L('الأصوات', 'Sounds')}</T>
+            <T kind="small">{L('صوت خفيف مع الأزرار وإضافة الأكل وتعليم التمارين. بيسكت لو الموبايل على الصامت.', 'A soft sound for buttons, adding food and ticking off exercises. Muted when your phone is on silent.')}</T>
           </View>
-          <Chip label={sound ? 'شغالة' : 'مقفولة'} on={sound} onPress={() => { setSoundOn(!sound); setSound(!sound); }} />
+          <Chip label={sound ? L('شغالة', 'On') : L('مقفولة', 'Off')} on={sound} onPress={() => { setSoundOn(!sound); setSound(!sound); }} />
         </View>
       </Card>
 
-      <T kind="small" style={{ textAlign: 'center' }}>بياناتك محفوظة على الموبايل ده بس.{'\n'}التطبيق ده للمساعدة ومش بديل عن دكتورك.</T>
+      <T kind="small" style={{ textAlign: 'center' }}>{L('بياناتك محفوظة على الموبايل ده بس.\nالتطبيق ده للمساعدة ومش بديل عن دكتورك.', "Your data is saved on this phone only.\nThis app is here to help and doesn't replace your doctor.")}</T>
       {confirm ? (
         <Card>
-          <T kind="body">{g('متأكد', 'متأكدة')}؟ هتتمسح كل بياناتك وأكلك.</T>
+          <T kind="body">{L(`${g('متأكد', 'متأكدة')}؟ هتتمسح كل بياناتك وأكلك.`, 'Are you sure? All your data and food logs will be deleted.')}</T>
           <View style={[styles.row, { gap: 10 }]}>
-            <Btn kind="secondary" title="أيوه امسح" onPress={async () => { await resetAll(); router.replace('/onboarding'); }} style={{ flex: 1 }} />
-            <Btn kind="outline" title="لأ" onPress={() => setConfirm(false)} style={{ flex: 1 }} />
+            <Btn kind="secondary" title={L('أيوه امسح', 'Yes, delete')} onPress={async () => { await resetAll(); router.replace('/onboarding'); }} style={{ flex: 1 }} />
+            <Btn kind="outline" title={L('لأ', 'No')} onPress={() => setConfirm(false)} style={{ flex: 1 }} />
           </View>
         </Card>
       ) : (
-        <Btn kind="text" title={g('امسح كل بياناتي وابدأ من الأول', 'امسحي كل بياناتي وابدأي من الأول')} onPress={() => setConfirm(true)} />
+        <Btn kind="text" title={L(g('امسح كل بياناتي وابدأ من الأول', 'امسحي كل بياناتي وابدأي من الأول'), 'Delete all my data and start over')} onPress={() => setConfirm(true)} />
       )}
     </Screen>
   );

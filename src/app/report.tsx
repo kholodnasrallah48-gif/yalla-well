@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Btn, Card, T, styles } from '../components/ui.tsx';
+import { Bg, Btn, Card, T, styles } from '../components/ui.tsx';
 import { dayKey, fmt, type DayLog } from '../lib/day.ts';
 import { FOODS } from '../lib/foods.ts';
 import { L, tx } from '../lib/i18n.ts';
@@ -42,7 +42,7 @@ export default function Report() {
   );
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }}>
+    <Bg><ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }}>
       <View style={styles.rowBetween}>
         <T kind="h1">{L('تقرير الأسبوع', 'Weekly report')}</T>
         <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => router.back()} />
@@ -97,6 +97,6 @@ export default function Report() {
           <T kind="small">{L(`بيفتح صفحة الطباعة في الموبايل، ومنها ${g('تقدر', 'تقدري')} ${g('تحفظه', 'تحفظيه')} PDF أو ${g('تبعته', 'تبعتيه')} لحد.`, 'This opens the print screen on your phone, where you can save it as a PDF or send it to someone.')}</T>
         </>
       )}
-    </ScrollView>
+    </ScrollView></Bg>
   );
 }

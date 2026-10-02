@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Btn, Card, Chip, Choice, NoteView, Ring, START, T, WeekStrip, styles } from '../components/ui.tsx';
+import { Bg, Btn, Card, Chip, Choice, NoteView, Ring, START, T, WeekStrip, styles } from '../components/ui.tsx';
 import { CONDITIONS, MEDS, PAINS, SCHEDULES, type ScheduleId } from '../lib/data.ts';
 import { fmt } from '../lib/day.ts';
 import { L, tx } from '../lib/i18n.ts';
@@ -57,7 +57,7 @@ export default function Onboarding() {
   const full = st === 'done' ? ({ name: '', ...d } as Profile) : null;
 
   return (
-    <ScrollView ref={scroll} style={{ flex: 1, backgroundColor: c.bg }} keyboardShouldPersistTaps="handled"
+    <Bg><ScrollView ref={scroll} style={{ flex: 1 }} keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ padding: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, gap: 16 }}>
       <View style={[styles.row, { gap: 4 }]}>
         {STEPS.map((s, i) => <View key={s} style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: i <= step ? c.petrol : c.line }} />)}
@@ -162,6 +162,6 @@ export default function Onboarding() {
           : profile ? <Btn kind="outline" title={L('إلغاء', 'Cancel')} onPress={() => router.back()} /> : null}
         <Btn title={st === 'done' ? L('يلا نبدأ', "Let's go") : L('التالي', 'Next')} onPress={next} style={{ flex: 1 }} />
       </View>
-    </ScrollView>
+    </ScrollView></Bg>
   );
 }

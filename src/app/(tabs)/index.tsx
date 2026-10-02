@@ -45,7 +45,7 @@ export default function Home() {
           <MacroBar label={L('كارب', 'Carbs')} value={t.c} target={T0.carbs} />
           <MacroBar label={L('دهون', 'Fat')} value={t.f} target={T0.fat} />
         </View>
-        <Btn kind="outline" title={L(g('سجّل أكل', 'سجّلي أكل'), 'Log food')} onPress={() => router.navigate('/food')} style={{ marginTop: 6 }} />
+        <Btn kind="primary" title={L(g('سجّل أكل', 'سجّلي أكل'), 'Log food')} onPress={() => router.navigate('/food')} style={{ marginTop: 6 }} />
       </Card>
 
       <Card>

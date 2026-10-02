@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdviceView, MacroChips, arNum } from '../../components/food.tsx';
-import { Btn, Card, T, styles } from '../../components/ui.tsx';
+import { Bg, Btn, Card, T, styles } from '../../components/ui.tsx';
 import { addFood, fmt, planned } from '../../lib/day.ts';
 import { foodAdvice, recipeFood } from '../../lib/foods.ts';
 import { L, tx } from '../../lib/i18n.ts';
@@ -31,7 +31,7 @@ export default function RecipeScreen() {
   }).catch(() => {});
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }}>
+    <Bg><ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }}>
       <View style={styles.rowBetween}>
         <T kind="label" color={c.petrol}>{tx(MEAL_NAME[r.meal])} · {arNum(r.mins)} {L('دقيقة', 'min')}</T>
         <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => router.back()} />
@@ -69,6 +69,6 @@ export default function RecipeScreen() {
       <Btn kind="outline" title={L(g('شوف فيديو الطريقة', 'شوفي فيديو الطريقة'), 'Watch the how-to video')} onPress={video} />
       <Btn title={added ? L('اتضافت لأكل النهارده ✓', "Added to today's food ✓") : L(g('ضيفها لأكل النهارده', 'ضيفيها لأكل النهارده'), "Add to today's food")} disabled={added}
         onPress={() => { updateDay((d) => addFood(d, food, r.meal)); router.back(); }} />
-    </ScrollView>
+    </ScrollView></Bg>
   );
 }

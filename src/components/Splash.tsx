@@ -6,9 +6,9 @@ import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { L as lang } from '../lib/i18n.ts';
 import { fonts } from '../theme.ts';
 
-const P = '#0E4C5A';
-const L = '#A9BD2C';
-const A = '#A7DCE3';
+const P = '#0E1621';
+const L = '#2E9BFF';
+const A = '#FFD60A';
 const AG = Animated.createAnimatedComponent(G);
 const ACircle = Animated.createAnimatedComponent(Circle);
 const CONFETTI: [number, number, string][] = [[-34, -30, L], [34, -34, A], [-44, 4, '#FFFFFF'], [44, 0, L], [-20, -46, A], [22, -48, '#FFFFFF'], [-40, -14, L], [40, -18, A]];

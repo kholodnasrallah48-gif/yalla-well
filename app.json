@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0E4C5A",
+        "backgroundColor": "#0E1621",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -44,14 +44,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0E4C5A",
+          "backgroundColor": "#0E1621",
           "image": "./assets/splash-icon.png",
           "imageWidth": 120
         }
       ]
     ],
     "scheme": "yallawell",
-    "backgroundColor": "#F1F6F7",
+    "backgroundColor": "#0E1621",
     "runtimeVersion": {
       "policy": "sdkVersion"
     }

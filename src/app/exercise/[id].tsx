@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Btn, Card, NoteView, T, styles } from '../../components/ui.tsx';
+import { Bg, Btn, Card, NoteView, T, styles } from '../../components/ui.tsx';
 import { weekIndex } from '../../lib/day.ts';
 import { MEDIA } from '../../lib/exercise-media.ts';
 import { L, num, tx } from '../../lib/i18n.ts';
@@ -88,7 +88,7 @@ export default function ExerciseScreen() {
   });
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 32, gap: 12 }}>
+    <Bg><ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 32, gap: 12 }}>
       <View style={styles.rowBetween}>
         <T kind="h1" style={{ flexShrink: 1 }}>{tx(item.ex.n)}</T>
         <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={L('قفل', 'Close')} hitSlop={10}>
@@ -151,6 +151,6 @@ export default function ExerciseScreen() {
       ) : null}
 
       {isToday ? <Btn kind={done || !strength ? 'primary' : 'outline'} title={L('خلصت التمرين ده', 'Done with this exercise')} onPress={finish} /> : null}
-    </ScrollView>
+    </ScrollView></Bg>
   );
 }

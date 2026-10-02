@@ -1,19 +1,31 @@
-// Brand tokens: petrol & lime, light and dark. Fonts: Readex Pro (display) + IBM Plex Sans Arabic (body).
+// Brand tokens: palette 34 "black & effort blue" (WHOOP spirit), light and dark.
+// Names kept from the first palette: petrol = main accent (blue), lime = highlight (yellow), aqua = third data colour.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
 const light = {
-  petrol: '#0E4C5A', lime: '#A9BD2C', aqua: '#A7DCE3', bg: '#F1F6F7', surface: '#FFFFFF',
-  ink: '#10242A', muted: '#5A6E74', line: '#D6E2E5', soft: '#E1EEF0',
-  onPetrol: '#FFFFFF', onLime: '#10242A',
-  ok: '#1B6B45', okBg: '#DDF3E6', warn: '#8A5A00', warnBg: '#FCEFD3', bad: '#A12C2C', badBg: '#FBE0E0',
+  petrol: '#1769D6', lime: '#FFD60A', aqua: '#19C37D', bg: '#EEF2F7', surface: '#FFFFFF',
+  ink: '#0A0F16', muted: '#5B6676', line: '#DCE3EC', soft: '#E4EBF4',
+  onPetrol: '#FFFFFF', onLime: '#0A0F16',
+  ok: '#13804F', okBg: '#DBF4E8', warn: '#8A5A00', warnBg: '#FFF3C4', bad: '#C62839', badBg: '#FDE2E5',
+  /** Gradients: screen background, card, dark hero card, main button. */
+  gBg: ['#F7F9FC', '#E2E9F3'] as [string, string],
+  gCard: ['#FFFFFF', '#F5F8FC'] as [string, string],
+  gHero: ['#1A2940', '#0A111C'] as [string, string],
+  gBtn: ['#3AA2FF', '#1769D6'] as [string, string],
+  shadow: 'rgba(16,32,60,0.12)', glow: 'rgba(46,155,255,0.35)',
 };
 const dark: typeof light = {
-  petrol: '#4FB3C4', lime: '#C3D84A', aqua: '#2E6E7A', bg: '#0B1A1E', surface: '#12262B',
-  ink: '#E6F0F2', muted: '#93A9AE', line: '#20393F', soft: '#183238',
-  onPetrol: '#0B1A1E', onLime: '#10242A',
-  ok: '#7FD6A6', okBg: '#16332A', warn: '#F2C46B', warnBg: '#33290F', bad: '#F29A9A', badBg: '#3A1C1C',
+  petrol: '#3D9BFF', lime: '#FFD60A', aqua: '#19E68C', bg: '#05080D', surface: '#111A26',
+  ink: '#EEF3F8', muted: '#8C9AAD', line: '#1E2A3A', soft: '#1A2636',
+  onPetrol: '#FFFFFF', onLime: '#0A0F16',
+  ok: '#3FE0A0', okBg: '#0F2A22', warn: '#FFD60A', warnBg: '#2E2708', bad: '#FF5C6C', badBg: '#3A1219',
+  gBg: ['#0F1826', '#04070B'] as [string, string],
+  gCard: ['#152132', '#0D1520'] as [string, string],
+  gHero: ['#1C3352', '#0B1422'] as [string, string],
+  gBtn: ['#4DAAFF', '#1769D6'] as [string, string],
+  shadow: 'rgba(0,0,0,0.55)', glow: 'rgba(61,155,255,0.45)',
 };
 export type Colors = typeof light;
 

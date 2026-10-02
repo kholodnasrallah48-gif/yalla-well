@@ -4,11 +4,12 @@ import { play } from '../lib/sound.ts';
 import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGrad, Path, Stop } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { WEEK, WEEK_SHORT, SESSIONS, SCHEDULES } from '../lib/data.ts';
 import { weekPlaces, type Note, type Profile } from '../lib/plan.ts';
-import { fonts, useColors, useTheme } from '../theme.ts';
+import { fonts, useColors, useTheme, type Colors } from '../theme.ts';
 
 // Native forces RTL, which swaps left/right text alignment; web keeps physical sides under dir=rtl.
 // Text alignment at the reading start / end. On phones the layout direction already mirrors 'left'/'right' in
@@ -39,7 +40,7 @@ function ThemeToggle() {
   const { isDark, toggle } = useTheme();
   return (
     <Pressable onPress={() => { play('tap'); toggle(); }} accessibilityRole="switch" accessibilityState={{ checked: isDark }} accessibilityLabel={L('الوضع الليلي', 'Dark mode')}
-      style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+      style={({ pressed }) => [{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }, lift(c, 'sm'), pressed && styles.pressed]}>
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c.petrol} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         {isDark
           ? <><Circle cx={12} cy={12} r={4} /><Path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>
@@ -54,7 +55,8 @@ export function Screen({ title, children, themeToggle }: { title: string; childr
   const insets = useSafeAreaInsets();
   const d = new Date();
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: 32, gap: 12 }} keyboardShouldPersistTaps="handled">
+    <Bg>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: 32, gap: 14 }} keyboardShouldPersistTaps="handled">
       <View style={styles.rowBetween}>
         <View style={{ flexShrink: 1 }}>
           <T kind="h1">{title}</T>
@@ -68,7 +70,20 @@ export function Screen({ title, children, themeToggle }: { title: string; childr
       </View>
       {children}
     </ScrollView>
+    </Bg>
   );
+}
+
+/** Soft shadow under cards and buttons. */
+export function lift(c: Colors, size: 'sm' | 'md' | 'glow' = 'md'): ViewStyle {
+  const v = { sm: `0px 2px 6px ${c.shadow}`, md: `0px 8px 22px ${c.shadow}`, glow: `0px 6px 16px ${c.glow}` }[size];
+  return { boxShadow: v } as ViewStyle;
+}
+
+/** Full-screen background gradient; every screen sits on it. */
+export function Bg({ children }: { children: ReactNode }) {
+  const c = useColors();
+  return <LinearGradient colors={c.gBg} start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }} style={{ flex: 1 }}>{children}</LinearGradient>;
 }
 
 /** Arabic / English switch, shown on the home page. */
@@ -93,8 +108,13 @@ export function LangToggle() {
 
 export function Card({ children, style, tone }: { children: ReactNode; style?: StyleProp<ViewStyle>; tone?: 'petrol' }) {
   const c = useColors();
-  const bg = tone === 'petrol' ? { backgroundColor: c.petrol, borderColor: c.petrol } : { backgroundColor: c.surface, borderColor: c.line };
-  return <View style={[styles.card, bg, style]}>{children}</View>;
+  const hero = tone === 'petrol';
+  return (
+    <View style={[styles.card, { backgroundColor: hero ? c.gHero[1] : c.surface, borderColor: hero ? 'rgba(255,255,255,0.08)' : c.line }, lift(c), style]}>
+      <LinearGradient pointerEvents="none" colors={hero ? c.gHero : c.gCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: 20 }]} />
+      {children}
+    </View>
+  );
 }
 
 export function Btn({ title, onPress, kind = 'primary', disabled, style }: {
@@ -102,14 +122,15 @@ export function Btn({ title, onPress, kind = 'primary', disabled, style }: {
 }) {
   const c = useColors();
   const look = {
-    primary: { bg: c.lime, fg: c.onLime, border: c.lime },
-    secondary: { bg: c.petrol, fg: c.onPetrol, border: c.petrol },
-    outline: { bg: 'transparent', fg: c.petrol, border: c.petrol },
-    text: { bg: 'transparent', fg: c.muted, border: 'transparent' },
+    primary: { grad: c.gBtn, fg: '#FFFFFF', border: 'transparent', shadow: lift(c, 'glow') },
+    secondary: { grad: c.gHero, fg: '#FFFFFF', border: 'rgba(255,255,255,0.08)', shadow: lift(c) },
+    outline: { grad: c.gCard, fg: c.petrol, border: c.petrol, shadow: lift(c, 'sm') },
+    text: { grad: null, fg: c.muted, border: 'transparent', shadow: null },
   }[kind];
   return (
     <Pressable accessibilityRole="button" onPress={() => { play(kind === 'primary' ? 'add' : 'tap'); onPress(); }} disabled={disabled}
-      style={({ pressed }) => [styles.btn, { backgroundColor: look.bg, borderColor: look.border, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 }, style]}>
+      style={({ pressed }) => [styles.btn, { borderColor: look.border, opacity: disabled ? 0.45 : 1 }, look.shadow, pressed && !disabled && styles.pressed, style]}>
+      {look.grad ? <LinearGradient pointerEvents="none" colors={look.grad} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: 14 }]} /> : null}
       <Text style={{ fontFamily: fonts.display, fontSize: 15, color: look.fg, textAlign: 'center' }}>{title}</Text>
     </Pressable>
   );
@@ -136,8 +157,13 @@ export function Ring({ value, max, size = 104, stroke = 12 }: { value: number; m
   const pct = Math.min(1, max ? value / max : 0);
   return (
     <Svg width={size} height={size}>
+      <Defs>
+        <SvgGrad id="ring" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor={c.gBtn[0]} /><Stop offset="1" stopColor={c.gBtn[1]} />
+        </SvgGrad>
+      </Defs>
       <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={c.soft} strokeWidth={stroke} />
-      <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={value > max * 1.05 ? c.bad : c.petrol} strokeWidth={stroke}
+      <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={value > max * 1.05 ? c.bad : 'url(#ring)'} strokeWidth={stroke}
         strokeLinecap="round" strokeDasharray={`${circ * pct} ${circ}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
     </Svg>
   );
@@ -149,7 +175,7 @@ export function MacroBar({ label, value, target }: { label: string; value: numbe
     <View style={[styles.row, { gap: 8 }]}>
       <T kind="small" color={c.ink} style={{ width: 52 }}>{label}</T>
       <View style={[styles.track, { backgroundColor: c.soft }]}>
-        <View style={{ width: `${Math.min(100, target ? (value / target) * 100 : 0)}%`, height: '100%', borderRadius: 99, backgroundColor: c.petrol }} />
+        <LinearGradient colors={c.gBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: `${Math.min(100, target ? (value / target) * 100 : 0)}%`, height: '100%', borderRadius: 99 }} />
       </View>
       <T kind="small" style={{ width: 78, textAlign: END(), fontVariant: ['tabular-nums'] }}>{Math.round(value)} / {target} {L('جم', 'g')}</T>
     </View>
@@ -160,7 +186,7 @@ export function Chip({ label, on, onPress }: { label: string; on: boolean; onPre
   const c = useColors();
   return (
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => { play('tap'); onPress(); }}
-      style={[styles.chip, { borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : c.surface }]}>
+      style={({ pressed }) => [styles.chip, { borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : c.surface }, on ? lift(c, 'glow') : lift(c, 'sm'), pressed && styles.pressed]}>
       <Text style={{ fontFamily: fonts.body, fontSize: 14, color: on ? c.onPetrol : c.ink }}>{label}</Text>
     </Pressable>
   );
@@ -170,7 +196,7 @@ export function Choice({ title, sub, on, onPress, style }: { title: string; sub?
   const c = useColors();
   return (
     <Pressable accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => { play('tap'); onPress(); }}
-      style={[styles.choice, { borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.soft : c.surface, borderWidth: on ? 2 : 1.5 }, style]}>
+      style={({ pressed }) => [styles.choice, { borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.soft : c.surface, borderWidth: on ? 2 : 1.5 }, lift(c, on ? 'glow' : 'sm'), pressed && styles.pressed, style]}>
       <T kind="h3">{title}</T>
       {sub ? <T kind="small">{sub}</T> : null}
     </Pressable>
@@ -200,8 +226,9 @@ export function WeekStrip({ profile, today }: { profile: Profile; today: number 
 export const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 8 },
-  btn: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1.5 },
+  card: { borderRadius: 20, borderWidth: 1, padding: 16, gap: 8 },
+  btn: { borderRadius: 14, paddingVertical: 13, paddingHorizontal: 18, borderWidth: 1.5 },
+  pressed: { transform: [{ scale: 0.97 }], opacity: 0.9 },
   note: { flexDirection: 'row', gap: 10, borderRadius: 14, padding: 12 },
   dot: { width: 9, height: 9, borderRadius: 5, marginTop: 8 },
   track: { flex: 1, height: 8, borderRadius: 99, overflow: 'hidden' },

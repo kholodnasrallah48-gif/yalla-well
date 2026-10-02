@@ -33,7 +33,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: c.petrol,
         tabBarInactiveTintColor: c.muted,
-        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.line },
+        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.line, boxShadow: `0px -4px 18px ${c.shadow}` } as object,
         tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 18 },
         tabBarIcon: ({ color }) => <Icon name={route.name} color={color} />,
       })}

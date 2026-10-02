@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { AdviceView, Dot, MacroChips } from '../components/food.tsx';
-import { Btn, Card, START, T, styles } from '../components/ui.tsx';
+import { Bg, Btn, Card, START, T, styles } from '../components/ui.tsx';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addFood, fmt, mealTotals, planned } from '../lib/day.ts';
 import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, OFTEN, byUse, oftenFoods, foodAdvice, foodLevel, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../lib/foods.ts';
@@ -150,7 +150,7 @@ export default function AddFood() {
   const inMeal = mealTotals(day, target);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }} keyboardShouldPersistTaps="handled">
+    <Bg><ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }} keyboardShouldPersistTaps="handled">
       <View style={styles.rowBetween}>
         <T kind="h1" style={{ flexShrink: 1 }}>{L(`${g('ضيف', 'ضيفي')} ${toMeal(target)}`, `Add to ${tx(MEAL_NAME[target])}`)}</T>
         <Btn kind="outline" title={L('خلصت', 'Done')} onPress={() => router.back()} />
@@ -326,6 +326,6 @@ export default function AddFood() {
         </View>
         <Btn kind="secondary" title={L(`${g('احفظها وضيفها', 'احفظيها وضيفيها')} ${toMeal(target)}`, `Save and add to ${tx(MEAL_NAME[target])}`)} onPress={saveCustom} disabled={!form.n.trim() || !form.kcal} />
       </Card>
-    </ScrollView>
+    </ScrollView></Bg>
   );
 }

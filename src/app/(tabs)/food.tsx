@@ -126,7 +126,7 @@ export default function FoodScreen() {
               </View>
               <Pressable onPress={() => { play('tap'); router.push({ pathname: '/add', params: { meal } }); }} accessibilityRole="button"
                 accessibilityLabel={L(`إضافة أكل ${toMeal(meal)}`, `Add food to ${tx(MEAL_NAME[meal])}`)}
-                style={{ borderRadius: 99, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: c.lime }}>
+                style={{ borderRadius: 99, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: c.lime, boxShadow: '0px 3px 10px rgba(255,214,10,0.35)' } as object}>
                 <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.onLime }}>{L(`+ ${g('ضيف', 'ضيفي')}`, '+ Add')}</Text>
               </Pressable>
             </View>

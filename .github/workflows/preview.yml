@@ -21,6 +21,8 @@ jobs:
       - run: npm run typecheck
       - name: Online food lookup check
         continue-on-error: true
+        env:
+          EXPO_PUBLIC_USDA_KEY: ${{ secrets.USDA_KEY }}
         run: node --experimental-strip-types --no-warnings scripts/online-smoke.ts
       - name: Check EXPO_TOKEN
         env:
@@ -42,6 +44,8 @@ jobs:
           eas update:configure --platform all --non-interactive
       - name: Publish update
         if: env.SKIP != '1'
+        env:
+          EXPO_PUBLIC_USDA_KEY: ${{ secrets.USDA_KEY }}
         run: |
           eas update --branch preview --message "${{ github.event.head_commit.message || 'manual run' }}" --non-interactive --json > update.json
           node -e '

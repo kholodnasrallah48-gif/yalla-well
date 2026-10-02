@@ -3,8 +3,11 @@
 import { AR_EN, SKIP } from './food-words.ts';
 import { norm, type Food, type FoodTag, type GI } from './foods.ts';
 
-// Free key from api.data.gov; DEMO_KEY works with a low hourly limit per phone.
-export const USDA_KEY = 'DEMO_KEY';
+// Free key from api.data.gov, injected at publish time from the repo secret USDA_KEY.
+// Without it DEMO_KEY works but allows only a few searches an hour per network.
+export const USDA_KEY = process.env.EXPO_PUBLIC_USDA_KEY || 'DEMO_KEY';
+/** Last HTTP problem per host, for the smoke check. */
+export const lastError: Record<string, string> = {};
 const UA = 'YallaWell/1.0 (github.com/kholodnasrallah48-gif/yalla-well)';
 
 /** "زيتون مخلل" → "olives pickled". Null when no food word was understood. */
@@ -96,13 +99,16 @@ export function toFood(o: OnlineFood, grams: number, label?: string): Food {
   };
 }
 
-async function getJSON<T>(url: string, ms = 9000): Promise<T | null> {
+async function getJSON<T>(url: string, ms = 12000): Promise<T | null> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
+  const host = new URL(url).host;
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: ctl.signal });
-    return res.ok ? ((await res.json()) as T) : null;
-  } catch {
+    if (!res.ok) { lastError[host] = `HTTP ${res.status}`; return null; }
+    return (await res.json()) as T;
+  } catch (e) {
+    lastError[host] = String(e);
     return null;
   } finally {
     clearTimeout(t);
@@ -111,17 +117,22 @@ async function getJSON<T>(url: string, ms = 9000): Promise<T | null> {
 
 export async function searchUSDA(en: string, key = USDA_KEY): Promise<OnlineFood[]> {
   const base = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${key}&pageSize=12&dataType=${encodeURIComponent('Foundation,SR Legacy,Survey (FNDDS)')}&query=`;
-  let j = await getJSON<{ foods?: USDAFood[] }>(base + encodeURIComponent(en) + '&requireAllWords=true');
-  if (!j?.foods?.length) j = await getJSON<{ foods?: USDAFood[] }>(base + encodeURIComponent(en));
+  // One request per search keeps us inside the key's hourly limit; USDA ranks the best word matches first.
+  const j = await getJSON<{ foods?: USDAFood[] }>(base + encodeURIComponent(en));
   return (j?.foods ?? []).map(fromUSDA).filter((x): x is OnlineFood => !!x);
 }
 
 export async function searchOFF(query: string): Promise<OnlineFood[]> {
   const fields = 'code,product_name,product_name_ar,product_name_en,brands,nova_group,serving_quantity,nutriments';
-  const j = await getJSON<{ products?: OFFHit[] }>(
-    `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10&fields=${fields}`,
-  );
-  return (j?.products ?? []).map(fromOFFHit).filter((x): x is OnlineFood => !!x);
+  const fast = await getJSON<{ hits?: OFFHit[] }>(`https://search.openfoodfacts.org/search?q=${encodeURIComponent(query)}&page_size=10&fields=${fields}`);
+  let list = fast?.hits;
+  if (!list) {
+    const j = await getJSON<{ products?: OFFHit[] }>(
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10&fields=${fields}`,
+    );
+    list = j?.products;
+  }
+  return (list ?? []).map(fromOFFHit).filter((x): x is OnlineFood => !!x);
 }
 
 /** Searches generic foods (USDA, in English) and packaged products (Open Food Facts, in Arabic) together. */

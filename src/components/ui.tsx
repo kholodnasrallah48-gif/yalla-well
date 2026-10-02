@@ -18,12 +18,12 @@ export function T({ children, style, kind = 'body', color, numberOfLines }: {
 }) {
   const c = useColors();
   const base = ({
-    h1: { fontFamily: fonts.display, fontSize: 22, lineHeight: 32 },
-    h2: { fontFamily: fonts.displaySemi, fontSize: 17, lineHeight: 26 },
-    h3: { fontFamily: fonts.displaySemi, fontSize: 15, lineHeight: 22 },
+    h1: { fontFamily: fonts.display, fontSize: 22, lineHeight: 36 },
+    h2: { fontFamily: fonts.displaySemi, fontSize: 17, lineHeight: 30 },
+    h3: { fontFamily: fonts.displaySemi, fontSize: 15, lineHeight: 26 },
     body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 24 },
     small: { fontFamily: fonts.body, fontSize: 13, lineHeight: 20 },
-    big: { fontFamily: fonts.display, fontSize: 28, lineHeight: 34, fontVariant: ['tabular-nums'] },
+    big: { fontFamily: fonts.display, fontSize: 28, lineHeight: 44, fontVariant: ['tabular-nums'] },
     label: { fontFamily: fonts.bodyMedium, fontSize: 12.5, lineHeight: 18 },
   } satisfies Record<string, TextStyle>)[kind];
   const defaultColor = kind === 'small' || kind === 'label' ? c.muted : c.ink;

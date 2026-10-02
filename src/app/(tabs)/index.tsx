@@ -51,6 +51,18 @@ export default function Home() {
         {ses ? <Btn title={g('ابدأ التمرين', 'ابدأي التمرين')} onPress={() => router.navigate('/train')} style={{ marginTop: 6 }} /> : null}
       </Card>
 
+      <Pressable onPress={() => router.push('/report')} accessibilityRole="button">
+        <Card>
+          <View style={[styles.row, { gap: 12 }]}>
+            <View style={{ flex: 1 }}>
+              <T kind="h3">تقرير الأسبوع</T>
+              <T kind="small">{g('حققت', 'حققتي')} إيه وإيه محتاج يتحسن، {g('وتقدر', 'وتقدري')} {g('تطبعه', 'تطبعيه')}.</T>
+            </View>
+            <T kind="h2" color={c.petrol}>‹</T>
+          </View>
+        </Card>
+      </Pressable>
+
       {M.mod.anyCondition ? (
         <Card>
           <View style={[styles.row, { gap: 12 }]}>

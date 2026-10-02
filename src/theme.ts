@@ -18,11 +18,13 @@ const dark: typeof light = {
 export type Colors = typeof light;
 
 export const fonts = {
-  display: 'ReadexPro_700Bold',
-  displaySemi: 'ReadexPro_600SemiBold',
-  body: 'IBMPlexSansArabic_400Regular',
-  bodyMedium: 'IBMPlexSansArabic_500Medium',
-  bodySemi: 'IBMPlexSansArabic_600SemiBold',
+  // Headings and big numbers: Baloo Bhaijaan 2 (rounded, close to the logo's spirit). Text: Almarai (easy to read).
+  display: 'BalooBhaijaan2_800ExtraBold',
+  displaySemi: 'BalooBhaijaan2_700Bold',
+  displayMedium: 'BalooBhaijaan2_600SemiBold',
+  body: 'Almarai_400Regular',
+  bodyMedium: 'Almarai_700Bold',
+  bodySemi: 'Almarai_700Bold',
   /** Logo wordmark only. */
   brand: 'Rakkas_400Regular',
 };

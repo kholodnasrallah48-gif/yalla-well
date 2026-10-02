@@ -63,6 +63,36 @@ function judge(p: Profile, f: Food): { level: Level; text: string }[] {
   return out;
 }
 
+/** Health notes for one food and this person (conditions, meds, blood sugar), without the calorie budget. */
+export const healthNotes = judge;
+
+type Macros = { kcal: number; p: number; c: number; f: number };
+type Limits = { kcal: number; protein: number; carbs: number; fat: number };
+/**
+ * Warnings for one logged item: health notes for this person, a lot of salt, a big share of the day's fat or carbs,
+ * and the moment this item pushes the day past its calorie, fat or carb limit. `before` is the day's total before it.
+ */
+export function itemAlerts(p: Profile, f: Food, q: number, before: Macros, T: Limits): { level: Level; text: string }[] {
+  const g = genderFor(p.sex);
+  const out = judge(p, f).filter((n) => n.level === 'warn' || n.level === 'bad');
+  const t = new Set(f.tags ?? []);
+  if (t.has('salty') && !out.some((n) => n.text.includes('ملح'))) out.push({ level: 'warn', text: 'فيها ملح كتير، وده بيحبس المياه في الجسم ويرفع الضغط.' });
+  const fat = f.f * q, carbs = f.c * q, kcal = f.kcal * q;
+  const pct = (a: number, b: number) => Math.round((a / Math.max(b, 1)) * 100);
+  const after = { kcal: before.kcal + kcal, c: before.c + carbs, f: before.f + fat };
+  const crossed = (name: string, was: number, now: number, lim: number, unit: string) =>
+    was <= lim && now > lim ? { level: 'bad' as Level, text: `مع دي ${g('عديت', 'عديتي')} المسموح ${g('ليك', 'ليكي')} من ${name} النهارده (${Math.round(now)} من ${lim}${unit}).` } : null;
+  const over = [
+    crossed('السعرات', before.kcal, after.kcal, T.kcal, ' سعرة'),
+    crossed('الدهون', before.f, after.f, T.fat, ' جم'),
+    crossed('الكارب', before.c, after.c, T.carbs, ' جم'),
+  ].filter((x): x is { level: Level; text: string } => !!x);
+  out.push(...over);
+  if (!over.some((n) => n.text.includes('الدهون')) && fat >= T.fat * 0.4) out.push({ level: 'warn', text: `فيها دهون كتير: ${Math.round(fat)} جم، يعني ${pct(fat, T.fat)}٪ من المسموح في اليوم.` });
+  if (!over.some((n) => n.text.includes('الكارب')) && carbs >= T.carbs * 0.45) out.push({ level: 'warn', text: `فيها كارب كتير: ${Math.round(carbs)} جم، يعني ${pct(carbs, T.carbs)}٪ من المسموح في اليوم.` });
+  return out.sort((a, b) => RANK[b.level] - RANK[a.level]);
+}
+
 const worst = (notes: { level: Level }[]): Level => notes.reduce<Level>((a, n) => (RANK[n.level] > RANK[a] ? n.level : a), notes.length ? 'good' : 'ok');
 
 /** Verdict for adding one portion now, with better swaps when it doesn't fit. */

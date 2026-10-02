@@ -23,6 +23,8 @@ type Store = {
   saveLift: (id: string, log: LiftLog) => void;
   updateDay: (fn: (d: DayLog) => DayLog) => void;
   resetAll: () => Promise<void>;
+  /** A saved day's log (today's comes from memory), or null when nothing was logged. */
+  readDay: (key: string) => Promise<DayLog | null>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -91,9 +93,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setProfile(null); setCustom([]); setLifts({}); setDay(blankDay());
   }, []);
 
+  const readDay = useCallback(async (key: string) => {
+    if (key === todayRef.current) return day;
+    const d = await readJSON<DayLog>(K.day(key));
+    return d ? { ...blankDay(), ...d } : null;
+  }, [day]);
+
   const value = useMemo(
-    () => ({ ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll }),
-    [ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll],
+    () => ({ ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay }),
+    [ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

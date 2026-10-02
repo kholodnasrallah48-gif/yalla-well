@@ -1,8 +1,8 @@
 // One day's log and date helpers.
-import type { Food } from './foods.ts';
+import type { Food, FoodTag, GI } from './foods.ts';
 import type { SetLog } from './progress.ts';
 
-export type LoggedFood = { ref: string; n: string; u: string; kcal: number; p: number; c: number; f: number; q: number };
+export type LoggedFood = { ref: string; n: string; u: string; kcal: number; p: number; c: number; f: number; q: number; gi?: GI; tags?: FoodTag[] };
 export type DayLog = { foods: LoggedFood[]; water: number; flare: boolean; done: string[]; sets: Record<string, SetLog[]> };
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });
@@ -23,8 +23,8 @@ export function totals(day: DayLog) {
 export function addFood(day: DayLog, food: Food): DayLog {
   const i = day.foods.findIndex((x) => x.ref === food.id);
   if (i >= 0) return { ...day, foods: day.foods.map((x, j) => (j === i ? { ...x, q: x.q + 1 } : x)) };
-  const { id, n, u, kcal, p, c, f } = food;
-  return { ...day, foods: [...day.foods, { ref: id, n, u, kcal, p, c, f, q: 1 }] };
+  const { id, n, u, kcal, p, c, f, gi, tags } = food;
+  return { ...day, foods: [...day.foods, { ref: id, n, u, kcal, p, c, f, q: 1, gi, tags }] };
 }
 
 /** Changes a logged portion by delta (in halves); removes it at zero. */

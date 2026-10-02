@@ -4,10 +4,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
-import { FOODS, foodAdvice, parseMeal } from './foods.ts';
+import { FOODS, foodAdvice, itemAlerts, parseMeal } from './foods.ts';
+import { reportHTML, weekReport, weekStart } from './report.ts';
 import { fromOFF } from './barcode.ts';
 import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
-import { addFood, blankDay, changePortion, totals, weekIndex } from './day.ts';
+import { addFood, blankDay, changePortion, dayKey, totals, weekIndex, type DayLog } from './day.ts';
 import { medical, sessionFor, targets, type Profile } from './plan.ts';
 import { PHASES, programWeek, suggestWeight } from './progress.ts';
 
@@ -210,4 +211,34 @@ test('Open Food Facts fast-search shapes (arrays, language maps) map safely', ()
   const o = fromOFFHit({ code: 622, product_name: { ar: 'شيبسي', en: 'Chipsy' }, brands: ['Chipsy', 'PepsiCo'], nutriments: { 'energy-kcal_100g': 536 } });
   assert.equal(o?.name, 'شيبسي (Chipsy)');
   assert.equal(fromOFFHit({ code: '1', product_name: 5 as unknown as string, nutriments: { 'energy-kcal_100g': 1 } }), null);
+});
+
+test('weekly report counts wins and misses from saved days', () => {
+  const p: Profile = { ...base, schedule: '3', start: '2026-09-01' };
+  const today = new Date(2026, 9, 1); // Thursday 1 Oct 2026
+  const start = weekStart(today);
+  assert.equal(dayKey(start), '2026-09-26'); // Saturday
+  const pepsi = FOODS.find((f) => f.n === 'بيبسي')!;
+  const chicken = FOODS.find((f) => f.p >= 25)!;
+  const T = targets(p);
+  const logs: Record<string, DayLog | null> = {
+    '2026-09-26': { ...blankDay(), foods: [{ ref: chicken.id, n: chicken.n, u: chicken.u, kcal: T.kcal, p: T.protein, c: 0, f: 10, q: 1 }], water: T.waterCups, done: sessionFor(p, 0, false, 3)!.items.map((x) => x.id) },
+    '2026-09-27': { ...blankDay(), foods: [{ ref: pepsi.id, n: pepsi.n, u: pepsi.u, kcal: T.kcal * 1.5, p: 10, c: 200, f: T.fat + 20, q: 1 }] },
+  };
+  const r = weekReport({ ...p, conditions: ['ms'] }, start, logs, today);
+  assert.equal(r.days.filter((d) => d.future).length, 1);
+  assert.ok(r.wins.some((w) => w.includes('حدود السعرات')));
+  assert.ok(r.misses.some((m) => m.includes('عديتي السعرات')));
+  assert.ok(r.misses.some((m) => m.includes('بيبسي')));
+  assert.ok(r.misses.some((m) => m.includes('مسجلتيش أكل ٤ أيام')));
+  assert.match(reportHTML(p, r), /تقرير الأسبوع/);
+});
+
+test('logged items warn in red when they cross the fat limit or are salty', () => {
+  const T = targets(base);
+  const f = { ...FOODS[0], f: 30, tags: ['salty' as const] };
+  const a = itemAlerts(base, f, 1, { kcal: 500, p: 20, c: 50, f: T.fat - 10 }, T);
+  assert.equal(a[0].level, 'bad');
+  assert.ok(a[0].text.includes('الدهون'));
+  assert.ok(a.some((x) => x.text.includes('ملح')));
 });

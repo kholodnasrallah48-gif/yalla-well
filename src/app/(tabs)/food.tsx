@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { AdviceView, Dot } from '../../components/food.tsx';
 import { Btn, Card, Screen, START, T, styles } from '../../components/ui.tsx';
 import { addFood, changePortion, fmt, totals } from '../../lib/day.ts';
-import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, foodAdvice, foodLevel, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../../lib/foods.ts';
+import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, foodAdvice, foodLevel, itemAlerts, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../../lib/foods.ts';
 import { searchOnline, toFood, type OnlineFood } from '../../lib/online.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
 import { useStore } from '../../store/AppStore.tsx';
@@ -23,6 +23,8 @@ function IconBtn({ label, a11y, onPress }: { label: string; a11y: string; onPres
 
 type Found = { loading: boolean; hits: OnlineFood[]; pick: number; grams: string };
 
+const fmt1 = (n: number) => String(Math.round(n * 10) / 10);
+
 export default function FoodScreen() {
   const c = useColors();
   const { profile, day, custom, updateDay, addCustomFood } = useStore();
@@ -36,6 +38,7 @@ export default function FoodScreen() {
   const [web, setWeb] = useState<{ q: string; loading: boolean; hits: OnlineFood[]; grams: string } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const all = useMemo(() => [...FOODS, ...custom.map((f) => ({ ...f, cat: MY_FOODS_CAT }))], [custom]);
+  const byId = useMemo(() => new Map(all.map((f) => [f.id, f])), [all]);
   const pool = useMemo(() => {
     let list = all;
     if (cat !== ALL_CAT) list = list.filter((f) => f.cat === cat);
@@ -110,8 +113,13 @@ export default function FoodScreen() {
             <T kind="big">{fmt(t.kcal)}</T>
             <T kind="small">من {fmt(T0.kcal)} سعرة</T>
           </View>
-          <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>بروتين {fmt(t.p)}g · كارب {fmt(t.c)}g · دهون {fmt(t.f)}g</T>
+          <View style={{ alignItems: 'flex-end', gap: 2 }}>
+            {([['بروتين', t.p, T0.protein, false], ['كارب', t.c, T0.carbs, true], ['دهون', t.f, T0.fat, true]] as const).map(([k, v, lim, cap]) => (
+              <T key={k} kind="small" color={cap && v > lim ? c.bad : undefined} style={{ fontVariant: ['tabular-nums'] }}>{k} {fmt(v)} من {fmt(lim)} جم</T>
+            ))}
+          </View>
         </View>
+        {t.kcal > T0.kcal ? <T kind="small" color={c.bad}>{g('عديت', 'عديتي')} هدف السعرات النهارده بـ {fmt(t.kcal - T0.kcal)} سعرة.</T> : null}
       </Card>
 
       <Card>
@@ -194,17 +202,37 @@ export default function FoodScreen() {
 
       <Card>
         <T kind="h2">أكل النهارده</T>
-        {day.foods.length ? day.foods.map((f, i) => (
-          <View key={f.ref} style={[styles.row, { gap: 10, paddingVertical: 8, borderBottomWidth: i < day.foods.length - 1 ? 1 : 0, borderColor: c.line }]}>
-            <View style={{ flex: 1 }}>
-              <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{f.n}</T>
-              <T kind="small">{f.u} · {fmt(f.kcal * f.q)} سعرة</T>
+        {day.foods.length ? day.foods.map((f, i) => {
+          const src = byId.get(f.ref);
+          const food: Food = { id: f.ref, cat: '', n: f.n, u: f.u, kcal: f.kcal, p: f.p, c: f.c, f: f.f, gi: f.gi ?? src?.gi, tags: f.tags ?? src?.tags };
+          const before = totals({ ...day, foods: day.foods.slice(0, i) });
+          const alerts = itemAlerts(profile, food, f.q, before, T0);
+          return (
+            <View key={f.ref} style={{ gap: 6, paddingVertical: 8, borderBottomWidth: i < day.foods.length - 1 ? 1 : 0, borderColor: c.line }}>
+              <View style={[styles.row, { gap: 10 }]}>
+                <View style={{ flex: 1 }}>
+                  <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{f.n}</T>
+                  <T kind="small">{f.u} · {fmt(f.kcal * f.q)} سعرة</T>
+                </View>
+                <IconBtn label="−" a11y="أقل" onPress={() => updateDay((d) => changePortion(d, i, -0.5))} />
+                <T kind="h3" style={{ minWidth: 28, textAlign: 'center' }}>{f.q}</T>
+                <IconBtn label="+" a11y="أكتر" onPress={() => updateDay((d) => changePortion(d, i, 0.5))} />
+              </View>
+              <View style={[styles.wrap, { gap: 6 }]}>
+                {([['بروتين', f.p], ['كارب', f.c], ['دهون', f.f]] as const).map(([k, v]) => (
+                  <View key={k} style={{ backgroundColor: c.bg, borderRadius: 99, paddingHorizontal: 9, paddingVertical: 2 }}>
+                    <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>{k} {fmt1(v * f.q)} جم</T>
+                  </View>
+                ))}
+              </View>
+              {alerts.map((a, k) => (
+                <View key={k} accessibilityRole="alert" style={{ backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                  <T kind="small" color={c.bad} style={a.level === 'bad' ? { fontFamily: fonts.bodyMedium } : undefined}>{a.level === 'bad' ? '⛔ ' : '⚠️ '}{a.text}</T>
+                </View>
+              ))}
             </View>
-            <IconBtn label="−" a11y="أقل" onPress={() => updateDay((d) => changePortion(d, i, -0.5))} />
-            <T kind="h3" style={{ minWidth: 28, textAlign: 'center' }}>{f.q}</T>
-            <IconBtn label="+" a11y="أكتر" onPress={() => updateDay((d) => changePortion(d, i, 0.5))} />
-          </View>
-        )) : <T kind="small">{g('لسه مسجلتش', 'لسه مسجلتيش')} حاجة النهارده. {g('دور', 'دوري')} على الأكلة تحت و{g('دوس', 'دوسي')} +.</T>}
+          );
+                }) : <T kind="small">{g('لسه مسجلتش', 'لسه مسجلتيش')} حاجة النهارده. {g('دور', 'دوري')} على الأكلة تحت و{g('دوس', 'دوسي')} +.</T>}
       </Card>
 
       <Card>

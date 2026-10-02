@@ -1,6 +1,7 @@
-import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold } from '@expo-google-fonts/ibm-plex-sans-arabic';
+import { Almarai_400Regular, Almarai_700Bold } from '@expo-google-fonts/almarai';
+import { BalooBhaijaan2_600SemiBold, BalooBhaijaan2_700Bold, BalooBhaijaan2_800ExtraBold } from '@expo-google-fonts/baloo-bhaijaan-2';
 import { Rakkas_400Regular } from '@expo-google-fonts/rakkas';
-import { ReadexPro_600SemiBold, ReadexPro_700Bold, useFonts } from '@expo-google-fonts/readex-pro';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
@@ -38,6 +39,7 @@ function Gate() {
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
         <Stack.Screen name="exercise/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="scan" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="report" />
       </Stack>
     </>
   );
@@ -45,8 +47,7 @@ function Gate() {
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    ReadexPro_600SemiBold, ReadexPro_700Bold, Rakkas_400Regular,
-    IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold,
+    BalooBhaijaan2_600SemiBold, BalooBhaijaan2_700Bold, BalooBhaijaan2_800ExtraBold, Almarai_400Regular, Almarai_700Bold, Rakkas_400Regular,
   });
   if (!loaded) return null;
   return (

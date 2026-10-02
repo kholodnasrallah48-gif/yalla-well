@@ -1,4 +1,4 @@
-// Opening screen ("cheer"): the icon pops, the champ rises and pumps its arms twice with confetti, then the name comes in word by word.
+// Opening screen ("cheer", lockup م٦): the icon pops beside the name, the champ rises and pumps its arms twice with confetti, then the name comes in word by word.
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
@@ -57,21 +57,24 @@ export function Splash({ onDone }: { onDone: () => void }) {
   const up = (x: Animated.Value) => ({ opacity: x.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }), transform: [{ translateY: x.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] });
 
   return (
-    <Animated.View style={{ flex: 1, backgroundColor: P, alignItems: 'center', justifyContent: 'center', gap: 18, opacity: v.out }}>
-      <Animated.View style={{ width: 120, height: 120, transform: [{ scale: v.pop }] }}>
-        <Svg width={120} height={120} viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
-          <Rect width={100} height={100} rx={24} fill={P} stroke="rgba(255,255,255,0.18)" strokeWidth={2} />
-          <AG opacity={v.rise} translateY={v.rise.interpolate({ inputRange: [0, 1], outputRange: [60, 0] })}>
-            <Champ arm={v.arm} sparks={v.sparks} confetti={v.confetti} />
-          </AG>
-        </Svg>
-      </Animated.View>
-      <View style={{ alignItems: 'center' }}>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Animated.Text style={[{ fontFamily: fonts.brand, fontSize: 52, lineHeight: 64, color: '#FFFFFF' }, up(v.w1)]}>يلا</Animated.Text>
-          <Animated.Text style={[{ fontFamily: fonts.brand, fontSize: 52, lineHeight: 64, color: L }, up(v.w2)]}>ويل</Animated.Text>
+    // Fixed right-to-left layout so the icon sits on the right and the name reads "يلا ويل" even before RTL is applied.
+    <Animated.View style={{ flex: 1, backgroundColor: P, alignItems: 'center', justifyContent: 'center', opacity: v.out, direction: 'rtl' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        <Animated.View style={{ width: 96, height: 96, transform: [{ scale: v.pop }] }}>
+          <Svg width={96} height={96} viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
+            <Rect width={100} height={100} rx={24} fill={P} stroke="rgba(255,255,255,0.18)" strokeWidth={2} />
+            <AG opacity={v.rise} translateY={v.rise.interpolate({ inputRange: [0, 1], outputRange: [60, 0] })}>
+              <Champ arm={v.arm} sparks={v.sparks} confetti={v.confetti} />
+            </AG>
+          </Svg>
+        </Animated.View>
+        <View style={{ alignItems: 'flex-start' }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Animated.Text style={[{ fontFamily: fonts.brand, fontSize: 50, lineHeight: 64, color: '#FFFFFF' }, up(v.w1)]}>يلا</Animated.Text>
+            <Animated.Text style={[{ fontFamily: fonts.brand, fontSize: 50, lineHeight: 64, color: L }, up(v.w2)]}>ويل</Animated.Text>
+          </View>
+          <Animated.Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, letterSpacing: 4, color: A, opacity: v.lat, writingDirection: 'ltr' }}>YALLA WELL</Animated.Text>
         </View>
-        <Animated.Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, letterSpacing: 4, color: A, opacity: v.lat }}>YALLA WELL</Animated.Text>
       </View>
       <Text accessibilityRole="header" style={{ position: 'absolute', opacity: 0 }}>يلا ويل</Text>
     </Animated.View>

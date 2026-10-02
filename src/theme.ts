@@ -1,31 +1,35 @@
-// Brand tokens: palette 34 "black & effort blue" (WHOOP spirit), light and dark.
-// Names kept from the first palette: petrol = main accent (blue), lime = highlight (yellow), aqua = third data colour.
+// Brand tokens: palette 33 "black & neon green" (WHOOP spirit), light and dark.
+// Names kept from the first palette: petrol = main accent (neon green), lime = second accent (blue, home days),
+// aqua = third data colour (amber). onHero = text on the dark hero cards.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
 const light = {
-  petrol: '#1769D6', lime: '#FFD60A', aqua: '#19C37D', bg: '#EEF2F7', surface: '#FFFFFF',
-  ink: '#0A0F16', muted: '#5B6676', line: '#DCE3EC', soft: '#E4EBF4',
-  onPetrol: '#FFFFFF', onLime: '#0A0F16',
-  ok: '#13804F', okBg: '#DBF4E8', warn: '#8A5A00', warnBg: '#FFF3C4', bad: '#C62839', badBg: '#FDE2E5',
+  petrol: '#0A8F55', lime: '#2E86E8', aqua: '#F0A500', bg: '#EDF3F0', surface: '#FFFFFF',
+  ink: '#07110D', muted: '#55665E', line: '#D6E2DC', soft: '#E1ECE6',
+  onPetrol: '#FFFFFF', onLime: '#FFFFFF', onHero: '#FFFFFF',
+  ok: '#0A8F55', okBg: '#D9F5E7', warn: '#8A5A00', warnBg: '#FFF3C4', bad: '#C62839', badBg: '#FDE2E5',
   /** Gradients: screen background, card, dark hero card, main button. */
-  gBg: ['#F7F9FC', '#E2E9F3'] as [string, string],
-  gCard: ['#FFFFFF', '#F5F8FC'] as [string, string],
-  gHero: ['#1A2940', '#0A111C'] as [string, string],
-  gBtn: ['#3AA2FF', '#1769D6'] as [string, string],
-  shadow: 'rgba(16,32,60,0.12)', glow: 'rgba(46,155,255,0.35)',
+  gBg: ['#F8FBF9', '#DCE8E2'] as [string, string],
+  gCard: ['#FFFFFF', '#F3F8F5'] as [string, string],
+  gHero: ['#173326', '#070D0A'] as [string, string],
+  gBtn: ['#12B06A', '#0A8F55'] as [string, string],
+  /** Soft moving glows behind every screen. */
+  orbs: ['rgba(25,230,140,0.22)', 'rgba(46,155,255,0.16)'] as [string, string],
+  shadow: 'rgba(10,40,25,0.12)', glow: 'rgba(25,200,120,0.35)',
 };
 const dark: typeof light = {
-  petrol: '#3D9BFF', lime: '#FFD60A', aqua: '#19E68C', bg: '#05080D', surface: '#111A26',
-  ink: '#EEF3F8', muted: '#8C9AAD', line: '#1E2A3A', soft: '#1A2636',
-  onPetrol: '#FFFFFF', onLime: '#0A0F16',
-  ok: '#3FE0A0', okBg: '#0F2A22', warn: '#FFD60A', warnBg: '#2E2708', bad: '#FF5C6C', badBg: '#3A1219',
-  gBg: ['#0F1826', '#04070B'] as [string, string],
-  gCard: ['#152132', '#0D1520'] as [string, string],
-  gHero: ['#1C3352', '#0B1422'] as [string, string],
-  gBtn: ['#4DAAFF', '#1769D6'] as [string, string],
-  shadow: 'rgba(0,0,0,0.55)', glow: 'rgba(61,155,255,0.45)',
+  petrol: '#19E68C', lime: '#2E9BFF', aqua: '#FFC23D', bg: '#040706', surface: '#0E1714',
+  ink: '#EEF6F2', muted: '#8DA399', line: '#1A2A23', soft: '#13211B',
+  onPetrol: '#03140B', onLime: '#FFFFFF', onHero: '#FFFFFF',
+  ok: '#19E68C', okBg: '#0D2A1E', warn: '#FFD60A', warnBg: '#2E2708', bad: '#FF5C6C', badBg: '#3A1219',
+  gBg: ['#0B1612', '#020403'] as [string, string],
+  gCard: ['#12201A', '#0A120F'] as [string, string],
+  gHero: ['#103A27', '#06110C'] as [string, string],
+  gBtn: ['#4CF5A8', '#12C977'] as [string, string],
+  orbs: ['rgba(25,230,140,0.20)', 'rgba(46,155,255,0.13)'] as [string, string],
+  shadow: 'rgba(0,0,0,0.6)', glow: 'rgba(25,230,140,0.40)',
 };
 export type Colors = typeof light;
 

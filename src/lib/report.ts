@@ -117,7 +117,7 @@ export function reportHTML(p: Profile, r: WeekReport): string {
   const list = (xs: string[], cls: string) => xs.length ? `<ul class="${cls}">${xs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="m">${L('مفيش.', 'None.')}</p>`;
   return `<!doctype html><html dir="${L('rtl', 'ltr')}" lang="${L('ar', 'en')}"><head><meta charset="utf-8"><style>
   body{font-family:-apple-system,"Geeza Pro",Tahoma,sans-serif;color:#0A0F16;margin:28px}
-  h1{color:#0E1621;margin:0}h1 span{color:#1769D6}.sub{color:#5B6676;margin:4px 0 18px}
+  h1{color:#07110D;margin:0}h1 span{color:#0A8F55}.sub{color:#5B6676;margin:4px 0 18px}
   h2{font-size:16px;margin:18px 0 6px}table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{border-bottom:1px solid #D6E2E5;padding:7px 6px;text-align:${L('right', 'left')}}th{color:#5A6E74;font-weight:600}
   .bad{color:#A12C2C;font-weight:700}.f{color:#9AAEB3}.win li{color:#1B6B45}.miss li{color:#A12C2C}.m{color:#5A6E74}

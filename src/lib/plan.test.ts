@@ -310,6 +310,14 @@ test('picking gym, home or rest per day changes that day and keeps the week bala
   assert.equal(sessionFor({ ...p, places: { 0: 'rest' } }, 0, false), null);
 });
 
+test('a gym day can be set to push, pull, legs, upper or lower', () => {
+  const p: Profile = { ...base, schedule: '5mix', splits: { 0: 'legs', 5: 'upper' } };
+  assert.deepEqual(weekSessions(p), ['legs', 'homeA', 'pull', null, 'homeB', 'upper', null]);
+  assert.match(sessionFor(p, 0, false)!.n, /Legs/);
+  // A pick on a day that isn't a gym day is ignored.
+  assert.equal(weekSessions({ ...p, splits: { 3: 'push' } })[3], null);
+});
+
 test('phone reminders skip what is done today, follow rest days and vary their wording', async () => {
   const { planReminders, reminderText } = await import('./reminders.ts');
   const p: Profile = { ...base, schedule: '5mix' };

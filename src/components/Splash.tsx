@@ -4,11 +4,12 @@ import { Animated, Easing, Text, View } from 'react-native';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 
 import { L as lang } from '../lib/i18n.ts';
+import { playWhenReady } from '../lib/sound.ts';
 import { fonts } from '../theme.ts';
 
-const P = '#0E1621';
-const L = '#2E9BFF';
-const A = '#FFD60A';
+const P = '#0B100E';
+const L = '#19E68C';
+const A = '#2E9BFF';
 const AG = Animated.createAnimatedComponent(G);
 const ACircle = Animated.createAnimatedComponent(Circle);
 const CONFETTI: [number, number, string][] = [[-34, -30, L], [34, -34, A], [-44, 4, '#FFFFFF'], [44, 0, L], [-20, -46, A], [22, -48, '#FFFFFF'], [-40, -14, L], [40, -18, A]];
@@ -53,6 +54,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
   }, []);
   useEffect(() => {
     const spring = (x: Animated.Value) => Animated.spring(x, { toValue: 1, friction: 5, tension: 90, useNativeDriver: false });
+    playWhenReady('intro');
     const pump = (to: number) => Animated.timing(v.arm, { toValue: to, duration: 225, easing: Easing.inOut(Easing.quad), useNativeDriver: false });
     Animated.sequence([
       spring(v.pop),

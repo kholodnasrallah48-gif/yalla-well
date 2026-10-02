@@ -1,10 +1,10 @@
 // Shared building blocks styled from the brand tokens.
 import { isEn, L, setLang, tx } from '../lib/i18n.ts';
 import { play } from '../lib/sound.ts';
-import type { ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient as SvgGrad, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGrad, Path, RadialGradient, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { WEEK, WEEK_SHORT, SESSIONS, SCHEDULES } from '../lib/data.ts';
@@ -62,11 +62,12 @@ export function Screen({ title, children, themeToggle }: { title: string; childr
           <T kind="h1">{title}</T>
           <T kind="small">{tx(WEEK[(d.getDay() + 1) % 7])} {d.getDate()}/{d.getMonth() + 1}</T>
         </View>
-        <View style={[styles.row, { gap: 10 }]}>
-          <T kind="h3" color={c.petrol}>{L('يلا ويل', 'Yalla Well')}</T>
-          {themeToggle ? <LangToggle /> : null}
-          {themeToggle ? <ThemeToggle /> : null}
-        </View>
+        {themeToggle ? (
+          <View style={[styles.row, { gap: 10 }]}>
+            <LangToggle />
+            <ThemeToggle />
+          </View>
+        ) : null}
       </View>
       {children}
     </ScrollView>
@@ -80,29 +81,69 @@ export function lift(c: Colors, size: 'sm' | 'md' | 'glow' = 'md'): ViewStyle {
   return { boxShadow: v } as ViewStyle;
 }
 
-/** Full-screen background gradient; every screen sits on it. */
-export function Bg({ children }: { children: ReactNode }) {
-  const c = useColors();
-  return <LinearGradient colors={c.gBg} start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }} style={{ flex: 1 }}>{children}</LinearGradient>;
+/** One soft glow that drifts slowly in a loop. */
+function Orb({ color, size, top, left, dx, dy, ms, still }: { color: string; size: number; top: `${number}%`; left: `${number}%`; dx: number; dy: number; ms: number; still: boolean }) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (still) return;
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(t, { toValue: 1, duration: ms, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(t, { toValue: 0, duration: ms, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web' }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [still]);
+  const move = (d: number) => t.interpolate({ inputRange: [0, 1], outputRange: [0, d] });
+  const scale = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const id = `orb${size}${ms}`;
+  return (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', top, left, width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2,
+      transform: [{ translateX: move(dx) }, { translateY: move(dy) }, { scale }] }}>
+      <Svg width={size} height={size}>
+        <Defs>
+          <RadialGradient id={id} cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={color} stopOpacity={1} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#${id})`} />
+      </Svg>
+    </Animated.View>
+  );
 }
 
-/** Arabic / English switch, shown on the home page. */
+/** Full-screen background: a gradient with two soft glows drifting behind the content (still when Reduce Motion is on). */
+export function Bg({ children }: { children: ReactNode }) {
+  const c = useColors();
+  const [still, setStill] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setStill).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setStill);
+    return () => sub.remove();
+  }, []);
+  return (
+    <LinearGradient colors={c.gBg} start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }} style={{ flex: 1, overflow: 'hidden' }}>
+      <Orb color={c.orbs[0]} size={460} top="8%" left="85%" dx={-70} dy={60} ms={9000} still={still} />
+      <Orb color={c.orbs[1]} size={420} top="70%" left="10%" dx={80} dy={-70} ms={11000} still={still} />
+      <Orb color={c.orbs[0]} size={300} top="105%" left="90%" dx={-50} dy={-60} ms={13000} still={still} />
+      {children}
+    </LinearGradient>
+  );
+}
+
+/** Arabic / English switch, shown on the home page: one button naming the other language. */
 export function LangToggle() {
   const c = useColors();
   const en = isEn();
   return (
-    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', borderWidth: 1.5, borderColor: c.petrol, borderRadius: 99, overflow: 'hidden' }}>
-      {([['ar', 'ع'], ['en', 'EN']] as const).map(([k, l]) => {
-        const on = (k === 'en') === en;
-        return (
-          <Pressable key={k} onPress={() => { if (!on) { play('tap'); setLang(k); } }} accessibilityRole="radio" accessibilityState={{ selected: on }}
-            accessibilityLabel={k === 'en' ? 'English' : 'العربي'}
-            style={{ paddingHorizontal: 10, height: 30, justifyContent: 'center', backgroundColor: on ? c.petrol : 'transparent' }}>
-            <Text style={{ fontFamily: k === 'en' ? fonts.displaySemi : fonts.bodyMedium, fontSize: 13, color: on ? c.onPetrol : c.petrol }}>{l}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
+    <Pressable onPress={() => { play('tap'); setLang(en ? 'ar' : 'en'); }} accessibilityRole="button"
+      accessibilityLabel={en ? 'التطبيق بالعربي' : 'Switch to English'}
+      style={({ pressed }) => [{ height: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 6 }, lift(c, 'sm'), pressed && styles.pressed]}>
+      <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={c.petrol} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <Circle cx={12} cy={12} r={9} /><Path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z" />
+      </Svg>
+      <Text style={{ fontFamily: en ? fonts.bodyMedium : fonts.displaySemi, fontSize: 13.5, lineHeight: 18, color: c.ink }}>{en ? 'عربي' : 'English'}</Text>
+    </Pressable>
   );
 }
 
@@ -122,7 +163,7 @@ export function Btn({ title, onPress, kind = 'primary', disabled, style }: {
 }) {
   const c = useColors();
   const look = {
-    primary: { grad: c.gBtn, fg: '#FFFFFF', border: 'transparent', shadow: lift(c, 'glow') },
+    primary: { grad: c.gBtn, fg: c.onPetrol, border: 'transparent', shadow: lift(c, 'glow') },
     secondary: { grad: c.gHero, fg: '#FFFFFF', border: 'rgba(255,255,255,0.08)', shadow: lift(c) },
     outline: { grad: c.gCard, fg: c.petrol, border: c.petrol, shadow: lift(c, 'sm') },
     text: { grad: null, fg: c.muted, border: 'transparent', shadow: null },
@@ -203,7 +244,7 @@ export function Choice({ title, sub, on, onPress, style }: { title: string; sub?
   );
 }
 
-/** Seven small day tiles: dark = gym, lime = home, empty = rest. */
+/** Seven day tiles on a dark card: a dot shows gym (green), home (blue) or rest; today glows in the accent colour. */
 export function WeekStrip({ profile, today }: { profile: Profile; today: number }) {
   const c = useColors();
   const places = weekPlaces(profile);
@@ -211,16 +252,24 @@ export function WeekStrip({ profile, today }: { profile: Profile; today: number 
     <View style={[styles.row, { gap: 5 }]}>
       {WEEK_SHORT.map((w, i) => {
         const pl = places[i];
-        const bg = pl === 'gym' ? c.bg : pl === 'home' ? c.lime : 'rgba(255,255,255,0.16)';
-        const fg = pl === 'gym' ? c.petrol : pl === 'home' ? c.onLime : c.onPetrol;
+        const now = i === today;
         return (
-          <View key={w} style={[styles.dayTile, { backgroundColor: bg, borderWidth: i === today ? 2 : 0, borderColor: c.lime }]}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 10.5, color: fg }}>{tx(w)}</Text>
+          <View key={w} style={[styles.dayTile, { backgroundColor: now ? 'transparent' : 'rgba(255,255,255,0.07)', borderWidth: now ? 0 : 1, borderColor: 'rgba(255,255,255,0.08)' }, now && lift(c, 'glow')]}>
+            {now ? <LinearGradient pointerEvents="none" colors={c.gBtn} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: 10 }]} /> : null}
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 10.5, color: now ? c.onPetrol : c.onHero }}>{tx(w)}</Text>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: placeColor(c, pl, now) }} />
           </View>
         );
       })}
     </View>
   );
+}
+
+/** Dot colour for a day's place; on the highlighted (accent) tile it switches to the text colour so it stays visible. */
+export function placeColor(c: Colors, pl: string | undefined, onAccent = false) {
+  if (pl === 'gym') return onAccent ? c.onPetrol : c.petrol;
+  if (pl === 'home') return c.lime;
+  return onAccent ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.22)';
 }
 
 export const styles = StyleSheet.create({
@@ -234,6 +283,6 @@ export const styles = StyleSheet.create({
   track: { flex: 1, height: 8, borderRadius: 99, overflow: 'hidden' },
   chip: { borderWidth: 1.5, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 14 },
   choice: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, gap: 2 },
-  dayTile: { flex: 1, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  dayTile: { flex: 1, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', gap: 3 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 });

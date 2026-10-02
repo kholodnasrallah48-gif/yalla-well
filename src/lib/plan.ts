@@ -28,12 +28,16 @@ export type Profile = {
   start?: string;
   /** The person's own pick per weekday (Saturday = 0): gym, home or rest. Missing days follow the schedule. */
   places?: Partial<Record<number, DayPlace>>;
+  /** The person's own gym workout per weekday (push, pull, legs, upper, lower). Missing days follow the schedule. */
+  splits?: Partial<Record<number, GymSplit>>;
   /** Profile picture as a small JPEG data URI. */
   photo?: string;
   /** Weigh-ins, oldest first; the first one is the starting weight. */
   weights?: { d: string; kg: number }[];
 };
 export type DayPlace = Place | 'rest';
+export const GYM_SPLITS = ['push', 'pull', 'legs', 'upper', 'lower'] as const;
+export type GymSplit = (typeof GYM_SPLITS)[number];
 
 /** Picks the masculine or feminine form of a phrase for the person. */
 export type Gender = (m: string, f: string) => string;
@@ -217,14 +221,21 @@ export function weekPlaces(p: Profile): DayPlace[] {
 
 /**
  * The session id for each weekday. Gym days take the schedule's gym sessions in order (cycling), home days
- * alternate the two home sessions, so changing a day's place keeps the week balanced.
+ * alternate the two home sessions, so changing a day's place keeps the week balanced. A gym day the person gave
+ * its own workout (push, pull, legs...) uses that one.
  */
 export function weekSessions(p: Profile): (string | null)[] {
   const map = SCHEDULES[p.schedule]?.map ?? {};
   const gym = Object.keys(map).map(Number).sort((a, b) => a - b).map((i) => map[i]).filter((id) => SESSIONS[id].pl === 'gym');
   const home = ['homeA', 'homeB'];
   let g = 0, h = 0;
-  return weekPlaces(p).map((pl) => (pl === 'gym' ? (gym.length ? gym[g++ % gym.length] : 'upper') : pl === 'home' ? home[h++ % 2] : null));
+  return weekPlaces(p).map((pl, i) => {
+    if (pl === 'gym') {
+      const auto = gym.length ? gym[g++ % gym.length] : 'upper';
+      return p.splits?.[i] ?? auto;
+    }
+    return pl === 'home' ? home[h++ % 2] : null;
+  });
 }
 
 export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 0): DaySession | null {

@@ -2,10 +2,12 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Card, NoteView, Screen, T, styles } from '../../components/ui.tsx';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import { Card, NoteView, Screen, T, lift, placeColor, styles } from '../../components/ui.tsx';
 import { WEEK, WEEK_SHORT } from '../../lib/data.ts';
 import { dayKey, weekIndex, type DayLog } from '../../lib/day.ts';
-import { genderFor, medical, sessionFor, weekPlaces, type DayPlace } from '../../lib/plan.ts';
+import { GYM_SPLITS, genderFor, medical, sessionFor, weekPlaces, weekSessions, type DayPlace, type GymSplit } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
 import { L, num, tx } from '../../lib/i18n.ts';
 import { play } from '../../lib/sound.ts';
@@ -37,6 +39,8 @@ export default function Train() {
   const ses = sessionFor(profile, sel, !!log?.flare, week);
   const places = weekPlaces(profile);
   const setPlace = (pl: DayPlace) => { play('tap'); saveProfile({ ...profile, places: { ...profile.places, [sel]: pl } }); };
+  const split = weekSessions(profile)[sel];
+  const setSplit = (k: GymSplit) => { play('tap'); saveProfile({ ...profile, splits: { ...profile.splits, [sel]: k } }); };
   const done = log?.done ?? [];
   const n = ses ? ses.items.filter((x) => done.includes(x.id)).length : 0;
   const M = medical(profile);
@@ -52,12 +56,17 @@ export default function Train() {
       <View style={[styles.row, { gap: 5 }]}>
         {WEEK_SHORT.map((w, i) => {
           const pl = places[i];
+          const now = i === todayIdx;
+          const picked = i === sel;
           return (
-            <Pressable key={w} onPress={() => { play('tap'); setSel(i); }} accessibilityRole="button" accessibilityState={{ selected: i === sel }}
-              style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 6, borderRadius: 12, backgroundColor: c.surface, borderWidth: i === sel ? 2 : 1, borderColor: i === sel ? c.petrol : c.line }}>
-              <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, color: c.ink }}>{tx(w)}</Text>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: pl === 'gym' ? c.petrol : pl === 'home' ? c.lime : c.line }} />
-              {i === todayIdx ? <Text style={{ fontFamily: fonts.body, fontSize: 9.5, color: c.muted }}>{L('النهارده', 'Today')}</Text> : null}
+            <Pressable key={w} onPress={() => { play('tap'); setSel(i); }} accessibilityRole="button" accessibilityState={{ selected: picked }}
+              accessibilityLabel={`${tx(WEEK[i])}${now ? L(' (النهارده)', ' (today)') : ''}`}
+              style={[{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 7, borderRadius: 12, backgroundColor: now ? 'transparent' : c.surface,
+                borderWidth: picked ? 2 : 1, borderColor: picked ? (now ? c.ink : c.petrol) : now ? 'transparent' : c.line }, lift(c, now ? 'glow' : 'sm')]}>
+              {now ? <LinearGradient pointerEvents="none" colors={c.gBtn} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', inset: 0, borderRadius: 10 }} /> : null}
+              <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, color: now ? c.onPetrol : c.ink }}>{tx(w)}</Text>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: pl === 'rest' ? (now ? 'rgba(0,0,0,0.25)' : c.line) : placeColor(c, pl, now) }} />
+              {now ? <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 9.5, color: c.onPetrol }}>{L('النهارده', 'Today')}</Text> : null}
             </Pressable>
           );
         })}
@@ -80,11 +89,29 @@ export default function Train() {
         </View>
       )}
 
+      {!past && places[sel] === 'gym' ? (
+        <View style={{ gap: 6 }}>
+          <T kind="small">{L(`${g('هتلعب', 'هتلعبي')} إيه في الجيم؟`, 'What are you training at the gym?')}</T>
+          <View style={[styles.row, { gap: 6 }]}>
+            {GYM_SPLITS.map((k) => {
+              const on = split === k;
+              const label = { push: 'Push', pull: 'Pull', legs: 'Legs', upper: L('علوي', 'Upper'), lower: L('سفلي', 'Lower') }[k];
+              return (
+                <Pressable key={k} onPress={() => setSplit(k)} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                  style={({ pressed }) => [{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : c.surface, borderRadius: 12, paddingVertical: 8 }, lift(c, on ? 'glow' : 'sm'), pressed && styles.pressed]}>
+                  <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, color: on ? c.onPetrol : c.ink }}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+
       {ses && !ses.flare ? (
         <Card tone="petrol">
-          <T kind="label" color={c.onPetrol}>{L('الأسبوع', 'Week')} {num(week + 1)} · {ses.variant === 'A' ? L('الأجهزة الأساسية', 'Main machines') : L('أجهزة بديلة', 'Alternate machines')}</T>
-          <T kind="h3" color={c.onPetrol}>{tx(ses.phase.n)}</T>
-          <T kind="small" color={c.onPetrol}>{L(`${ses.phase.text} ${g('دوس', 'دوسي')} على أي تمرين تشوف${g('', 'ي')} شرحه و${g('تسجل', 'تسجلي')} الأوزان.`, `${tx(ses.phase.text)} Tap any exercise to see how it's done and log your weights.`)}</T>
+          <T kind="label" color={c.onHero}>{L('الأسبوع', 'Week')} {num(week + 1)} · {ses.variant === 'A' ? L('الأجهزة الأساسية', 'Main machines') : L('أجهزة بديلة', 'Alternate machines')}</T>
+          <T kind="h3" color={c.onHero}>{tx(ses.phase.n)}</T>
+          <T kind="small" color={c.onHero}>{L(`${ses.phase.text} ${g('دوس', 'دوسي')} على أي تمرين تشوف${g('', 'ي')} شرحه و${g('تسجل', 'تسجلي')} الأوزان.`, `${tx(ses.phase.text)} Tap any exercise to see how it's done and log your weights.`)}</T>
         </Card>
       ) : null}
 

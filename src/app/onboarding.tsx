@@ -152,8 +152,8 @@ export default function Onboarding() {
             </View>
           </Card>
           <Card tone="petrol">
-            <T kind="label" color={c.onPetrol}>{L('نظامك', 'Your plan')}</T>
-            <T kind="h2" color={c.onPetrol}>{tx(SCHEDULES[full.schedule].n)}</T>
+            <T kind="label" color={c.onHero}>{L('نظامك', 'Your plan')}</T>
+            <T kind="h2" color={c.onHero}>{tx(SCHEDULES[full.schedule].n)}</T>
             <WeekStrip profile={full} today={-1} />
           </Card>
           {notes.length ? <Card><T kind="h2">{L('عدّلنا الخطة على حسب حالتك', 'We adjusted the plan to your health')}</T>{notes.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}

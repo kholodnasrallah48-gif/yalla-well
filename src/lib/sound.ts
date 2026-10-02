@@ -1,6 +1,7 @@
 // Short sound effects for actions (tap, add food, tick an exercise, finish a workout...). They follow the phone's
 // silent switch, mix with music, and can be turned off from the profile tab.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
 const FILES = {
@@ -10,6 +11,8 @@ const FILES = {
   win: require('../../assets/sounds/win.wav'),
   remove: require('../../assets/sounds/remove.wav'),
   warn: require('../../assets/sounds/warn.wav'),
+  /** Played once when the app opens, in time with the logo animation. */
+  intro: require('../../assets/sounds/intro.wav'),
 };
 export type Sound = keyof typeof FILES;
 const KEY = 'yallawell:sound';
@@ -17,7 +20,7 @@ let on = true;
 const players: Partial<Record<Sound, AudioPlayer>> = {};
 const listeners = new Set<(v: boolean) => void>();
 
-AsyncStorage.getItem(KEY).then((v) => { if (v === 'off') { on = false; listeners.forEach((f) => f(on)); } }).catch(() => {});
+const loaded = AsyncStorage.getItem(KEY).then((v) => { if (v === 'off') { on = false; listeners.forEach((f) => f(on)); } }).catch(() => {});
 setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(() => {});
 
 export function play(s: Sound) {
@@ -28,6 +31,10 @@ export function play(s: Sound) {
     p.play();
   } catch { /* sound is a nicety; never break an action over it */ }
 }
+
+/** Like play(), but waits for the saved on/off setting first (for the opening sound, before it has loaded). */
+// Browsers block sound before the first tap, so the web preview skips it.
+export function playWhenReady(s: Sound) { if (Platform.OS !== 'web') loaded.then(() => play(s)); }
 
 export const soundOn = () => on;
 export function setSoundOn(v: boolean) {

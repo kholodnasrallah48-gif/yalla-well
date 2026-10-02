@@ -68,8 +68,8 @@ export default function Home() {
       </Card>
 
       <Card tone="petrol">
-        <T kind="label" color={c.onPetrol}>{tx(SCHEDULES[profile.schedule].n)}</T>
-        <T kind="h2" color={c.onPetrol}>{ses ? L(`النهارده: ${ses.n} (${ses.place === 'gym' ? 'جيم' : 'بيت'})`, `Today: ${tx(ses.n)} (${ses.place === 'gym' ? 'gym' : 'home'})`) : L('النهارده راحة', 'Rest day today')}</T>
+        <T kind="label" color={c.onHero}>{tx(SCHEDULES[profile.schedule].n)}</T>
+        <T kind="h2" color={c.onHero}>{ses ? L(`النهارده: ${ses.n} (${ses.place === 'gym' ? 'جيم' : 'بيت'})`, `Today: ${tx(ses.n)} (${ses.place === 'gym' ? 'gym' : 'home'})`) : L('النهارده راحة', 'Rest day today')}</T>
         <WeekStrip profile={profile} today={todayIdx} />
         {ses ? <Btn title={L(g('ابدأ التمرين', 'ابدأي التمرين'), 'Start workout')} onPress={() => router.navigate('/train')} style={{ marginTop: 6 }} /> : null}
       </Card>

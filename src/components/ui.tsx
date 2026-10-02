@@ -1,4 +1,5 @@
 // Shared building blocks styled from the brand tokens.
+import { isEn, setLang } from '../lib/i18n.ts';
 import { play } from '../lib/sound.ts';
 import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
@@ -10,8 +11,10 @@ import { weekPlaces, type Note, type Profile } from '../lib/plan.ts';
 import { fonts, useColors, useTheme } from '../theme.ts';
 
 // Native forces RTL, which swaps left/right text alignment; web keeps physical sides under dir=rtl.
-export const START = Platform.OS === 'web' ? 'right' : 'left';
-export const END = Platform.OS === 'web' ? 'left' : 'right';
+// Text alignment at the reading start / end. On phones the layout direction already mirrors 'left'/'right' in
+// Arabic; on the web it doesn't. Functions, because the language can change while the app runs.
+export const START = (): 'left' | 'right' => (isEn() || Platform.OS !== 'web' ? 'left' : 'right');
+export const END = (): 'left' | 'right' => (START() === 'left' ? 'right' : 'left');
 
 export function T({ children, style, kind = 'body', color, numberOfLines }: {
   children: ReactNode; style?: StyleProp<TextStyle>; kind?: 'h1' | 'h2' | 'h3' | 'body' | 'small' | 'big' | 'label';
@@ -28,7 +31,7 @@ export function T({ children, style, kind = 'body', color, numberOfLines }: {
     label: { fontFamily: fonts.bodyMedium, fontSize: 12.5, lineHeight: 18 },
   } satisfies Record<string, TextStyle>)[kind];
   const defaultColor = kind === 'small' || kind === 'label' ? c.muted : c.ink;
-  return <Text numberOfLines={numberOfLines} style={[base, { color: color ?? defaultColor, textAlign: START, writingDirection: 'rtl' }, style]}>{children}</Text>;
+  return <Text numberOfLines={numberOfLines} style={[base, { color: color ?? defaultColor, textAlign: START(), writingDirection: isEn() ? 'ltr' : 'rtl' }, style]}>{children}</Text>;
 }
 
 function ThemeToggle() {
@@ -59,11 +62,32 @@ export function Screen({ title, children, themeToggle }: { title: string; childr
         </View>
         <View style={[styles.row, { gap: 10 }]}>
           <T kind="h3" color={c.petrol}>يلا ويل</T>
+          {themeToggle ? <LangToggle /> : null}
           {themeToggle ? <ThemeToggle /> : null}
         </View>
       </View>
       {children}
     </ScrollView>
+  );
+}
+
+/** Arabic / English switch, shown on the home page. */
+export function LangToggle() {
+  const c = useColors();
+  const en = isEn();
+  return (
+    <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', borderWidth: 1.5, borderColor: c.petrol, borderRadius: 99, overflow: 'hidden' }}>
+      {([['ar', 'ع'], ['en', 'EN']] as const).map(([k, l]) => {
+        const on = (k === 'en') === en;
+        return (
+          <Pressable key={k} onPress={() => { if (!on) { play('tap'); setLang(k); } }} accessibilityRole="radio" accessibilityState={{ selected: on }}
+            accessibilityLabel={k === 'en' ? 'English' : 'العربي'}
+            style={{ paddingHorizontal: 10, height: 30, justifyContent: 'center', backgroundColor: on ? c.petrol : 'transparent' }}>
+            <Text style={{ fontFamily: k === 'en' ? fonts.displaySemi : fonts.bodyMedium, fontSize: 13, color: on ? c.onPetrol : c.petrol }}>{l}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -127,7 +151,7 @@ export function MacroBar({ label, value, target }: { label: string; value: numbe
       <View style={[styles.track, { backgroundColor: c.soft }]}>
         <View style={{ width: `${Math.min(100, target ? (value / target) * 100 : 0)}%`, height: '100%', borderRadius: 99, backgroundColor: c.petrol }} />
       </View>
-      <T kind="small" style={{ width: 78, textAlign: END, fontVariant: ['tabular-nums'] }}>{Math.round(value)} / {target} جم</T>
+      <T kind="small" style={{ width: 78, textAlign: END(), fontVariant: ['tabular-nums'] }}>{Math.round(value)} / {target} جم</T>
     </View>
   );
 }

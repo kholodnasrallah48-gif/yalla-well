@@ -97,7 +97,7 @@ export default function FoodScreen() {
   };
   const mealKcal = parsed ? parsed.items.reduce((a, it) => a + it.food.kcal * it.q, 0) + onlineFoods.reduce((a, f) => a + (f?.kcal ?? 0), 0) : 0;
   const anyToAdd = !!parsed && (parsed.items.length > 0 || onlineFoods.some(Boolean));
-  const input = { borderWidth: 1.5, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START } as const;
+  const input = { borderWidth: 1.5, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
 
   const saveCustom = () => {
     if (!form.n.trim() || !form.kcal) return;

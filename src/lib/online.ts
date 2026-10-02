@@ -125,7 +125,22 @@ export async function searchUSDA(en: string, key = USDA_KEY): Promise<OnlineFood
   const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${key}`;
   let j = await getJSON<{ foods?: USDAFood[] }>(url, 12000, { query: en, dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)'], pageSize: 12 });
   if (!j) j = await getJSON<{ foods?: USDAFood[] }>(`${url}&pageSize=12&query=${encodeURIComponent(en)}`);
-  return (Array.isArray(j?.foods) ? j.foods : []).map((x) => { try { return fromUSDA(x); } catch { return null; } }).filter((x): x is OnlineFood => !!x);
+  const hits = (Array.isArray(j?.foods) ? j.foods : []).map((x) => { try { return fromUSDA(x); } catch { return null; } }).filter((x): x is OnlineFood => !!x);
+  return rankUSDA(en, hits);
+}
+
+// Dishes and by-products that shouldn't win over the plain food unless they were asked for.
+const SIDE = ['oil', 'dressing', 'sandwich', 'salad', 'sauce', 'soup', 'baby', 'lomi', 'spread', 'casserole', 'pie', 'dip', 'french'];
+/** Puts plain foods first: more query words, fewer side words, then shorter names. */
+export function rankUSDA(en: string, hits: OnlineFood[]): OnlineFood[] {
+  const q = en.toLowerCase().split(/\s+/);
+  const score = (h: OnlineFood) => {
+    const words = h.name.toLowerCase().split(/[^a-z-]+/).filter(Boolean);
+    const found = q.filter((w) => words.some((x) => x === w || x.startsWith(w) || w.startsWith(x))).length;
+    const side = words.filter((x) => SIDE.includes(x) && !q.includes(x)).length;
+    return found * 10 - side * 6 - words.length * 0.3 + (words.includes('raw') ? 1 : 0);
+  };
+  return hits.map((h, i) => ({ h, s: score(h), i })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.h);
 }
 
 export async function searchOFF(query: string): Promise<OnlineFood[]> {

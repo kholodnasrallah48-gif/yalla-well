@@ -2,7 +2,9 @@
 import { dayKey, totals, weekIndex, type DayLog } from './day.ts';
 import { FOODS, healthNotes, type Food } from './foods.ts';
 import { genderFor, sessionFor, targets, type Profile } from './plan.ts';
+import { MEALS, MEAL_NAME } from './mealplan.ts';
 import { programWeek } from './progress.ts';
+import type { Meal } from './recipes-data.ts';
 
 export type ReportDay = {
   key: string; date: Date; logged: boolean; future: boolean;
@@ -87,6 +89,13 @@ export function weekReport(p: Profile, start: Date, logs: Record<string, DayLog 
   const red = past.flatMap((d) => d.redFoods);
   if (red.length) misses.push(`${g('أكلت', 'أكلتي')} حاجات مش مناسبة لحالتك ${ar(red.length)} مرة: ${Array.from(new Set(red)).slice(0, 4).join('، ')}.`);
   else if (n) wins.push('مفيش أكلة مش مناسبة لحالتك طول الأسبوع.');
+  // Meals not ticked, on the days the person used the meal ticks.
+  const ticked = past.map((d) => logs[d.key]?.meals).filter((m): m is Meal[] => !!m && m.length > 0);
+  if (ticked.length) {
+    const skipped = MEALS.filter((m) => m !== 'snack').map((m) => [m, ticked.filter((x) => !x.includes(m)).length] as const).filter(([, k]) => k > 0);
+    if (skipped.length) misses.push(`${g('مخدتش', 'مخدتيش')} ${skipped.map(([m, k]) => `${MEAL_NAME[m]} ${nDays(k)}`).join('، و')}.`);
+    else wins.push(`${g('خدت', 'خدتي')} وجباتك الأساسية كلها.`);
+  }
   const missing = past.length - n;
   if (missing) misses.push(`${g('مسجلتش', 'مسجلتيش')} أكل ${nDays(missing)}، فالتقرير مش كامل.`);
   return { days, wins, misses, from: days[0].date, to: days[6].date };

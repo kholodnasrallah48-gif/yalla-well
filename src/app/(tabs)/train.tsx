@@ -3,19 +3,20 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Card, NoteView, Screen, T, styles } from '../../components/ui.tsx';
-import { SCHEDULES, SESSIONS, WEEK_SHORT } from '../../lib/data.ts';
+import { WEEK, WEEK_SHORT } from '../../lib/data.ts';
 import { dayKey, weekIndex, type DayLog } from '../../lib/day.ts';
-import { genderFor, medical, sessionFor } from '../../lib/plan.ts';
+import { genderFor, medical, sessionFor, weekPlaces, type DayPlace } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
+import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
 export default function Train() {
   const c = useColors();
-  const { profile, day, readDay, writeDay } = useStore();
+  const { profile, day, readDay, updateDay, saveProfile } = useStore();
   const todayIdx = weekIndex(new Date());
   const [sel, setSel] = useState(todayIdx);
-  // Earlier days of this week can still be ticked (a workout done yesterday but not marked); later days can't.
+  // Only today can be ticked: earlier days are closed and kept as they were for the report; later days are ahead.
   const selDate = new Date(); selDate.setDate(selDate.getDate() + sel - todayIdx);
   const selKey = dayKey(selDate);
   const [other, setOther] = useState<DayLog | null>(null);
@@ -28,27 +29,30 @@ export default function Train() {
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const isToday = sel === todayIdx;
-  const canTick = sel <= todayIdx;
+  const canTick = isToday;
+  const past = sel < todayIdx;
   const log = isToday ? day : other;
   const week = programWeek(profile.start, selDate);
   const ses = sessionFor(profile, sel, !!log?.flare, week);
-  const map = SCHEDULES[profile.schedule].map;
+  const places = weekPlaces(profile);
+  const setPlace = (pl: DayPlace) => { play('tap'); saveProfile({ ...profile, places: { ...profile.places, [sel]: pl } }); };
   const done = log?.done ?? [];
   const n = ses ? ses.items.filter((x) => done.includes(x.id)).length : 0;
   const M = medical(profile);
   const toggle = (id: string) => {
+    const was = done.includes(id);
+    play(was ? 'remove' : ses && n + 1 === ses.items.length ? 'win' : 'check');
     const flip = (d: DayLog) => ({ ...d, done: d.done.includes(id) ? d.done.filter((x) => x !== id) : [...d.done, id] });
-    writeDay(selKey, flip).then((d) => { if (!isToday) setOther(d); });
+    updateDay(flip);
   };
 
   return (
     <Screen title="التمرين">
       <View style={[styles.row, { gap: 5 }]}>
         {WEEK_SHORT.map((w, i) => {
-          const s = map[i];
-          const pl = s ? SESSIONS[s].pl : null;
+          const pl = places[i];
           return (
-            <Pressable key={w} onPress={() => setSel(i)} accessibilityRole="button" accessibilityState={{ selected: i === sel }}
+            <Pressable key={w} onPress={() => { play('tap'); setSel(i); }} accessibilityRole="button" accessibilityState={{ selected: i === sel }}
               style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 6, borderRadius: 12, backgroundColor: c.surface, borderWidth: i === sel ? 2 : 1, borderColor: i === sel ? c.petrol : c.line }}>
               <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, color: c.ink }}>{w}</Text>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: pl === 'gym' ? c.petrol : pl === 'home' ? c.lime : c.line }} />
@@ -57,6 +61,23 @@ export default function Train() {
           );
         })}
       </View>
+
+      {past ? null : (
+        <View style={[styles.row, { gap: 8 }]}>
+          <T kind="small" style={{ flexShrink: 1 }}>{isToday ? 'النهارده' : `يوم ${WEEK[sel]}`} {g('هتتمرن', 'هتتمرني')} فين؟</T>
+          <View style={[styles.row, { gap: 6, flex: 1, justifyContent: 'flex-end' }]}>
+            {([['gym', 'جيم'], ['home', 'بيت'], ['rest', 'راحة']] as [DayPlace, string][]).map(([k, l]) => {
+              const on = places[sel] === k;
+              return (
+                <Pressable key={k} onPress={() => setPlace(k)} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                  style={{ borderWidth: 1.5, borderColor: on ? c.petrol : c.line, backgroundColor: on ? (k === 'home' ? c.lime : k === 'gym' ? c.petrol : c.soft) : c.surface, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 5 }}>
+                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: on ? (k === 'gym' ? c.onPetrol : k === 'home' ? c.onLime : c.petrol) : c.ink }}>{l}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
       {ses && !ses.flare ? (
         <Card tone="petrol">
@@ -79,9 +100,9 @@ export default function Train() {
               <View style={{ height: 6, borderRadius: 99, backgroundColor: c.soft, overflow: 'hidden' }}>
                 <View style={{ height: '100%', width: `${ses.items.length ? (n / ses.items.length) * 100 : 0}%`, backgroundColor: c.lime }} />
               </View>
-              <T kind="small">{g('خلصت', 'خلصتي')} {n} من {ses.items.length}{isToday ? '' : ` يوم ${WEEK_SHORT[sel]}`}</T>
+              <T kind="small">{g('خلصت', 'خلصتي')} {n} من {ses.items.length}</T>
             </>
-          ) : <T kind="small" color={c.warn}>ده يوم جاي، {g('هتقدر تعلّم', 'هتقدري تعلّمي')} على التمارين يومها. {g('اختار', 'اختاري')} النهارده من فوق.</T>}
+          ) : <T kind="small" color={c.warn}>{past ? `اليوم ده اتقفل واتسجل في التقرير: ${g('خلصت', 'خلصتي')} ${n} من ${ses.items.length}.` : `ده يوم جاي، ${g('هتقدر تعلّم', 'هتقدري تعلّمي')} على التمارين يومها.`}</T>}
           {ses.items.map((x, i) => {
             const on = done.includes(x.id);
             const logged = log?.sets?.[x.id]?.length ?? 0;

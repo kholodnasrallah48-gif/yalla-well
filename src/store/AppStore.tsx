@@ -25,8 +25,8 @@ type Store = {
   resetAll: () => Promise<void>;
   /** A saved day's log (today's comes from memory), or null when nothing was logged. */
   readDay: (key: string) => Promise<DayLog | null>;
-  /** Changes another day's log (today goes through updateDay). Returns the saved log. */
-  writeDay: (key: string, fn: (d: DayLog) => DayLog) => Promise<DayLog>;
+  /** On how many of the last 30 days (today included) each food id was logged. */
+  usage: Record<string, number>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -50,6 +50,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [day, setDay] = useState<DayLog>(blankDay);
   const todayRef = useRef(today);
   todayRef.current = today;
+  // Foods logged on the 29 days before today, counted once per day; today's are added live below.
+  const [pastUse, setPastUse] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const keys = Array.from({ length: 29 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 1 - i); return K.day(dayKey(d)); });
+    AsyncStorage.multiGet(keys).then((rows) => {
+      const n: Record<string, number> = {};
+      for (const [, v] of rows) {
+        if (!v) continue;
+        try { for (const ref of new Set(((JSON.parse(v) as DayLog).foods ?? []).map((x) => x.ref))) n[ref] = (n[ref] ?? 0) + 1; } catch { /* skip a broken day */ }
+      }
+      setPastUse(n);
+    }).catch(() => {});
+  }, [today]);
 
   useEffect(() => {
     (async () => {
@@ -66,17 +79,20 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // Roll over to a fresh day when the app comes back after midnight.
+  // After midnight the finished day stays saved as it was (for the report) and a fresh day starts:
+  // checked when the app comes back to the screen and every minute while it stays open.
   useEffect(() => {
-    const sub = AppState.addEventListener('change', async (s) => {
-      if (s !== 'active') return;
+    const roll = async () => {
       const k = dayKey(new Date());
       if (k === todayRef.current) return;
+      todayRef.current = k;
       const d = await readJSON<DayLog>(K.day(k));
       setToday(k);
       setDay({ ...blankDay(), ...(d ?? {}) });
-    });
-    return () => sub.remove();
+    };
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') roll(); });
+    const timer = setInterval(roll, 60_000);
+    return () => { sub.remove(); clearInterval(timer); };
   }, []);
 
   const saveProfile = useCallback((p: Profile) => { setProfile(p); writeJSON(K.profile, p); }, []);
@@ -101,17 +117,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return d ? { ...blankDay(), ...d } : null;
   }, [day]);
 
-  const writeDay = useCallback(async (key: string, fn: (d: DayLog) => DayLog) => {
-    if (key === todayRef.current) { let out = blankDay(); updateDay((d) => (out = fn(d))); return out; }
-    const d = await readJSON<DayLog>(K.day(key));
-    const next = fn({ ...blankDay(), ...(d ?? {}) });
-    await writeJSON(K.day(key), next);
-    return next;
-  }, [updateDay]);
+  const usage = useMemo(() => {
+    const n = { ...pastUse };
+    for (const ref of new Set(day.foods.map((x) => x.ref))) n[ref] = (n[ref] ?? 0) + 1;
+    return n;
+  }, [pastUse, day]);
 
   const value = useMemo(
-    () => ({ ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, writeDay }),
-    [ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, writeDay],
+    () => ({ ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage }),
+    [ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

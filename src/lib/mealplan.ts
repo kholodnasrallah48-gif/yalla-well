@@ -58,21 +58,20 @@ export function mealOptions(p: Profile, meal: Meal, budget = targets(p).kcal * S
 }
 
 export type PlanEntry = {
-  meal: Meal; recipe: Recipe | null; budget: number; eaten: boolean; why: string[];
-  /** The meal's time is over for today, so its share went to the meals still to come. */
-  passed: boolean;
+  meal: Meal; recipe: Recipe | null; budget: number;
+  /** The person ticked this meal as eaten (or logged its suggested dish). */
+  eaten: boolean;
+  why: string[];
   /** Even the lightest fitting dish is more than the budget: eat this part of it (e.g. 0.5 = half). */
   portion: number;
 };
-/** Hour of the day after which a meal counts as over (dinner stays open all evening). */
-const ENDS: Record<Meal, number> = { breakfast: 11, lunch: 17, snack: 21, dinner: 24 };
 
 /**
- * The plan for a day. Meals whose suggested dish was already logged count as eaten, and meals whose time is over
- * (by `hour`, the local hour now) are skipped; the calories left today are split over the meals still to come by
- * their usual share. `shuffle[meal]` moves that meal to the next option.
+ * The plan for a day. Meals the person ticked (`doneMeals`) or whose suggested dish they logged count as eaten;
+ * the calories left today are split over the meals not ticked yet by their usual share.
+ * `shuffle[meal]` moves that meal to the next option.
  */
-export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, number>> = {}, loggedRefs: string[] = [], eatenKcal = 0, hour = 0): PlanEntry[] {
+export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, number>> = {}, loggedRefs: string[] = [], eatenKcal = 0, doneMeals: Meal[] = []): PlanEntry[] {
   const target = targets(p).kcal;
   const used = new Set<string>();
   // The day's dish for each meal from the best-suited few, so it changes daily but stays a good fit.
@@ -88,19 +87,17 @@ export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, 
     const opts = RECIPES.filter((r) => r.meal === meal && recipeFits(p, r) && !used.has(r.n)).sort((a, b) => a.kcal - b.kcal).slice(0, 3);
     return opts.length ? opts[(shuffle[meal] ?? 0) % opts.length] : null;
   };
-  const eaten = (m: Meal) => loggedRefs.some((ref) => RECIPES.some((r) => r.meal === m && 'r_' + r.id === ref));
-  const passed = (m: Meal) => !eaten(m) && hour >= ENDS[m];
-  const open = MEALS.filter((m) => !eaten(m) && !passed(m));
-  const leftShare = open.reduce((a, m) => a + SHARE[m], 0) || 1;
+  const loggedDish = (m: Meal) => RECIPES.find((r) => r.meal === m && loggedRefs.includes('r_' + r.id)) ?? null;
+  const eaten = (m: Meal) => doneMeals.includes(m) || !!loggedDish(m);
+  const leftShare = MEALS.filter((m) => !eaten(m)).reduce((a, m) => a + SHARE[m], 0) || 1;
   const left = Math.max(0, target - eatenKcal);
   return MEALS.map((meal) => {
     const done = eaten(meal);
-    const gone = passed(meal);
-    const budget = done || gone ? 0 : (left * SHARE[meal]) / leftShare;
+    const budget = done ? 0 : (left * SHARE[meal]) / leftShare;
     let recipe: Recipe | null = null;
     let portion = 1;
-    if (done) recipe = RECIPES.find((r) => r.meal === meal && loggedRefs.includes('r_' + r.id)) ?? null;
-    else if (!gone && budget >= 80) {
+    if (done) recipe = loggedDish(meal);
+    else if (left >= 80) {
       recipe = pick(meal, budget);
       if (!recipe) {
         recipe = lightest(meal);
@@ -108,7 +105,7 @@ export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, 
       }
     }
     if (recipe) used.add(recipe.n);
-    return { meal, recipe, budget: Math.round(budget), eaten: done, passed: gone, portion, why: recipe ? suitability(p, recipe).why : [] };
+    return { meal, recipe, budget: Math.round(budget), eaten: done, portion, why: recipe ? suitability(p, recipe).why : [] };
   });
 }
 

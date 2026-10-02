@@ -5,17 +5,18 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { AdviceView, Dot, MacroChips } from '../../components/food.tsx';
 import { Btn, Card, Screen, START, T, styles } from '../../components/ui.tsx';
 import { addFood, changePortion, fmt, totals } from '../../lib/day.ts';
-import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, foodAdvice, foodLevel, itemAlerts, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../../lib/foods.ts';
+import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, OFTEN, byUse, oftenFoods, foodAdvice, foodLevel, itemAlerts, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../../lib/foods.ts';
 import { searchOnline, toFood, type OnlineFood } from '../../lib/online.ts';
 import { MEAL_NAME, dayPlan } from '../../lib/mealplan.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
+import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
-function IconBtn({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+function IconBtn({ label, a11y, onPress, silent }: { label: string; a11y: string; onPress: () => void; silent?: boolean }) {
   const c = useColors();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={a11y} onPress={onPress}
+    <Pressable accessibilityRole="button" accessibilityLabel={a11y} onPress={() => { if (!silent) play(label === '−' ? 'remove' : 'tap'); onPress(); }}
       style={{ width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ fontSize: 20, lineHeight: 22, color: c.petrol, fontFamily: fonts.display }}>{label}</Text>
     </Pressable>
@@ -26,9 +27,10 @@ type Found = { loading: boolean; hits: OnlineFood[]; pick: number; grams: string
 
 export default function FoodScreen() {
   const c = useColors();
-  const { profile, day, today, custom, updateDay, addCustomFood } = useStore();
+  const { profile, day, today, custom, updateDay, addCustomFood, usage } = useStore();
   const [q, setQ] = useState('');
-  const [cat, setCat] = useState(ALL_CAT);
+  // The open section of the food menu (null = all closed).
+  const [cat, setCat] = useState<string | null>(null);
   const [form, setForm] = useState({ n: '', u: '', kcal: '', p: '', c: '', f: '' });
   const [meal, setMeal] = useState('');
   const [parsed, setParsed] = useState<{ items: ParsedItem[]; unknown: Unknown[] } | null>(null);
@@ -38,21 +40,21 @@ export default function FoodScreen() {
   const [open, setOpen] = useState<string | null>(null);
   const all = useMemo(() => [...FOODS, ...custom.map((f) => ({ ...f, cat: MY_FOODS_CAT }))], [custom]);
   const byId = useMemo(() => new Map(all.map((f) => [f.id, f])), [all]);
+  // Typing searches every section; otherwise only the open section is listed.
   const pool = useMemo(() => {
-    let list = all;
-    if (cat !== ALL_CAT) list = list.filter((f) => f.cat === cat);
     const s = norm(q);
-    if (s) list = list.filter((f) => norm(f.n).includes(s) || norm(f.u).includes(s));
-    return list.slice(0, 80);
-  }, [q, cat, all]);
+    if (s) return byUse(all.filter((f) => norm(f.n).includes(s) || norm(f.u).includes(s)), usage).slice(0, 25);
+    return cat ? byUse(all.filter((f) => f.cat === cat), usage) : [];
+  }, [q, cat, all, usage]);
+  const often = useMemo(() => oftenFoods(all, usage), [all, usage]);
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
-  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), totals(day).kcal, new Date().getHours());
+  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), totals(day).kcal, day.meals);
   const t = totals(day);
   const remaining = T0.kcal - t.kcal;
   const female = profile.sex !== 'm';
-  const add = (f: Food) => { updateDay((d) => addFood(d, f)); setOpen(null); };
+  const add = (f: Food) => { play(profile && foodLevel(profile, f) === 'bad' ? 'warn' : 'add'); updateDay((d) => addFood(d, f)); setOpen(null); };
   // Online foods are kept in "أكلاتي" so next time they come from the list without internet.
   const remember = (f: Food) => { if (!custom.some((x) => x.id === f.id)) addCustomFood(f); };
   const calc = () => {
@@ -105,6 +107,34 @@ export default function FoodScreen() {
     setForm({ n: '', u: '', kcal: '', p: '', c: '', f: '' });
   };
 
+  // One food in the menu: name, portion and macros, a badge when eaten often, + to log it, tap for advice.
+  const row = (f: Food, line: boolean) => {
+    const isOpen = open === f.id;
+    const used = usage[f.id] ?? 0;
+    return (
+      <View key={f.id} style={{ gap: 8, paddingVertical: 8, borderBottomWidth: line ? 1 : 0, borderColor: c.line }}>
+        <View style={[styles.row, { gap: 10 }]}>
+          <Pressable style={[styles.row, { flex: 1, gap: 8 }]} onPress={() => setOpen(isOpen ? null : f.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}>
+            <Dot level={foodLevel(profile, f)} />
+            <View style={{ flex: 1 }}>
+              <View style={[styles.row, { gap: 6, flexWrap: 'wrap' }]}>
+                <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{f.n}</T>
+                {used >= OFTEN ? (
+                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: c.onLime, backgroundColor: c.lime, borderRadius: 99, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 1 }}>
+                    متكررة · {used.toLocaleString('ar-EG')} {used <= 10 ? 'أيام' : 'يوم'}
+                  </Text>
+                ) : null}
+              </View>
+              <T kind="small">{f.u} · {fmt(f.kcal)} سعرة · ب {f.p} ك {f.c} د {f.f}</T>
+            </View>
+          </Pressable>
+          <IconBtn label="+" a11y={`إضافة ${f.n}`} onPress={() => add(f)} silent />
+        </View>
+        {isOpen ? <AdviceView advice={foodAdvice(profile, f, remaining, all)} onSwap={add} female={female} /> : null}
+      </View>
+    );
+  };
+
   return (
     <Screen title="الأكل">
       <Card>
@@ -124,27 +154,37 @@ export default function FoodScreen() {
 
       <Card>
         <T kind="h2">اقتراحات النهارده</T>
-        <T kind="small">على قد السعرات الفاضلة {g('ليك', 'ليكي')} النهارده ومترتبة حسب حالتك وأدويتك. {g('دوس', 'دوسي')} على الأكلة {g('تشوف', 'تشوفي')} المكونات والطريقة والفيديو.</T>
-        {plan.map(({ meal, recipe: r, eaten, why, passed, portion }, i) => {
-          if (!r) return (
-            <View key={meal} style={[styles.row, { gap: 8, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line, opacity: passed ? 0.55 : 1 }]}>
-              <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}</T>
-              <T kind="small" style={{ flex: 1 }}>{passed
-                ? 'وقتها عدّى، وسعراتها اتنقلت للوجبات الجاية.'
-                : `مفيش سعرات فاضلة كفاية النهارده. لو ${g('جعت', 'جعتي')} خليها خضار أو زبادي لايت.`}</T>
-            </View>
-          );
+        <T kind="small">على قد السعرات الفاضلة {g('ليك', 'ليكي')} ومترتبة حسب حالتك وأدويتك. {g('علّم', 'علّمي')} على الوجبة لما {g('تخلصها', 'تخلصيها')}، والسعرات الباقية بتتقسم على اللي لسه. {g('دوس', 'دوسي')} على الأكلة {g('تشوف', 'تشوفي')} الطريقة والفيديو.</T>
+        {plan.map(({ meal, recipe: r, eaten, why, portion }, i) => {
+          const ticked = (day.meals ?? []).includes(meal);
+          const loggedDish = eaten && !ticked;
+          const tick = () => {
+            if (loggedDish) return;
+            play(ticked ? 'remove' : plan.filter((e) => !e.eaten).length === 1 ? 'win' : 'check');
+            updateDay((d) => ({ ...d, meals: ticked ? (d.meals ?? []).filter((m) => m !== meal) : [...(d.meals ?? []), meal] }));
+          };
           return (
-            <View key={meal} style={[styles.row, { gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line, opacity: eaten ? 0.6 : 1 }]}>
-              <Pressable style={{ flex: 1, gap: 2 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button" accessibilityLabel={`${MEAL_NAME[meal]}: ${r.n}`}>
-                <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}{eaten ? ' · اتاكلت ✓' : ''}</T>
-                <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{r.n}</T>
-                <T kind="small">{fmt(Math.round(r.kcal * portion))} سعرة · {r.mins} دقيقة</T>
-                {portion < 1 && !eaten ? <T kind="small" color={c.warn}>{g('خد', 'خدي')} {portion === 0.5 ? 'نص' : 'تلات تربع'} الكمية عشان تفضل{g('', 'ي')} في حدود سعراتك</T> : null}
-                {why.length && !eaten ? <T kind="small" color={c.ok}>{why.join('، ')}</T> : null}
+            <View key={meal} style={[styles.row, { gap: 10, alignItems: 'flex-start', paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.line }]}>
+              <Pressable onPress={tick} disabled={loggedDish} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: eaten }} accessibilityLabel={`${g('خلصت', 'خلصتي')} ${MEAL_NAME[meal]}`}
+                style={{ width: 26, height: 26, marginTop: 2, borderRadius: 8, borderWidth: 2, borderColor: c.petrol, backgroundColor: eaten ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                {eaten ? <Text style={{ color: c.onPetrol, fontSize: 15, fontWeight: '700' }}>✓</Text> : null}
               </Pressable>
-              {eaten ? null : (
-                <Pressable onPress={() => updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } }))} accessibilityRole="button" accessibilityLabel={`اقتراح تاني لـ${MEAL_NAME[meal]}`}
+              {r ? (
+                <Pressable style={{ flex: 1, gap: 2, opacity: eaten ? 0.6 : 1 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button" accessibilityLabel={`${MEAL_NAME[meal]}: ${r.n}`}>
+                  <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}{eaten ? ` · ${g('خلصته', 'خلصتيه')} ✓` : ''}</T>
+                  <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{r.n}</T>
+                  <T kind="small">{fmt(Math.round(r.kcal * portion))} سعرة · {r.mins} دقيقة</T>
+                  {portion < 1 && !eaten ? <T kind="small" color={c.warn}>{g('خد', 'خدي')} {portion === 0.5 ? 'نص' : 'تلات تربع'} الكمية عشان تفضل{g('', 'ي')} في حدود سعراتك</T> : null}
+                  {why.length && !eaten ? <T kind="small" color={c.ok}>{why.join('، ')}</T> : null}
+                </Pressable>
+              ) : (
+                <View style={{ flex: 1, gap: 2, opacity: eaten ? 0.6 : 1 }}>
+                  <T kind="label" color={c.petrol}>{MEAL_NAME[meal]}{eaten ? ` · ${g('خلصته', 'خلصتيه')} ✓` : ''}</T>
+                  {eaten ? null : <T kind="small">مفيش سعرات فاضلة كفاية النهارده. لو {g('جعت', 'جعتي')} خليها خضار أو زبادي لايت.</T>}
+                </View>
+              )}
+              {eaten || !r ? null : (
+                <Pressable onPress={() => { play('tap'); updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } })); }} accessibilityRole="button" accessibilityLabel={`اقتراح تاني لـ${MEAL_NAME[meal]}`}
                   style={{ borderWidth: 1, borderColor: c.line, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface }}>
                   <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>غيّر</Text>
                 </Pressable>
@@ -266,32 +306,36 @@ export default function FoodScreen() {
       <Card>
         <T kind="h2">{g('ضيف أكلة', 'ضيفي أكلة')}</T>
         <TextInput value={q} onChangeText={(v) => { setQ(v); setWeb(null); }} onSubmitEditing={searchWeb} returnKeyType="search" placeholder={g('دور: فول، فراخ، بيبسي...', 'دوري: فول، فراخ، بيبسي...')} placeholderTextColor={c.muted} style={input} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-          {FOOD_CATS.map((k) => (
-            <Pressable key={k} onPress={() => setCat(k)} accessibilityRole="button"
-              style={{ borderWidth: 1, borderColor: k === cat ? c.petrol : c.line, backgroundColor: k === cat ? c.petrol : c.surface, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4 }}>
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: k === cat ? c.onPetrol : c.ink }}>{k}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-        {pool.length ? pool.map((f, i) => {
-          const isOpen = open === f.id;
-          return (
-            <View key={f.id} style={{ gap: 8, paddingVertical: 8, borderBottomWidth: i < pool.length - 1 ? 1 : 0, borderColor: c.line }}>
-              <View style={[styles.row, { gap: 10 }]}>
-                <Pressable style={[styles.row, { flex: 1, gap: 8 }]} onPress={() => setOpen(isOpen ? null : f.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}>
-                  <Dot level={foodLevel(profile, f)} />
-                  <View style={{ flex: 1 }}>
-                    <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{f.n}</T>
-                    <T kind="small">{f.u} · {fmt(f.kcal)} سعرة · ب {f.p} ك {f.c} د {f.f}</T>
-                  </View>
-                </Pressable>
-                <IconBtn label="+" a11y={`إضافة ${f.n}`} onPress={() => add(f)} />
+        {q.trim() ? (
+          pool.length ? <View>{pool.map((f, i) => row(f, i < pool.length - 1))}</View> : <T kind="small">مفيش نتيجة في اللستة.</T>
+        ) : (
+          <>
+            {often.length ? (
+              <View style={{ gap: 2 }}>
+                <T kind="h3">الأكتر استخدامًا</T>
+                {often.map((f, i) => row(f, i < often.length - 1))}
               </View>
-              {isOpen ? <AdviceView advice={foodAdvice(profile, f, remaining, all)} onSwap={add} female={female} /> : null}
+            ) : <T kind="small">الأكل اللي {g('بتاكله', 'بتاكليه')} كتير هيظهر هنا فوق عشان {g('تضيفه', 'تضيفيه')} بسرعة.</T>}
+            <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: 14, overflow: 'hidden' }}>
+              {FOOD_CATS.filter((k) => k !== ALL_CAT).map((k, ci, cats) => {
+                const n = all.filter((f) => f.cat === k).length;
+                if (!n) return null;
+                const isCat = cat === k;
+                return (
+                  <View key={k} style={{ borderBottomWidth: ci < cats.length - 1 ? 1 : 0, borderColor: c.line }}>
+                    <Pressable onPress={() => { play('tap'); setCat(isCat ? null : k); setOpen(null); }} accessibilityRole="button" accessibilityState={{ expanded: isCat }}
+                      style={[styles.row, { gap: 8, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: isCat ? c.soft : c.surface }]}>
+                      <Text style={{ flex: 1, fontFamily: fonts.displaySemi, fontSize: 15, color: isCat ? c.petrol : c.ink }}>{k}</Text>
+                      <Text style={{ fontFamily: fonts.body, fontSize: 12, color: c.muted }}>{n.toLocaleString('ar-EG')} أكلة</Text>
+                      <Text style={{ fontFamily: fonts.display, fontSize: 16, color: c.petrol, transform: [{ rotate: isCat ? '-90deg' : '0deg' }] }}>‹</Text>
+                    </Pressable>
+                    {isCat ? <View style={{ paddingHorizontal: 12 }}>{pool.map((f, i) => row(f, i < pool.length - 1))}</View> : null}
+                  </View>
+                );
+              })}
             </View>
-          );
-        }) : <T kind="small">مفيش نتيجة في اللستة.</T>}
+          </>
+        )}
         {q.trim().length > 1 && !web ? <Btn kind="outline" title={`${g('دوّر', 'دوّري')} على "${q.trim()}" أونلاين`} onPress={searchWeb} /> : null}
         {web ? (
           <View style={{ gap: 8 }}>
@@ -311,7 +355,7 @@ export default function FoodScreen() {
                     <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{h.name}</T>
                     <T kind="small">{f.u} · {fmt(f.kcal)} سعرة · ب {fmt(f.p)} ك {fmt(f.c)} د {fmt(f.f)} · {h.src}</T>
                   </View>
-                  <IconBtn label="+" a11y={`إضافة ${h.name}`} onPress={() => { add(f); remember(f); }} />
+                  <IconBtn label="+" a11y={`إضافة ${h.name}`} onPress={() => { add(f); remember(f); }} silent />
                 </View>
               );
             }) : <T kind="small" color={c.warn}>ملقيناش حاجة أونلاين. {g('جرب', 'جربي')} كلمة تانية أو {g('ضيفها', 'ضيفيها')} كأكلة خاصة تحت.</T>}

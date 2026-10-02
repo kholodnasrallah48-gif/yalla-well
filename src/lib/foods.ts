@@ -19,6 +19,16 @@ export const FOODS: Food[] = FOOD_ROWS.map((r, i) => ({
 export const MY_FOODS_CAT = 'أكلاتي';
 export const ALL_CAT = 'الكل';
 export const FOOD_CATS = [ALL_CAT, ...Array.from(new Set(FOODS.map((f) => f.cat))), MY_FOODS_CAT];
+/** A food logged on at least this many recent days is shown as one the person eats often. */
+export const OFTEN = 2;
+/** Most-used foods first (keeping the list's own order otherwise). */
+export function byUse(list: Food[], usage: Record<string, number>): Food[] {
+  return list.map((f, i) => ({ f, i, n: usage[f.id] ?? 0 })).sort((a, b) => b.n - a.n || a.i - b.i).map((x) => x.f);
+}
+/** The person's usual foods, most used first. */
+export function oftenFoods(list: Food[], usage: Record<string, number>, max = 6): Food[] {
+  return byUse(list.filter((f) => (usage[f.id] ?? 0) >= OFTEN), usage).slice(0, max);
+}
 
 const AUTOIMMUNE = ['hashimoto', 'graves', 'ra', 'psoriasis', 'lupus', 'ms', 'ibd', 'celiac', 't1d'];
 const SUGAR = ['t1d', 't2d', 'ir', 'pcos'];

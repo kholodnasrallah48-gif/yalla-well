@@ -1,11 +1,12 @@
 // Shared building blocks styled from the brand tokens.
+import { play } from '../lib/sound.ts';
 import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { WEEK, WEEK_SHORT, SESSIONS, SCHEDULES } from '../lib/data.ts';
-import type { Note, Profile } from '../lib/plan.ts';
+import { weekPlaces, type Note, type Profile } from '../lib/plan.ts';
 import { fonts, useColors, useTheme } from '../theme.ts';
 
 // Native forces RTL, which swaps left/right text alignment; web keeps physical sides under dir=rtl.
@@ -34,7 +35,7 @@ function ThemeToggle() {
   const c = useColors();
   const { isDark, toggle } = useTheme();
   return (
-    <Pressable onPress={toggle} accessibilityRole="switch" accessibilityState={{ checked: isDark }} accessibilityLabel="الوضع الليلي"
+    <Pressable onPress={() => { play('tap'); toggle(); }} accessibilityRole="switch" accessibilityState={{ checked: isDark }} accessibilityLabel="الوضع الليلي"
       style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c.petrol} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         {isDark
@@ -83,7 +84,7 @@ export function Btn({ title, onPress, kind = 'primary', disabled, style }: {
     text: { bg: 'transparent', fg: c.muted, border: 'transparent' },
   }[kind];
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} disabled={disabled}
+    <Pressable accessibilityRole="button" onPress={() => { play(kind === 'primary' ? 'add' : 'tap'); onPress(); }} disabled={disabled}
       style={({ pressed }) => [styles.btn, { backgroundColor: look.bg, borderColor: look.border, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 }, style]}>
       <Text style={{ fontFamily: fonts.display, fontSize: 15, color: look.fg, textAlign: 'center' }}>{title}</Text>
     </Pressable>
@@ -134,7 +135,7 @@ export function MacroBar({ label, value, target }: { label: string; value: numbe
 export function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   const c = useColors();
   return (
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={onPress}
+    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => { play('tap'); onPress(); }}
       style={[styles.chip, { borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : c.surface }]}>
       <Text style={{ fontFamily: fonts.body, fontSize: 14, color: on ? c.onPetrol : c.ink }}>{label}</Text>
     </Pressable>
@@ -144,7 +145,7 @@ export function Chip({ label, on, onPress }: { label: string; on: boolean; onPre
 export function Choice({ title, sub, on, onPress, style }: { title: string; sub?: string; on: boolean; onPress: () => void; style?: StyleProp<ViewStyle> }) {
   const c = useColors();
   return (
-    <Pressable accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={onPress}
+    <Pressable accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => { play('tap'); onPress(); }}
       style={[styles.choice, { borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.soft : c.surface, borderWidth: on ? 2 : 1.5 }, style]}>
       <T kind="h3">{title}</T>
       {sub ? <T kind="small">{sub}</T> : null}
@@ -155,12 +156,11 @@ export function Choice({ title, sub, on, onPress, style }: { title: string; sub?
 /** Seven small day tiles: dark = gym, lime = home, empty = rest. */
 export function WeekStrip({ profile, today }: { profile: Profile; today: number }) {
   const c = useColors();
-  const map = SCHEDULES[profile.schedule].map;
+  const places = weekPlaces(profile);
   return (
     <View style={[styles.row, { gap: 5 }]}>
       {WEEK_SHORT.map((w, i) => {
-        const s = map[i];
-        const pl = s ? SESSIONS[s].pl : null;
+        const pl = places[i];
         const bg = pl === 'gym' ? c.bg : pl === 'home' ? c.lime : 'rgba(255,255,255,0.16)';
         const fg = pl === 'gym' ? c.petrol : pl === 'home' ? c.onLime : c.onPetrol;
         return (

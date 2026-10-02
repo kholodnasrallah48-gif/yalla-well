@@ -4,13 +4,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
-import { FOODS, findSwaps, foodAdvice, itemAlerts, parseMeal } from './foods.ts';
+import { FOODS, byUse, findSwaps, foodAdvice, itemAlerts, oftenFoods, parseMeal } from './foods.ts';
 import { dayPlan, mealOptions, suitability } from './mealplan.ts';
 import { reportHTML, weekReport, weekStart } from './report.ts';
 import { fromOFF } from './barcode.ts';
 import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
 import { addFood, blankDay, changePortion, dayKey, totals, weekIndex, type DayLog } from './day.ts';
-import { medical, sessionFor, targets, type Profile } from './plan.ts';
+import { medical, sessionFor, targets, weekSessions, type Profile } from './plan.ts';
 import { PHASES, programWeek, suggestWeight } from './progress.ts';
 
 const base: Profile = {
@@ -275,21 +275,36 @@ test('meal plan fits conditions, ranks by them, follows calories left and shuffl
   assert.ok(after.filter((e) => !e.eaten).reduce((s, e) => s + e.budget, 0) <= total - 1100 + 1);
 });
 
-test('evening plan gives the calories left to the meals still to come', () => {
-  // 733 eaten of the target at 7:41 PM: breakfast and lunch are over, snack and dinner get the rest.
+test('ticked meals hand the calories left to the meals not ticked yet', () => {
+  // 733 eaten of the target, breakfast and lunch ticked: snack and dinner share the rest, whatever the hour.
   const p: Profile = { ...base, conditions: ['hashimoto'] };
   const total = targets(p).kcal;
-  const x = dayPlan(p, '2026-10-02', {}, [], total - 557, 19);
+  const x = dayPlan(p, '2026-10-02', {}, [], total - 557, ['breakfast', 'lunch']);
   const get = (m: string) => x.find((e) => e.meal === m)!;
-  assert.ok(get('breakfast').passed && !get('breakfast').recipe);
-  assert.ok(get('lunch').passed && !get('lunch').recipe);
-  assert.ok(get('dinner').recipe, 'dinner');
-  assert.ok(get('snack').recipe, 'snack');
+  assert.ok(get('breakfast').eaten && get('lunch').eaten);
+  assert.ok(get('dinner').recipe && !get('dinner').eaten, 'dinner');
+  assert.ok(get('snack').recipe && !get('snack').eaten, 'snack');
   assert.ok(Math.abs(get('dinner').budget + get('snack').budget - 557) <= 2);
-  // Late at night with little left: only dinner, and a part of it when even the lightest is too much.
-  const late = dayPlan(p, '2026-10-02', {}, [], total - 150, 22);
-  const d = late.find((e) => e.meal === 'dinner')!;
-  assert.ok(d.recipe && d.portion < 1);
-  // Morning: all four meals.
-  assert.ok(dayPlan(p, '2026-10-02', {}, [], 0, 8).every((e) => e.recipe && !e.passed));
+  // Nothing ticked: every meal still gets a dish, a part of it when even the lightest is too much.
+  const none = dayPlan(p, '2026-10-02', {}, [], total - 557);
+  assert.ok(none.every((e) => e.recipe && !e.eaten));
+  assert.ok(none.some((e) => e.portion < 1));
+});
+
+test('food menu puts the usual foods first', () => {
+  const [a, b, c] = FOODS;
+  const use = { [c.id]: 5, [b.id]: 2, [a.id]: 1 };
+  assert.deepEqual(oftenFoods([a, b, c], use).map((f) => f.id), [c.id, b.id]);
+  assert.deepEqual(byUse([a, b, c], use).map((f) => f.id), [c.id, b.id, a.id]);
+  assert.deepEqual(byUse([a, b, c], {}).map((f) => f.id), [a.id, b.id, c.id]);
+});
+
+test('picking gym, home or rest per day changes that day and keeps the week balanced', () => {
+  const p: Profile = { ...base, schedule: '5mix' };
+  assert.deepEqual(weekSessions(p), ['push', 'homeA', 'pull', null, 'homeB', 'legs', null]);
+  // Sunday to gym, Thursday home, Friday home.
+  const q: Profile = { ...p, places: { 1: 'gym', 5: 'home', 6: 'home' } };
+  assert.deepEqual(weekSessions(q), ['push', 'pull', 'legs', null, 'homeA', 'homeB', 'homeA']);
+  assert.equal(sessionFor(q, 1, false)!.place, 'gym');
+  assert.equal(sessionFor({ ...p, places: { 0: 'rest' } }, 0, false), null);
 });

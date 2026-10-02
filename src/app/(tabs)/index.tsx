@@ -6,6 +6,7 @@ import { SCHEDULES } from '../../lib/data.ts';
 import { fmt, totals, weekIndex } from '../../lib/day.ts';
 import { genderFor, medical, sessionFor, targets, type Note } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
+import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { useColors } from '../../theme.ts';
 
@@ -84,7 +85,7 @@ export default function Home() {
         <View style={styles.wrap}>
           {Array.from({ length: T0.waterCups }, (_, i) => (
             <Pressable key={i} accessibilityRole="button" accessibilityLabel={`كوباية ${i + 1}`}
-              onPress={() => updateDay((d) => ({ ...d, water: d.water === i + 1 ? i : i + 1 }))}
+              onPress={() => { play(day.water === i + 1 ? 'remove' : i + 1 === T0.waterCups ? 'win' : 'tap'); updateDay((d) => ({ ...d, water: d.water === i + 1 ? i : i + 1 })); }}
               style={{ width: 30, height: 36, borderWidth: 1.5, borderColor: c.petrol, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, backgroundColor: i < day.water ? c.aqua : 'transparent' }} />
           ))}
         </View>

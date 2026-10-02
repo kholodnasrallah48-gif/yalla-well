@@ -25,7 +25,10 @@ export type Profile = {
   otherPain?: string;
   /** Day the plan started (YYYY-MM-DD); drives the weekly progression. */
   start?: string;
+  /** The person's own pick per weekday (Saturday = 0): gym, home or rest. Missing days follow the schedule. */
+  places?: Partial<Record<number, DayPlace>>;
 };
+export type DayPlace = Place | 'rest';
 
 /** Picks the masculine or feminine form of a phrase for the person. */
 export type Gender = (m: string, f: string) => string;
@@ -201,8 +204,26 @@ export function resolveExercise(id: string, p: Profile, m: Modifiers): { id: str
 }
 
 /** The session for a Saturday-first day index in a program week, or null on rest days. */
+/** Gym, home or rest for each weekday: the person's own pick, else the schedule's. */
+export function weekPlaces(p: Profile): DayPlace[] {
+  const map = SCHEDULES[p.schedule]?.map ?? {};
+  return Array.from({ length: 7 }, (_, i) => p.places?.[i] ?? (map[i] ? SESSIONS[map[i]].pl : 'rest'));
+}
+
+/**
+ * The session id for each weekday. Gym days take the schedule's gym sessions in order (cycling), home days
+ * alternate the two home sessions, so changing a day's place keeps the week balanced.
+ */
+export function weekSessions(p: Profile): (string | null)[] {
+  const map = SCHEDULES[p.schedule]?.map ?? {};
+  const gym = Object.keys(map).map(Number).sort((a, b) => a - b).map((i) => map[i]).filter((id) => SESSIONS[id].pl === 'gym');
+  const home = ['homeA', 'homeB'];
+  let g = 0, h = 0;
+  return weekPlaces(p).map((pl) => (pl === 'gym' ? (gym.length ? gym[g++ % gym.length] : 'upper') : pl === 'home' ? home[h++ % 2] : null));
+}
+
 export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 0): DaySession | null {
-  const sid = SCHEDULES[p.schedule]?.map[dayIndex];
+  const sid = weekSessions(p)[dayIndex];
   if (!sid) return null;
   const m = medical(p).mod;
   const s = flare ? SESSIONS.gentle : SESSIONS[sid];

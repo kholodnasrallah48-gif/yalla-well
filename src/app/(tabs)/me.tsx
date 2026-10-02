@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { Btn, Card, NoteView, Screen, T, styles } from '../../components/ui.tsx';
+import { Btn, Card, Chip, NoteView, Screen, T, styles } from '../../components/ui.tsx';
+import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
 import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { fmt } from '../../lib/day.ts';
 import { genderFor, medical, targets } from '../../lib/plan.ts';
@@ -13,6 +14,8 @@ const GOALS = { lose: 'نزول وزن', maintain: 'ثبات الوزن وشد',
 export default function Me() {
   const { profile, resetAll } = useStore();
   const [confirm, setConfirm] = useState(false);
+  const [sound, setSound] = useState(soundOn());
+  useEffect(() => onSoundChange(setSound), []);
   if (!profile) return null;
   const p = profile;
   const g = genderFor(p.sex);
@@ -57,6 +60,16 @@ export default function Me() {
 
       {M.food.length ? <Card><T kind="h2">ملاحظات الأكل</T>{M.food.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
       {M.train.length ? <Card><T kind="h2">ملاحظات التمرين</T>{M.train.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
+
+      <Card>
+        <View style={styles.rowBetween}>
+          <View style={{ flex: 1 }}>
+            <T kind="h3">الأصوات</T>
+            <T kind="small">صوت خفيف مع الأزرار وإضافة الأكل وتعليم التمارين. بيسكت لو الموبايل على الصامت.</T>
+          </View>
+          <Chip label={sound ? 'شغالة' : 'مقفولة'} on={sound} onPress={() => { setSoundOn(!sound); setSound(!sound); }} />
+        </View>
+      </Card>
 
       <T kind="small" style={{ textAlign: 'center' }}>بياناتك محفوظة على الموبايل ده بس.{'\n'}التطبيق ده للمساعدة ومش بديل عن دكتورك.</T>
       {confirm ? (

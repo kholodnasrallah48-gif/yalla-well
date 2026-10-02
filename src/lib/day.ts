@@ -8,6 +8,8 @@ export type DayLog = {
   foods: LoggedFood[]; water: number; flare: boolean; done: string[]; sets: Record<string, SetLog[]>;
   /** How many times each suggested meal was swapped for another today. */
   shuffle?: Partial<Record<Meal, number>>;
+  /** Meals the person ticked as eaten today. */
+  meals?: Meal[];
 };
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });

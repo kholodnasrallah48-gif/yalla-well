@@ -50,12 +50,12 @@ function ThemeToggle() {
   );
 }
 
-export function Screen({ title, kicker, accentTitle, children, themeToggle }: {
+export function Screen({ title, kicker, bigTitle, children, themeToggle }: {
   title: string; children: ReactNode; themeToggle?: boolean;
   /** Small line above the title (e.g. the greeting when the title is the person's name). */
   kicker?: string;
-  /** Shows the title in the accent colour (used for the person's name). */
-  accentTitle?: boolean;
+  /** Larger title (used for the person's name). */
+  bigTitle?: boolean;
 }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -66,7 +66,7 @@ export function Screen({ title, kicker, accentTitle, children, themeToggle }: {
       <View style={[styles.rowBetween, { alignItems: 'flex-start' }]}>
         <View style={{ flexShrink: 1, gap: 4 }}>
           {kicker ? <T kind="h3" color={c.ink} style={{ opacity: 0.85 }}>{kicker}</T> : null}
-          <T kind="h1" color={accentTitle ? c.petrol : c.ink} style={accentTitle ? { fontSize: 30, lineHeight: 44 } : undefined} numberOfLines={1}>{title}</T>
+          <T kind="h1" color={c.ink} style={bigTitle ? { fontSize: 30, lineHeight: 44 } : undefined} numberOfLines={1}>{title}</T>
           <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 99, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.petrol }} />
             <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12.5, lineHeight: 18, color: c.ink }}>{tx(WEEK[(d.getDay() + 1) % 7])} {d.getDate()}/{d.getMonth() + 1}</Text>

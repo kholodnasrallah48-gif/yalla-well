@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { Pressable, Switch, Text, View } from 'react-native';
 
+import { Badge, BoltIcon, DumbbellIcon, FlameIcon } from '../../components/Icons.tsx';
+import { DailyFire } from '../../components/DailyFire.tsx';
 import { Btn, Card, MacroBar, NoteView, Ring, Screen, T, WeekStrip, lift, styles } from '../../components/ui.tsx';
 import { SCHEDULES } from '../../lib/data.ts';
 import { fmt, totals, weekIndex } from '../../lib/day.ts';
@@ -12,6 +14,7 @@ import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
+const FLAME = '#FF8A3D';
 const RANK: Record<Note['tone'], number> = { bad: 0, warn: 1, info: 2 };
 
 export default function Home() {
@@ -30,7 +33,8 @@ export default function Home() {
   const greet = new Date().getHours() < 12 ? L('صباح الخير', 'Good morning') : L('مساء الخير', 'Good evening');
 
   return (
-    <Screen title={profile.name ? profile.name : greet} kicker={profile.name ? `${greet} 👋` : undefined} accentTitle={!!profile.name} themeToggle>
+    <Screen title={profile.name ? profile.name : greet} kicker={profile.name ? greet : undefined} bigTitle={!!profile.name} themeToggle>
+      <DailyFire streak={st.kcal} />
       <Card>
         <View style={[styles.row, { gap: 16 }]}>
           <Ring value={t.kcal} max={T0.kcal} />
@@ -51,12 +55,13 @@ export default function Home() {
       <Card>
         <View style={[styles.row, { gap: 8 }]}>
           {([
-            ['🔥', num(st.kcal), L(st.kcal === 1 ? 'يوم في السعرات' : 'أيام في السعرات', st.kcal === 1 ? 'day on target' : 'days on target')],
-            ['💪', num(st.workout), L(st.workout === 1 ? 'تمرين ورا بعض' : 'تمارين ورا بعض', st.workout === 1 ? 'workout in a row' : 'workouts in a row')],
-            ['⭐', num(st.points), L('نقطة', 'points')],
-          ] as const).map(([icon, v, label]) => (
-            <View key={icon} style={{ flex: 1, alignItems: 'center', gap: 2, backgroundColor: c.soft, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 4 }}>
-              <T kind="h2" style={{ textAlign: 'center' }}>{icon} {v}</T>
+            ['kcal', FLAME, <FlameIcon key="i" />, num(st.kcal), L(st.kcal === 1 ? 'يوم في السعرات' : 'أيام في السعرات', st.kcal === 1 ? 'day on target' : 'days on target')],
+            ['workout', c.petrol, <DumbbellIcon key="i" color={c.petrol} />, num(st.workout), L(st.workout === 1 ? 'تمرين ورا بعض' : 'تمارين ورا بعض', st.workout === 1 ? 'workout in a row' : 'workouts in a row')],
+            ['points', c.lime, <BoltIcon key="i" color={c.lime} />, num(st.points), L('نقطة', 'points')],
+          ] as const).map(([k, color, icon, v, label]) => (
+            <View key={k} style={{ flex: 1, alignItems: 'center', gap: 4, backgroundColor: c.soft, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 4 }}>
+              <Badge color={color}>{icon}</Badge>
+              <T kind="h2" style={{ textAlign: 'center' }}>{v}</T>
               <T kind="small" style={{ textAlign: 'center' }}>{label}</T>
             </View>
           ))}

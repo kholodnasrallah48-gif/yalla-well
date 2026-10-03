@@ -81,3 +81,20 @@ async function run({ profile, day }: ReminderState) {
     }
   } catch { /* permission or native errors: no reminders, no crash */ }
 }
+
+/** Sends one sample reminder a few seconds from now, so the person can see how reminders look. */
+export async function testReminder(title: string, body: string, seconds = 5): Promise<'sent' | 'denied' | 'unavailable'> {
+  const N = native();
+  if (!N) return 'unavailable';
+  try {
+    if (!(await allowed(N))) return 'denied';
+    await N.scheduleNotificationAsync({
+      identifier: `yw-test-${Date.now()}`,
+      content: { title, body, sound: true },
+      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds },
+    });
+    return 'sent';
+  } catch {
+    return 'unavailable';
+  }
+}

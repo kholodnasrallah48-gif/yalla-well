@@ -5,7 +5,7 @@ import { TextInput, View } from 'react-native';
 import { PhotoPicker } from '../../components/Photo.tsx';
 import { Btn, Card, Chip, NoteView, Screen, T, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
-import { notifyOn, onNotifyChange, setNotifyOn } from '../../lib/notify.ts';
+import { notifyOn, onNotifyChange, setNotifyOn, testReminder } from '../../lib/notify.ts';
 import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { fmt } from '../../lib/day.ts';
 import { L, tx } from '../../lib/i18n.ts';
@@ -21,6 +21,7 @@ export default function Me() {
   const { profile, resetAll, saveProfile } = useStore();
   const c = useColors();
   const [kg, setKg] = useState('');
+  const [testMsg, setTestMsg] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [sound, setSound] = useState(soundOn());
   useEffect(() => onSoundChange(setSound), []);
@@ -102,6 +103,14 @@ export default function Me() {
           </View>
           <Chip label={notify ? L('شغالة', 'On') : L('مقفولة', 'Off')} on={notify} onPress={() => { setNotifyOn(!notify); setNotify(!notify); }} />
         </View>
+        <Btn kind="outline" title={L(g('جرب تنبيه', 'جربي تنبيه'), 'Send a test reminder')} onPress={async () => {
+          setTestMsg('');
+          const r = await testReminder(L('يلا ويل', 'Yalla Well'), L(`ده تنبيه تجربة. التنبيهات شغالة ${g('معاك', 'معاكي')} 💪`, 'This is a test reminder. Your reminders are working 💪'));
+          setTestMsg(r === 'sent' ? L(`هيوصلك تنبيه كمان ٥ ثواني. ${g('اقفل', 'اقفلي')} الشاشة أو ${g('اطلع', 'اطلعي')} من التطبيق عشان ${g('تشوفه', 'تشوفيه')}.`, "A reminder is coming in 5 seconds. Lock your screen or leave the app to see it.")
+            : r === 'denied' ? L(`التنبيهات مقفولة للتطبيق. ${g('افتح', 'افتحي')} الإعدادات ← التنبيهات ← Expo Go (أو يلا ويل) و${g('شغلها', 'شغليها')}.`, 'Notifications are off for this app. Open Settings → Notifications → Expo Go (or Yalla Well) and turn them on.')
+            : L('التنبيهات بتشتغل على الموبايل بس.', 'Reminders only work on the phone.'));
+        }} />
+        {testMsg ? <T kind="small" color={c.petrol}>{testMsg}</T> : null}
       </Card>
 
       <T kind="small" style={{ textAlign: 'center' }}>{L('بياناتك محفوظة على الموبايل ده بس.\nالتطبيق ده للمساعدة ومش بديل عن دكتورك.', "Your data is saved on this phone only.\nThis app is here to help and doesn't replace your doctor.")}</T>

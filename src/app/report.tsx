@@ -86,7 +86,7 @@ export default function Report() {
                   ) : <T kind="small" color={c.warn}>{L('مفيش أكل متسجل', 'No food logged')}</T>}
                   {d.future ? null : (
                     <T kind="small">
-                      {L('مياه', 'Water')} {d.water}/{T0.waterCups} · {d.workout ? `${d.workout.done >= Math.ceil(d.workout.of / 2) ? '✓' : '✗'} ${tx(d.workout.name)}` : L('راحة', 'Rest')}
+                      {L('مياه', 'Water')} {Math.round(d.water * 10) / 10}/{T0.waterCups} · {d.workout ? `${d.workout.done >= Math.ceil(d.workout.of / 2) ? '✓' : '✗'} ${tx(d.workout.name)}` : L('راحة', 'Rest')}
                     </T>
                   )}
                 </View>

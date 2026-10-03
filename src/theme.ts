@@ -28,7 +28,7 @@ const dark: typeof light = {
   gCard: ['#12201A', '#0A120F'] as [string, string],
   gHero: ['#103A27', '#06110C'] as [string, string],
   gBtn: ['#4CF5A8', '#12C977'] as [string, string],
-  orbs: ['rgba(25,230,140,0.20)', 'rgba(46,155,255,0.13)'] as [string, string],
+  orbs: ['rgba(25,230,140,0.14)', 'rgba(46,155,255,0.12)'] as [string, string],
   shadow: 'rgba(0,0,0,0.6)', glow: 'rgba(25,230,140,0.40)',
 };
 export type Colors = typeof light;

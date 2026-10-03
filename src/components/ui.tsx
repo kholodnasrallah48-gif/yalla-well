@@ -50,17 +50,27 @@ function ThemeToggle() {
   );
 }
 
-export function Screen({ title, children, themeToggle }: { title: string; children: ReactNode; themeToggle?: boolean }) {
+export function Screen({ title, kicker, accentTitle, children, themeToggle }: {
+  title: string; children: ReactNode; themeToggle?: boolean;
+  /** Small line above the title (e.g. the greeting when the title is the person's name). */
+  kicker?: string;
+  /** Shows the title in the accent colour (used for the person's name). */
+  accentTitle?: boolean;
+}) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const d = new Date();
   return (
     <Bg>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: 32, gap: 14 }} keyboardShouldPersistTaps="handled">
-      <View style={styles.rowBetween}>
-        <View style={{ flexShrink: 1 }}>
-          <T kind="h1">{title}</T>
-          <T kind="small">{tx(WEEK[(d.getDay() + 1) % 7])} {d.getDate()}/{d.getMonth() + 1}</T>
+      <View style={[styles.rowBetween, { alignItems: 'flex-start' }]}>
+        <View style={{ flexShrink: 1, gap: 4 }}>
+          {kicker ? <T kind="h3" color={c.ink} style={{ opacity: 0.85 }}>{kicker}</T> : null}
+          <T kind="h1" color={accentTitle ? c.petrol : c.ink} style={accentTitle ? { fontSize: 30, lineHeight: 44 } : undefined} numberOfLines={1}>{title}</T>
+          <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 99, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.petrol }} />
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12.5, lineHeight: 18, color: c.ink }}>{tx(WEEK[(d.getDay() + 1) % 7])} {d.getDate()}/{d.getMonth() + 1}</Text>
+          </View>
         </View>
         {themeToggle ? (
           <View style={[styles.row, { gap: 10 }]}>

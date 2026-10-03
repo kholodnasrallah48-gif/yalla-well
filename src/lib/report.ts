@@ -112,7 +112,7 @@ export function reportHTML(p: Profile, r: WeekReport): string {
   const rows = r.days.map((d) => `<tr${d.future ? ' class="f"' : ''}><td>${dayName(d.date)} ${shortDate(d.date)}</td>
     <td class="${d.logged && d.kcal > T.kcal * 1.05 ? 'bad' : ''}">${d.logged ? ar(d.kcal) : '—'}</td>
     <td>${d.logged ? ar(d.p) : '—'}</td><td class="${d.logged && d.f > T.fat ? 'bad' : ''}">${d.logged ? ar(d.f) : '—'}</td>
-    <td>${d.future ? '' : ar(d.water)}</td>
+    <td>${d.future ? '' : ar(Math.round(d.water * 10) / 10)}</td>
     <td>${d.future ? '' : d.workout ? (d.workout.done >= Math.ceil(d.workout.of / 2) ? '✓ ' : '✗ ') + esc(tx(d.workout.name)) : L('راحة', 'Rest')}</td></tr>`).join('');
   const list = (xs: string[], cls: string) => xs.length ? `<ul class="${cls}">${xs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="m">${L('مفيش.', 'None.')}</p>`;
   return `<!doctype html><html dir="${L('rtl', 'ltr')}" lang="${L('ar', 'en')}"><head><meta charset="utf-8"><style>

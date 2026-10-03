@@ -143,6 +143,9 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
   return { food, train, mod };
 }
 
+/** One cup of water. DayLog.water counts cups and may be fractional (a 500 ml bottle adds 2). */
+export const CUP_ML = 250;
+
 export type Targets = { kcal: number; protein: number; fat: number; carbs: number; waterCups: number; tdee: number };
 
 const ACTIVITY_FACTOR: Record<Activity, number> = { low: 1.2, mid: 1.3, high: 1.45 };
@@ -162,7 +165,7 @@ export function targets(p: Profile): Targets {
   const protein = Math.round(p.weight * ppk);
   const fat = Math.round((kcal * 0.27) / 9);
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
-  return { kcal, protein, fat, carbs, waterCups: Math.ceil((p.weight * 35) / 250), tdee: Math.round(tdee) };
+  return { kcal, protein, fat, carbs, waterCups: Math.ceil((p.weight * 35) / CUP_ML), tdee: Math.round(tdee) };
 }
 
 export type PlannedExercise = {

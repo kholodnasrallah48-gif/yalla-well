@@ -1,16 +1,16 @@
 import { router } from 'expo-router';
-import { Pressable, Switch, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 
-import { Btn, Card, MacroBar, NoteView, Ring, Screen, T, WeekStrip, styles } from '../../components/ui.tsx';
+import { Btn, Card, MacroBar, NoteView, Ring, Screen, T, WeekStrip, lift, styles } from '../../components/ui.tsx';
 import { SCHEDULES } from '../../lib/data.ts';
 import { fmt, totals, weekIndex } from '../../lib/day.ts';
-import { genderFor, medical, sessionFor, targets, type Note } from '../../lib/plan.ts';
+import { CUP_ML, genderFor, medical, sessionFor, targets, type Note } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
 import { L, num, tx } from '../../lib/i18n.ts';
 import { streaks } from '../../lib/streaks.ts';
 import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
-import { useColors } from '../../theme.ts';
+import { fonts, useColors } from '../../theme.ts';
 
 const RANK: Record<Note['tone'], number> = { bad: 0, warn: 1, info: 2 };
 
@@ -30,7 +30,7 @@ export default function Home() {
   const greet = new Date().getHours() < 12 ? L('صباح الخير', 'Good morning') : L('مساء الخير', 'Good evening');
 
   return (
-    <Screen title={`${greet}${profile.name ? L(' يا ', ', ') + profile.name : ''}`} themeToggle>
+    <Screen title={profile.name ? profile.name : greet} kicker={profile.name ? `${greet} 👋` : undefined} accentTitle={!!profile.name} themeToggle>
       <Card>
         <View style={[styles.row, { gap: 16 }]}>
           <Ring value={t.kcal} max={T0.kcal} />
@@ -102,14 +102,33 @@ export default function Home() {
       <Card>
         <View style={styles.rowBetween}>
           <T kind="h2">{L('المياه', 'Water')}</T>
-          <T kind="small">{L(`${day.water} / ${T0.waterCups} كوباية`, `${day.water} / ${T0.waterCups} cups`)}</T>
+          <T kind="h3" color={c.petrol}>{L(`${fmt(Math.round(day.water * CUP_ML))} / ${fmt(T0.waterCups * CUP_ML)} مل`, `${fmt(Math.round(day.water * CUP_ML))} / ${fmt(T0.waterCups * CUP_ML)} ml`)}</T>
         </View>
+        <View style={{ height: 8, borderRadius: 99, backgroundColor: c.soft, overflow: 'hidden' }}>
+          <View style={{ height: '100%', width: `${Math.min(100, (day.water / T0.waterCups) * 100)}%`, backgroundColor: c.lime, borderRadius: 99 }} />
+        </View>
+        <T kind="small">{L(`${fmt(Math.floor(day.water))} من ${T0.waterCups} كوبايات (الكوباية ${CUP_ML} مل)`, `${fmt(Math.floor(day.water))} of ${T0.waterCups} cups (a cup is ${CUP_ML} ml)`)}</T>
         <View style={styles.wrap}>
           {Array.from({ length: T0.waterCups }, (_, i) => (
             <Pressable key={i} accessibilityRole="button" accessibilityLabel={L(`كوباية ${i + 1}`, `Cup ${i + 1}`)}
-              onPress={() => { play(day.water === i + 1 ? 'remove' : i + 1 === T0.waterCups ? 'win' : 'tap'); updateDay((d) => ({ ...d, water: d.water === i + 1 ? i : i + 1 })); }}
-              style={{ width: 30, height: 36, borderWidth: 1.5, borderColor: c.petrol, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, backgroundColor: i < day.water ? c.aqua : 'transparent' }} />
+              onPress={() => { const n = Math.floor(day.water) === i + 1 ? i : i + 1; play(n < day.water ? 'remove' : n >= T0.waterCups ? 'win' : 'tap'); updateDay((d) => ({ ...d, water: n })); }}
+              style={{ width: 30, height: 36, borderWidth: 1.5, borderColor: c.lime, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, backgroundColor: i < Math.floor(day.water) ? c.lime : 'transparent' }} />
           ))}
+        </View>
+        <T kind="label">{L(g('شربت إزازة؟ ضيفها مرة واحدة:', 'شربتي إزازة؟ ضيفيها مرة واحدة:'), 'Had a bottle? Add it in one go:')}</T>
+        <View style={styles.wrap}>
+          {[250, 330, 500, 1000, 1500].map((ml) => (
+            <Pressable key={ml} accessibilityRole="button" onPress={() => { const n = day.water + ml / CUP_ML; play(n >= T0.waterCups && day.water < T0.waterCups ? 'win' : 'add'); updateDay((d) => ({ ...d, water: Math.round((d.water + ml / CUP_ML) * 100) / 100 })); }}
+              style={({ pressed }) => [styles.chip, { borderColor: c.lime, backgroundColor: c.surface }, lift(c, 'sm'), pressed && styles.pressed]}>
+              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.ink }}>+ {ml >= 1000 ? L(`${ml / 1000} لتر`, `${ml / 1000} L`) : L(`${ml} مل`, `${ml} ml`)}</Text>
+            </Pressable>
+          ))}
+          {day.water > 0 ? (
+            <Pressable accessibilityRole="button" onPress={() => { play('remove'); updateDay((d) => ({ ...d, water: 0 })); }}
+              style={({ pressed }) => [styles.chip, { borderColor: c.line, backgroundColor: c.surface }, pressed && styles.pressed]}>
+              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>{L('صفّر', 'Reset')}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </Card>
 

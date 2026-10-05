@@ -61,6 +61,7 @@
     "backgroundColor": "#0B100E",
     "runtimeVersion": {
       "policy": "sdkVersion"
-    }
+    },
+    "owner": "my-team-yalla-fit"
   }
 }

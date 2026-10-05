@@ -145,7 +145,8 @@ test('photo titles: explicit names for Egyptian dishes, cleaned English otherwis
 test('hiRes asks for sharper photos', async () => {
   const { hiRes } = await import('./food-images.ts');
   assert.equal(hiRes('https://www.themealdb.com/images/media/meals/x.jpg/preview'), 'https://www.themealdb.com/images/media/meals/x.jpg');
-  assert.equal(hiRes('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Ful.jpg/320px-Ful.jpg'), 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Ful.jpg/1280px-Ful.jpg');
+  assert.equal(hiRes('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Ful.jpg/320px-Ful.jpg'), 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Ful.jpg/960px-Ful.jpg');
   assert.equal(hiRes('https://images.openfoodfacts.org/images/products/1/front_en.3.200.jpg'), 'https://images.openfoodfacts.org/images/products/1/front_en.3.400.jpg');
+  assert.equal(hiRes('https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/Koshary.jpg/330px-Koshary.jpg?utm_source=x'), 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/Koshary.jpg/960px-Koshary.jpg');
   assert.equal(hiRes('https://example.com/a.png'), 'https://example.com/a.png');
 });

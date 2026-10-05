@@ -148,12 +148,12 @@ export async function offImage(code: string): Promise<Got<string>> {
 
 /**
  * A sharper version of a photo URL for big displays (the recipe page): TheMealDB's full photo instead of the
- * 250 px preview, a 1280 px Wikipedia thumbnail instead of the ~320 px one, Open Food Facts' 400 px image.
+ * 250 px preview, a 960 px Wikipedia thumbnail instead of the ~330 px one, Open Food Facts' 400 px image.
  * The same URL when there's nothing bigger to ask for.
  */
 export function hiRes(url: string): string {
   if (/themealdb\.com/.test(url)) return url.replace(/\/(preview|small|medium)$/, '');
-  if (/upload\.wikimedia\.org\/.*\/thumb\//.test(url)) return url.replace(/\/\d+px-([^/]+)$/, '/1280px-$1');
+  if (/wikimedia\.org\/.*\/thumb\//.test(url)) return url.replace(/\/\d+px-([^/?]+)(\?.*)?$/, '/960px-$1');
   if (/openfoodfacts\.org/.test(url)) return url.replace(/\.(100|200)\.jpg$/, '.400.jpg');
   return url;
 }

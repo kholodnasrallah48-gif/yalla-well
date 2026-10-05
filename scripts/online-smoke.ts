@@ -1,6 +1,6 @@
 // Live check of the online lookups: calories (USDA + Open Food Facts), recipes (TheMealDB) and food photos
-// (TheMealDB, Wikipedia, Open Food Facts) and the translation of what the person types (MyMemory). Run: node --experimental-strip-types scripts/online-smoke.ts [food words...]
-import { mealDBThumb, offImage, wikiThumb, foodImage } from '../src/lib/food-images.ts';
+// (TheMealDB, Wikipedia, Open Food Facts) and the translation of what the person types. Run: node --experimental-strip-types scripts/online-smoke.ts [food words...]
+import { hiRes, mealDBThumb, offImage, wikiThumb, foodImage } from '../src/lib/food-images.ts';
 import { lastError, searchOnline, toEnglish } from '../src/lib/online.ts';
 import { translate } from '../src/lib/translate.ts';
 import { dishQuery, estimateKcal, lookupMealDB, searchMealDB } from '../src/lib/online-recipes.ts';
@@ -57,6 +57,17 @@ await check('Wikipedia ar "كشري"', async () => got(await wikiThumb('كشري
 await check('Open Food Facts image 3017620422003', async () => got(await offImage('3017620422003')));
 await check('foodImage recipe l_koshary_healthy', () => foodImage({ id: 'l_koshary_healthy', n: 'كشري صحي بالرز البني والمكرونة السن' }));
 await check('foodImage food "جوافة"', () => foodImage({ id: 'f174', n: 'جوافة' }));
+// The sharp versions the recipe page asks for must load too (the app falls back to the small one if not).
+for (const [label, get] of [['TheMealDB', () => mealDBThumb('Shakshuka')], ['Wikipedia', () => wikiThumb('Koshary')]] as const) {
+  await check(`sharp photo ${label}`, async () => {
+    const g = await get();
+    const small = g.ok ? g.data : null;
+    if (!small) return null;
+    const big = hiRes(small);
+    const res = await fetch(big, { method: 'GET', headers: { 'User-Agent': 'YallaWell/1.0 (github.com/kholodnasrallah48-gif/yalla-well)' } });
+    return res.ok && big !== small ? `${res.status} ${big}` : null;
+  });
+}
 
 console.log(`\n${ok}/${total} recipe and photo checks passed`);
 if (!ok) console.error('No recipe or photo lookups worked');
@@ -64,11 +75,12 @@ const lookupsOk = ok;
 
 // Translation of the person's own text: fails the run when none of the translations come back.
 ok = 0; total = 0;
-console.log('\n— Translation of the person\'s own text (MyMemory) —');
+console.log('\n— Translation of the person\'s own text (Google Translate, MyMemory fallback) —');
 await check('ar → en "بلاش صيام"', () => translate('بلاش صيام'));
 await check('ar → en "بلاش رفع أوزان تقيلة"', () => translate('بلاش رفع أوزان تقيلة'));
+await check('ar → en "متشيليش حاجة تقيلة ومتصوميش"', () => translate('متشيليش حاجة تقيلة ومتصوميش'));
 await check('en → ar "no heavy lifting"', () => translate('no heavy lifting'));
 
 console.log(`\n${ok}/${total} translation checks passed`);
-if (!ok) console.error('No translations came back from MyMemory');
+if (!ok) console.error('No translations came back');
 process.exit(noCalories || !lookupsOk || !ok ? 1 : 0);

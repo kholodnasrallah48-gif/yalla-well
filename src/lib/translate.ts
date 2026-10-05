@@ -48,18 +48,28 @@ export async function translate(text: string, to?: Lang, timeoutMs = 8000): Prom
   const from = scriptOf(t);
   const target = to ?? (from === 'ar' ? 'en' : 'ar');
   if (target === from) return t;
+  const ok = (out: string | null | undefined) => {
+    const o = out?.trim();
+    // Reject quota/error messages, markup leaking from subtitle memories, and replies in the wrong script.
+    if (!o || /MYMEMORY|INVALID|QUERY LENGTH|[{}\\]/i.test(o) || scriptOf(o) !== target) return null;
+    return o;
+  };
+  // Google Translate's free web endpoint first (handles Egyptian Arabic well), MyMemory as a fallback.
+  const g = await getJSON<unknown[]>(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${target}&dt=t&q=${encodeURIComponent(t)}`, timeoutMs);
+  const parts = Array.isArray(g?.[0]) ? (g![0] as unknown[]).map((x) => (Array.isArray(x) && typeof x[0] === 'string' ? x[0] : '')).join('') : null;
+  const first = ok(parts);
+  if (first) return first;
+  const m = await getJSON<{ responseStatus?: number | string; responseData?: { translatedText?: string } }>(
+    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=${from}|${target}`, timeoutMs);
+  return m && Number(m.responseStatus) === 200 ? ok(m.responseData?.translatedText) : null;
+}
+
+async function getJSON<T>(url: string, ms: number): Promise<T | null> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const timer = setTimeout(() => ctrl.abort(), ms);
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=${from}|${target}`;
     const res = await fetch(url, { signal: ctrl.signal });
-    if (!res.ok) return null;
-    const j = (await res.json()) as { responseStatus?: number | string; responseData?: { translatedText?: string } };
-    const out = j.responseData?.translatedText?.trim();
-    // Quota and error messages come back as "translations" in capitals; a reply in the wrong script is no use either.
-    if (Number(j.responseStatus) !== 200 || !out || /MYMEMORY WARNING|INVALID|QUERY LENGTH/i.test(out)) return null;
-    if (scriptOf(out) !== target) return null;
-    return out;
+    return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;
   } finally {

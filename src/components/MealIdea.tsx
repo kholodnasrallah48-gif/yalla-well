@@ -28,7 +28,7 @@ export function MealIdea({ recipe: r, meal, budget, factor, why, g, onAnother }:
         <View style={{ flex: 1, gap: 2 }}>
           <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(r.n)}</T>
           <T kind="small">{L(`${fmt(Math.round(r.kcal * factor))} سعرة · ${fmt(r.mins)} دقيقة`, `${fmt(Math.round(r.kcal * factor))} kcal · ${r.mins} min`)}</T>
-          {why.length ? <T kind="small" color={c.ok}>{why.join(L('، ', ', '))}</T> : null}
+          {why.length ? <T kind="small" color={c.ok}>{L(why.join('، '), why.map((w, i) => (i ? w.charAt(0).toLowerCase() + w.slice(1) : w)).join('; '))}</T> : null}
         </View>
       </Pressable>
       {factor < 1 ? (

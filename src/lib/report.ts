@@ -72,16 +72,16 @@ export function weekReport(p: Profile, start: Date, logs: Record<string, DayLog 
     }
     if (low) misses.push(L(`${g('أكلت', 'أكلتي')} أقل من اللازم بكتير ${nDays(low)}، وده بيبطّأ الحرق ويتعب الجسم.`, `You ate far too little on ${nDays(low)}, which slows your metabolism and wears your body out.`));
     const prot = logged.filter((d) => d.p >= T.protein * 0.9).length;
-    if (prot >= Math.ceil(n / 2)) wins.push(L(`${g('جبت', 'جبتي')} البروتين المطلوب ${nDays(prot)} من ${nDays(n)}.`, `You hit your protein target on ${nDays(prot)} of ${nDays(n)}.`));
-    else misses.push(L(`البروتين كان قليل: ${g('جبته', 'جبتيه')} ${nDays(prot)} بس من ${nDays(n)}. الهدف ${ar(T.protein)} جم في اليوم.`, `Protein was low: you hit it on only ${nDays(prot)} of ${nDays(n)}. The target is ${ar(T.protein)} g a day.`));
+    if (prot >= Math.ceil(n / 2)) wins.push(L(`${g('جبت', 'جبتي')} البروتين المطلوب ${nDays(prot)} من ${nDays(n)}.`, `You hit your protein target on ${ar(prot)} of ${nDays(n)}.`));
+    else misses.push(L(`البروتين كان قليل: ${g('جبته', 'جبتيه')} ${nDays(prot)} بس من ${nDays(n)}. الهدف ${ar(T.protein)} جم في اليوم.`, `Protein was low: you hit it on ${prot ? 'only ' : ''}${ar(prot)} of ${nDays(n)}. The target is ${ar(T.protein)} g a day.`));
     const fat = logged.filter((d) => d.f > T.fat).length;
     if (fat) misses.push(L(`الدهون عدّت المسموح (${ar(T.fat)} جم) ${nDays(fat)}.`, `Fat went over your limit (${ar(T.fat)} g) on ${nDays(fat)}.`));
     else wins.push(L('الدهون فضلت في المسموح طول الأسبوع.', 'Fat stayed within your limit all week.'));
   }
   const water = past.filter((d) => d.water >= T.waterCups).length;
   if (past.length) {
-    if (water >= Math.ceil(past.length / 2)) wins.push(L(`${g('شربت', 'شربتي')} المياه كاملة ${nDays(water)} من ${nDays(past.length)}.`, `You drank all your water on ${nDays(water)} of ${nDays(past.length)}.`));
-    else misses.push(L(`المياه كانت قليلة: ${g('وصلت', 'وصلتي')} لـ ${ar(T.waterCups)} كوبايات ${nDays(water)} بس من ${nDays(past.length)}.`, `Water was low: you reached ${ar(T.waterCups)} cups on only ${nDays(water)} of ${nDays(past.length)}.`));
+    if (water >= Math.ceil(past.length / 2)) wins.push(L(`${g('شربت', 'شربتي')} المياه كاملة ${nDays(water)} من ${nDays(past.length)}.`, `You drank all your water on ${ar(water)} of ${nDays(past.length)}.`));
+    else misses.push(L(`المياه كانت قليلة: ${g('وصلت', 'وصلتي')} لـ ${ar(T.waterCups)} كوبايات ${nDays(water)} بس من ${nDays(past.length)}.`, `Water was low: you reached ${ar(T.waterCups)} cups on ${water ? 'only ' : ''}${ar(water)} of ${nDays(past.length)}.`));
   }
   const planned = past.filter((d) => d.workout);
   if (planned.length) {

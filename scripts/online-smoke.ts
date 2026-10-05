@@ -1,7 +1,8 @@
 // Live check of the online lookups: calories (USDA + Open Food Facts), recipes (TheMealDB) and food photos
-// (TheMealDB, Wikipedia, Open Food Facts). Run: node --experimental-strip-types scripts/online-smoke.ts [food words...]
+// (TheMealDB, Wikipedia, Open Food Facts) and the translation of what the person types (MyMemory). Run: node --experimental-strip-types scripts/online-smoke.ts [food words...]
 import { mealDBThumb, offImage, wikiThumb, foodImage } from '../src/lib/food-images.ts';
 import { lastError, searchOnline, toEnglish } from '../src/lib/online.ts';
+import { translate } from '../src/lib/translate.ts';
 import { dishQuery, estimateKcal, lookupMealDB, searchMealDB } from '../src/lib/online-recipes.ts';
 
 const args = process.argv.slice(2);
@@ -59,4 +60,15 @@ await check('foodImage food "جوافة"', () => foodImage({ id: 'f174', n: 'ج�
 
 console.log(`\n${ok}/${total} recipe and photo checks passed`);
 if (!ok) console.error('No recipe or photo lookups worked');
-process.exit(noCalories || !ok ? 1 : 0);
+const lookupsOk = ok;
+
+// Translation of the person's own text: fails the run when none of the translations come back.
+ok = 0; total = 0;
+console.log('\n— Translation of the person\'s own text (MyMemory) —');
+await check('ar → en "بلاش صيام"', () => translate('بلاش صيام'));
+await check('ar → en "بلاش رفع أوزان تقيلة"', () => translate('بلاش رفع أوزان تقيلة'));
+await check('en → ar "no heavy lifting"', () => translate('no heavy lifting'));
+
+console.log(`\n${ok}/${total} translation checks passed`);
+if (!ok) console.error('No translations came back from MyMemory');
+process.exit(noCalories || !lookupsOk || !ok ? 1 : 0);

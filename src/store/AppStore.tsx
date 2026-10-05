@@ -6,6 +6,7 @@ import { AppState } from 'react-native';
 import type { Food } from '../lib/foods.ts';
 import { blankDay, dayKey, type DayLog } from '../lib/day.ts';
 import type { Profile } from '../lib/plan.ts';
+import { translateMissing, withTr } from '../lib/translate.ts';
 import type { LiftLog } from '../lib/progress.ts';
 
 const K = { profile: 'yallawell:profile', custom: 'yallawell:custom', lifts: 'yallawell:lifts', day: (k: string) => 'yallawell:day:' + k };
@@ -71,6 +72,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       // Plans made before progression existed start counting from today.
       if (p && !p.start) { p.start = today; writeJSON(K.profile, p); }
       setProfile(p);
+      if (p) translateLater(p);
       setLifts(l ?? {});
       setCustom(c ?? []);
       setDay({ ...blankDay(), ...(d ?? {}) });
@@ -94,7 +96,21 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return () => { sub.remove(); clearInterval(timer); };
   }, []);
 
-  const saveProfile = useCallback((p: Profile) => { setProfile(p); writeJSON(K.profile, p); }, []);
+  // Free text the person typed is translated to the other language in the background (needs the internet), then
+  // saved on the latest profile so it shows in either language offline. Anything missed is retried on the next save
+  // or launch.
+  const translateLater = useCallback((p: Profile) => {
+    translateMissing(p).then((add) => {
+      if (!add) return;
+      setProfile((cur) => {
+        if (!cur) return cur;
+        const next = withTr(cur, add);
+        writeJSON(K.profile, next);
+        return next;
+      });
+    }).catch(() => {});
+  }, []);
+  const saveProfile = useCallback((p: Profile) => { setProfile(p); writeJSON(K.profile, p); translateLater(p); }, [translateLater]);
   const addCustomFood = useCallback((f: Food) => {
     setCustom((prev) => { const next = [...prev, f]; writeJSON(K.custom, next); return next; });
   }, []);

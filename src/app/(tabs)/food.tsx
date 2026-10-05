@@ -4,11 +4,12 @@ import { Pressable, Text, View } from 'react-native';
 
 import { MacroChips } from '../../components/food.tsx';
 import { MealIdea } from '../../components/MealIdea.tsx';
+import { RecipeFinder } from '../../components/RecipeFinder.tsx';
 import { Card, MacroBar, Screen, T, styles } from '../../components/ui.tsx';
 import { changePortion, fmt, mealTotals, planned, totals, type LoggedFood } from '../../lib/day.ts';
 import { FOODS, MY_FOODS_CAT, itemAlerts, type Food } from '../../lib/foods.ts';
 import { L, isEn, tx } from '../../lib/i18n.ts';
-import { MEALS, MEAL_NAME, dayPlan, toMeal } from '../../lib/mealplan.ts';
+import { MEALS, MEAL_NAME, dayPlan, mealBudget, toMeal } from '../../lib/mealplan.ts';
 import { portionFor } from '../../lib/recipe-search.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
 import type { Meal } from '../../lib/recipes-data.ts';
@@ -47,6 +48,10 @@ export default function FoodScreen() {
   const started = MEALS.filter((m) => day.foods.some((x) => x.meal === m));
   const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), t.kcal + waiting, ticked, started);
   const loose = day.foods.filter((x) => !x.meal);
+  // What each meal can still take, for the recipe finder's portions.
+  const left = T0.kcal - t.kcal - waiting;
+  const budgets = Object.fromEntries(MEALS.map((m) => [m, mealBudget(profile, plan, m, mealTotals(day, m).kcal, left)])) as Record<Meal, number>;
+  const nextMeal = MEALS.find((m) => !ticked.includes(m)) ?? 'snack';
 
   const tick = (meal: Meal) => {
     const on = ticked.includes(meal);
@@ -103,6 +108,8 @@ export default function FoodScreen() {
         {waiting > 0 ? <T kind="small" color={c.warn}>{L(`+ ${fmt(waiting)} سعرة في وجبات لسه ${g('معلمتش', 'معلمتيش')} عليها. بتتحسب لما ${g('تعلّم', 'تعلّمي')} إنك ${g('خلصتها', 'خلصتيها')}.`, `+ ${fmt(waiting)} kcal in meals not ticked yet. They count once you tick the meal as done.`)}</T> : null}
       </Card>
 
+      <RecipeFinder budgets={budgets} start={nextMeal} g={g} />
+
       {MEALS.map((meal) => {
         const foods = day.foods.filter((x) => x.meal === meal);
         const done = ticked.includes(meal);
@@ -129,7 +136,7 @@ export default function FoodScreen() {
               </View>
               <Pressable onPress={() => { play('tap'); router.push({ pathname: '/add', params: { meal } }); }} accessibilityRole="button"
                 accessibilityLabel={L(`إضافة أكل ${toMeal(meal)}`, `Add food to ${tx(MEAL_NAME[meal])}`)}
-                style={{ borderRadius: 99, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: c.lime, boxShadow: '0px 3px 10px rgba(255,214,10,0.35)' } as object}>
+                style={{ borderRadius: 99, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: c.lime, boxShadow: '0px 3px 10px rgba(61,165,255,0.30)' } as object}>
                 <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.onLime }}>{L(`+ ${g('ضيف', 'ضيفي')}`, '+ Add')}</Text>
               </Pressable>
             </View>

@@ -3,11 +3,13 @@ import { Pressable, Switch, Text, View } from 'react-native';
 
 import { Badge, BoltIcon, DumbbellIcon, FlameIcon } from '../../components/Icons.tsx';
 import { DailyFire } from '../../components/DailyFire.tsx';
+import { CheckInCard, TodayDoses } from '../../components/health.tsx';
 import { Btn, Card, MacroBar, NoteView, Ring, Screen, T, WeekStrip, lift, styles } from '../../components/ui.tsx';
 import { SCHEDULES } from '../../lib/data.ts';
 import { fmt, totals, weekIndex } from '../../lib/day.ts';
 import { CUP_ML, genderFor, medical, sessionFor, targets, type Note } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
+import { easyDay, medIds } from '../../lib/health.ts';
 import { L, num, tx } from '../../lib/i18n.ts';
 import { streaks } from '../../lib/streaks.ts';
 import { play } from '../../lib/sound.ts';
@@ -26,7 +28,8 @@ export default function Home() {
   const t = totals(day);
   const M = medical(profile);
   const todayIdx = weekIndex(new Date());
-  const ses = sessionFor(profile, todayIdx, day.flare, programWeek(profile.start, new Date()));
+  const ses = sessionFor(profile, todayIdx, easyDay(profile, day, new Date()).easy, programWeek(profile.start, new Date()));
+  const careful = M.mod.anyCondition || profile.meds.length > 0 || medIds(profile).length > 0;
   const left = T0.kcal - t.kcal;
   const notes = [...M.train, ...M.food].sort((a, b) => RANK[a.tone] - RANK[b.tone]).slice(0, 2);
   const st = streaks(profile, { ...history, [today]: day }, new Date());
@@ -51,6 +54,9 @@ export default function Home() {
         </View>
         <Btn kind="primary" title={L(g('سجّل أكل', 'سجّلي أكل'), 'Log food')} onPress={() => router.navigate('/food')} style={{ marginTop: 6 }} />
       </Card>
+
+      <TodayDoses profile={profile} day={day} update={updateDay} g={g} />
+      {careful ? <CheckInCard day={day} update={updateDay} g={g} /> : null}
 
       <Card>
         <View style={[styles.row, { gap: 8 }]}>
@@ -90,6 +96,20 @@ export default function Home() {
           </View>
         </Card>
       </Pressable>
+
+      {careful ? (
+        <Pressable onPress={() => router.push('/health')} accessibilityRole="button">
+          <Card>
+            <View style={[styles.row, { gap: 12 }]}>
+              <View style={{ flex: 1 }}>
+                <T kind="h3">{L('صحتي', 'My health')}</T>
+                <T kind="small">{L('مواعيد الأدوية، التحاليل، وتقرير للدكتور.', 'Medicine times, lab results and a report for your doctor.')}</T>
+              </View>
+              <T kind="h2" color={c.petrol}>{L('‹', '›')}</T>
+            </View>
+          </Card>
+        </Pressable>
+      ) : null}
 
       {M.mod.anyCondition ? (
         <Card>

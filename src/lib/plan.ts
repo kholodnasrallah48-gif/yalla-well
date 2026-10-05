@@ -1,6 +1,8 @@
 // Calorie targets, medical adjustments and weekly training sessions, derived from the profile.
+import type { LabEntry, MedPlan } from './health.ts';
 import { CONDITIONS, EXERCISES, GEAR, PAINS, SCHEDULES, SESSIONS, variantsOf, type Equip, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
 import { L, num, tx } from './i18n.ts';
+import { quoteUx } from './translate.ts';
 import { phaseFor, variantFor, type Phase } from './progress.ts';
 
 export type Sex = 'f' | 'm';
@@ -36,10 +38,16 @@ export type Profile = {
   condInfo?: Record<string, CondInfo>;
   /** Anything the doctor said not to do, in the person's words. */
   doctorSaid?: string;
+  /** Translations of the free text above into the other language (typed text -> translation), for showing it in the app's language. */
+  tr?: Record<string, string>;
   /** Profile picture as a small JPEG data URI. */
   photo?: string;
   /** Weigh-ins, oldest first; the first one is the starting weight. */
   weights?: { d: string; kg: number }[];
+  /** Medicine times, by medicine id ('x:<name>' for ones the person added). See lib/health. */
+  medPlan?: Record<string, MedPlan>;
+  /** Lab results, oldest first. */
+  labs?: LabEntry[];
 };
 export type DayPlace = Place | 'rest';
 /** How a condition is right now, and condition-specific answers (all optional). */
@@ -79,6 +87,8 @@ export type Modifiers = {
 export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifiers } {
   const g = genderFor(p.sex);
   const has = (id: string) => p.conditions.includes(id) || p.meds.includes(id);
+  // The newest lab result logged in My health wins over the value given at the start.
+  const logged = (k: LabEntry['kind']) => [...(p.labs ?? [])].filter((x) => x.kind === k && x.value !== undefined).sort((a, b) => b.date.localeCompare(a.date))[0]?.value;
   const food: Note[] = [];
   const train: Note[] = [];
   const mod: Modifiers = {
@@ -149,8 +159,10 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
     const names = p.pains.map((id) => PAINS.find((x) => x.id === id)?.n);
     train.push({ tone: 'warn', title: L('الألم', 'Pain'), text: L(`بدلنا التمارين اللي بتضغط على ${names.join(' و')} بتمارين ألطف. لو ${g('حسيت', 'حسيتي')} بألم حاد ${g('وقف', 'وقفي')} فورًا.`, `We swapped exercises that load your ${names.map((n) => tx(n ?? '').toLowerCase()).join(' and ')} for gentler ones. Stop right away if you feel sharp pain.`) });
   }
-  if (p.otherPain) {
-    train.push({ tone: 'warn', title: L('الألم', 'Pain'), text: L(`${g('كتبت', 'كتبتي')} إن عندك ألم في (${p.otherPain}). أي تمرين يضغط عليه ${g('خففه أو بدله', 'خففيه أو بدليه')}، و${g('اسأل', 'اسألي')} دكتور علاج طبيعي.`, `You noted pain in (${p.otherPain}). Go lighter on or swap any exercise that loads it, and ask a physiotherapist.`) });
+  // Text the person typed shows in the app's language (translated when saved), quoted in English when not yet.
+  const q = (s: string | undefined) => quoteUx(p, s);
+  if (p.otherPain?.trim()) {
+    train.push({ tone: 'warn', title: L('الألم', 'Pain'), text: L(`${g('كتبت', 'كتبتي')} إن عندك ألم في (${q(p.otherPain)}). أي تمرين يضغط عليه ${g('خففه أو بدله', 'خففيه أو بدليه')}، و${g('اسأل', 'اسألي')} دكتور علاج طبيعي.`, `You noted pain: ${q(p.otherPain)}. Go lighter on or swap any exercise that loads it, and ask a physiotherapist.`) });
   }
   // Details from the start: how each condition is right now and what the doctor said.
   const info = p.condInfo ?? {};
@@ -159,11 +171,11 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
   const fresh = p.conditions.filter((id) => info[id]?.status === 'new');
   if (active.length) {
     mod.lowImpact = true; mod.shortSessions = true; mod.rpe = L('٥-٦ من ١٠', '5-6 of 10'); mod.deficit = Math.min(mod.deficit, 0.1);
-    train.unshift({ tone: 'bad', title: L('الحالة نشطة دلوقتي', 'Active right now'), text: L(`${g('قلت', 'قلتي')} إن (${active.map(nameOf).join('، ')}) فيها نشاط دلوقتي، فخلينا التمرين أقصر وأخف ومن غير قفز، والعجز في السعرات بسيط. لما الدكتور يطمّن${g('ك', 'كي')} ${g('غيّر', 'غيّري')} الحالة من ملفي.`, `You said ${active.map(nameOf).join(', ')} is active right now, so workouts are shorter, lighter and jump-free, with only a small calorie deficit. Update it from Me once your doctor gives the all-clear.`) });
+    train.unshift({ tone: 'bad', title: L('الحالة نشطة دلوقتي', 'Active right now'), text: L(`${g('قلت', 'قلتي')} إن (${active.map(nameOf).join('، ')}) فيها نشاط دلوقتي، فخلينا التمرين أقصر وأخف ومن غير قفز، والعجز في السعرات بسيط. لما الدكتور يطمّن${g('ك', 'كي')} ${g('غيّر', 'غيّري')} الحالة من ملفي.`, `You said ${active.map(nameOf).join(', ')} ${active.length > 1 ? 'are' : 'is'} active right now, so workouts are shorter, lighter and jump-free, with only a small calorie deficit. Update it from Me once your doctor gives the all-clear.`) });
   }
   if (fresh.length) {
     if (!active.length) mod.rpe = L('٦ من ١٠', '6 of 10');
-    train.push({ tone: 'warn', title: L('تشخيص جديد', 'New diagnosis'), text: L(`عشان (${fresh.map(nameOf).join('، ')}) جديد، أول أسبوعين هنمشي بالراحة لحد ما ${g('تعرف', 'تعرفي')} جسمك بيستجيب إزاي. ${g('اسأل', 'اسألي')} دكتورك عن التمرين لو لسه بيظبط العلاج.`, `Because ${fresh.map(nameOf).join(', ')} is new, take the first two weeks easy while you learn how your body responds. Ask your doctor about exercise if your treatment is still being adjusted.`) });
+    train.push({ tone: 'warn', title: L('تشخيص جديد', 'New diagnosis'), text: L(`عشان (${fresh.map(nameOf).join('، ')}) جديد، أول أسبوعين هنمشي بالراحة لحد ما ${g('تعرف', 'تعرفي')} جسمك بيستجيب إزاي. ${g('اسأل', 'اسألي')} دكتورك عن التمرين لو لسه بيظبط العلاج.`, `Because ${fresh.map(nameOf).join(', ')} ${fresh.length > 1 ? 'are' : 'is'} new, take the first two weeks easy while you learn how your body responds. Ask your doctor about exercise if your treatment is still being adjusted.`) });
   }
   const sugar = p.conditions.find((id) => ['t1d', 't2d', 'ir'].includes(id) && info[id]);
   if (sugar) {
@@ -174,31 +186,31 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
     } else if (hy === 'sometimes') {
       train.push({ tone: 'warn', title: L('هبوط السكر', 'Low blood sugar'), text: L(`${g('قيس', 'قيسي')} قبل التمرين، ولو حسيت${g('', 'ي')} برعشة أو عرق ${g('وقف', 'وقفي')} و${g('خد', 'خدي')} حاجة مسكرة.`, 'Check before training, and if you feel shaky or sweaty, stop and have something sweet.') });
     }
-    const a1c = parseFloat((info[sugar]?.lab ?? '').replace(',', '.'));
+    const a1c = logged('hba1c') ?? parseFloat((info[sugar]?.lab ?? '').replace(',', '.'));
     if (a1c >= 9) train.unshift({ tone: 'bad', title: L('التراكمي عالي', 'High HbA1c'), text: L(`التراكمي ${a1c}٪ عالي. ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل التمرين العنيف، وابدأ${g('', 'ي')} بالمشي والتمارين الخفيفة.`, `An HbA1c of ${a1c}% is high. Show this plan to your doctor before hard training, and start with walking and light workouts.`) });
     else if (a1c >= 7) food.push({ tone: 'warn', title: L('التراكمي', 'HbA1c'), text: L(`التراكمي ${a1c}٪. هنركز على أكل بطيء في رفع السكر، وده هيبان في الاقتراحات.`, `Your HbA1c is ${a1c}%. We'll favour foods that raise blood sugar slowly in the suggestions.`) });
   }
-  const tsh = (id: string) => parseFloat((info[id]?.lab ?? '').replace(',', '.'));
+  const tsh = (id: string) => logged('tsh') ?? parseFloat((info[id]?.lab ?? '').replace(',', '.'));
   if (p.conditions.includes('hashimoto') && tsh('hashimoto') > 4.5) {
     mod.deficit = Math.min(mod.deficit, 0.1);
     food.push({ tone: 'warn', title: L('الـ TSH عالي', 'High TSH'), text: L(`آخر TSH (${tsh('hashimoto')}) أعلى من الطبيعي، فالطاقة ممكن تكون أقل والنزول أبطأ. خلينا العجز في السعرات ١٠٪ بس لحد ما الدكتور يظبط الجرعة.`, `Your last TSH (${tsh('hashimoto')}) is above normal, so energy may be lower and weight loss slower. The calorie deficit is 10% until your doctor adjusts your dose.`) });
   }
-  if (p.conditions.includes('graves') && info.graves?.lab && tsh('graves') < 0.1) {
+  if (p.conditions.includes('graves') && (info.graves?.lab || logged('tsh') !== undefined) && tsh('graves') < 0.1) {
     mod.lowImpact = true; mod.rpe = L('٥ من ١٠', '5 of 10');
     train.unshift({ tone: 'bad', title: L('الـ TSH مكبوت', 'Suppressed TSH'), text: L('الغدة لسه نشيطة زيادة، فخلي المجهود خفيف ونبضك تحت السيطرة لحد التحليل الجاي.', 'Your thyroid is still overactive, so keep the effort light and your heart rate in check until your next test.') });
   }
   if (p.conditions.some((id) => ['ra', 'psoriasis', 'lupus'].includes(id) && info[id]?.stiff)) {
     train.push({ tone: 'info', title: L('تيبس الصبح', 'Morning stiffness'), text: L(`${g('سخّن', 'سخّني')} ١٠-١٥ دقيقة بحركة خفيفة، والتمرين بعد الضهر بيبقى أريح من الصبح بدري.`, 'Warm up for 10-15 minutes with gentle movement; training after midday is easier than early morning.') });
   }
-  const triggers = p.conditions.map((id) => info[id]?.trigger?.trim()).filter(Boolean);
-  if (triggers.length) food.push({ tone: 'warn', title: L(`أكلات بتتعب${g('ك', 'كي')}`, 'Foods that upset you'), text: L(`${g('كتبت', 'كتبتي')} إن (${triggers.join('، ')}) بتتعب${g('ك', 'كي')}. ${g('ابعد', 'ابعدي')} عنها حتى لو ظهرت في الاقتراحات.`, `You noted that ${triggers.join(', ')} upsets you. Skip them even if they show up in suggestions.`) });
+  const triggers = p.conditions.map((id) => info[id]?.trigger?.trim()).filter((s): s is string => !!s).map(q);
+  if (triggers.length) food.push({ tone: 'warn', title: L(`أكلات بتتعب${g('ك', 'كي')}`, 'Foods that upset you'), text: L(`${g('كتبت', 'كتبتي')} إن (${triggers.join('، ')}) بتتعب${g('ك', 'كي')}. ${g('ابعد', 'ابعدي')} عنها حتى لو ظهرت في الاقتراحات.`, `You noted these foods upset you: ${triggers.join(', ')}. Skip them even if they show up in suggestions.`) });
   if (p.doctorSaid?.trim()) {
-    const n: Note = { tone: 'bad', title: L('كلام الدكتور', 'Your doctor said'), text: L(`"${p.doctorSaid.trim()}". كلام دكتورك أهم من أي حاجة في الخطة دي.`, `"${p.doctorSaid.trim()}". Your doctor's advice comes before anything in this plan.`) };
+    const n: Note = { tone: 'bad', title: L('كلام الدكتور', 'Your doctor said'), text: L(`"${q(p.doctorSaid)}". كلام دكتورك أهم من أي حاجة في الخطة دي.`, `${q(p.doctorSaid)}. Your doctor's advice comes before anything in this plan.`) };
     train.unshift(n); food.unshift(n);
   }
-  const other = [p.otherCond, p.otherMeds].filter(Boolean).join(L('، ', ', '));
+  const other = [p.otherCond, p.otherMeds].filter((s) => s?.trim()).map(q).join(L('، ', ', '));
   if (other) {
-    train.push({ tone: 'info', title: L('حالات تانية', 'Other conditions'), text: L(`سجلنا اللي ${g('كتبته', 'كتبتيه')} (${other}). ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل ما ${g('تبدأ', 'تبدأي')}.`, `We saved what you wrote (${other}). Show this plan to your doctor before you start.`) });
+    train.push({ tone: 'info', title: L('حالات تانية', 'Other conditions'), text: L(`سجلنا اللي ${g('كتبته', 'كتبتيه')} (${other}). ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل ما ${g('تبدأ', 'تبدأي')}.`, `We saved what you wrote: ${other}. Show this plan to your doctor before you start.`) });
   }
   return { food, train, mod };
 }

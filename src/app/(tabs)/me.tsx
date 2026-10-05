@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { PhotoPicker } from '../../components/Photo.tsx';
-import { Btn, Card, Chip, NoteView, Screen, T, styles } from '../../components/ui.tsx';
+import { Btn, Card, Chip, Choice, NoteView, Screen, T, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
 import { notifyOn, onNotifyChange, setNotifyOn, testReminder } from '../../lib/notify.ts';
-import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
+import { CONDITIONS, MEDS, PAINS, SCHEDULES, SCHEDULE_ORDER } from '../../lib/data.ts';
 import { fmt } from '../../lib/day.ts';
-import { L, tx } from '../../lib/i18n.ts';
+import { L, getLang, setLang, tx } from '../../lib/i18n.ts';
 import { genderFor, medical, targets } from '../../lib/plan.ts';
+import { ux } from '../../lib/translate.ts';
 import { logWeight, weightChange } from '../../lib/weight.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
@@ -22,6 +23,7 @@ export default function Me() {
   const c = useColors();
   const [kg, setKg] = useState('');
   const [testMsg, setTestMsg] = useState('');
+  const [plans, setPlans] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [sound, setSound] = useState(soundOn());
   useEffect(() => onSoundChange(setSound), []);
@@ -34,9 +36,9 @@ export default function Me() {
   const M = medical(p);
   const W = weightChange(p);
   const okKg = Number(kg) >= 30 && Number(kg) <= 300;
-  const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? '')), p.otherCond].filter(Boolean);
-  const meds = [...p.meds.map((id) => tx(MEDS.find((x) => x.id === id)?.n ?? '')), p.otherMeds].filter(Boolean);
-  const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '')), p.otherPain].filter(Boolean);
+  const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherCond)].filter(Boolean);
+  const meds = [...p.meds.map((id) => tx(MEDS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherMeds)].filter(Boolean);
+  const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherPain)].filter(Boolean);
 
   return (
     <Screen title={L('ملفي', 'Me')}>
@@ -46,6 +48,35 @@ export default function Me() {
         <T kind="small">{L(`${p.sex === 'm' ? 'ذكر' : 'أنثى'} · ${p.age} سنة · ${p.height} سم · ${p.weight} كجم`, `${p.sex === 'm' ? 'Male' : 'Female'} · ${p.age} yrs · ${p.height} cm · ${p.weight} kg`)}</T>
         <T kind="small">{L('الهدف:', 'Goal:')} {L(GOALS[p.goal], GOALS_EN[p.goal])} · {tx(SCHEDULES[p.schedule].n)}</T>
         <Btn kind="outline" title={L(g('عدّل بياناتي', 'عدّلي بياناتي'), 'Edit my details')} onPress={() => router.push('/onboarding')} />
+      </Card>
+
+      <Card>
+        <View style={styles.rowBetween}>
+          <View style={{ flex: 1 }}>
+            <T kind="h3">{L('نظام التمرين', 'Workout plan')}</T>
+            <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(SCHEDULES[p.schedule].n)}</T>
+            <T kind="small">{tx(SCHEDULES[p.schedule].d)}</T>
+          </View>
+          <Chip label={plans ? L('اقفل', 'Close') : L(g('غيّر', 'غيّري'), 'Change')} on={plans} onPress={() => setPlans(!plans)} />
+        </View>
+        {plans ? SCHEDULE_ORDER.map((k) => (
+          <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={p.schedule === k}
+            onPress={() => {
+              // A new plan brings its own week: drop the old gym/home/rest days and per-day workouts.
+              if (k !== p.schedule) saveProfile({ ...p, schedule: k, places: undefined, splits: undefined });
+              setPlans(false);
+            }} />
+        )) : null}
+      </Card>
+
+      <Card>
+        <View style={styles.rowBetween}>
+          <T kind="h3" style={{ flex: 1 }}>{L('اللغة', 'Language')}</T>
+          <View style={[styles.row, { gap: 8 }]}>
+            <Chip label="العربية" on={getLang() === 'ar'} onPress={() => setLang('ar')} />
+            <Chip label="English" on={getLang() === 'en'} onPress={() => setLang('en')} />
+          </View>
+        </View>
       </Card>
 
       <Card>
@@ -74,6 +105,8 @@ export default function Me() {
           ))}
         </View>
       </Card>
+
+      <Btn kind="outline" title={L('صحتي: الأدوية والتحاليل وتقرير الدكتور', 'My health: medicines, labs and doctor report')} onPress={() => router.push('/health')} />
 
       <Card>
         <T kind="h2">{L('الهيستوري الطبي', 'Medical history')}</T>

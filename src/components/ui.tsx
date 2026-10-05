@@ -127,8 +127,9 @@ function Orb({ color, size, top, left, dx, dy, ms, still, squash = 1 }: { color:
 }
 
 /**
- * Full-screen background: deep black (or soft white) with a faint light from the top and two slow glows,
- * green and blue, that drift behind the content. Still when Reduce Motion is on.
+ * Full-screen background: charcoal at the top fading to pure black (white to light grey in light mode), with one
+ * soft neutral light from the top that breathes very slowly and a faint green hint low in the corner. Still when
+ * Reduce Motion is on.
  */
 export function Bg({ children }: { children: ReactNode }) {
   const c = useColors();
@@ -139,10 +140,9 @@ export function Bg({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, []);
   return (
-    <LinearGradient colors={c.gBg} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ flex: 1, overflow: 'hidden' }}>
-      <Orb color={c.orbs[0]} size={760} squash={0.55} top="0%" left="50%" dx={0} dy={18} ms={7000} still={still} />
-      <Orb color={c.orbs[0]} size={560} top="62%" left="100%" dx={-60} dy={-50} ms={12000} still={still} />
-      <Orb color={c.orbs[1]} size={520} top="96%" left="0%" dx={70} dy={-60} ms={14000} still={still} />
+    <LinearGradient colors={c.gBg} locations={c.gBg.length === 4 ? [0, 0.35, 0.7, 1] : undefined} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ flex: 1, overflow: 'hidden' }}>
+      <Orb color={c.orbs[0]} size={820} squash={0.5} top="0%" left="50%" dx={0} dy={10} ms={9000} still={still} />
+      <Orb color={c.orbs[1]} size={600} top="100%" left="100%" dx={-30} dy={-20} ms={16000} still={still} />
       {children}
     </LinearGradient>
   );

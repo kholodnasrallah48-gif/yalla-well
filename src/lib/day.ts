@@ -1,5 +1,6 @@
 // One day's log and date helpers.
 import type { Food, FoodTag, GI } from './foods.ts';
+import type { CheckIn } from './health.ts';
 import type { SetLog } from './progress.ts';
 import type { Meal } from './recipes-data.ts';
 
@@ -8,12 +9,19 @@ export type LoggedFood = {
   /** The meal it was logged under (older logs have none). */
   meal?: Meal;
 };
+
 export type DayLog = {
   foods: LoggedFood[]; water: number; flare: boolean; done: string[]; sets: Record<string, SetLog[]>;
   /** How many times each suggested meal was swapped for another today. */
   shuffle?: Partial<Record<Meal, number>>;
   /** Meals the person ticked as eaten today. */
   meals?: Meal[];
+  /** Medicine doses ticked as taken ("<med id>@<HH:MM>", see lib/health). */
+  medsTaken?: string[];
+  /** The day's check-in: energy, pain and sleep. */
+  check?: CheckIn;
+  /** The person chose the normal workout on a day we'd made easy (after a weekly dose or a rough check-in). */
+  normalDay?: boolean;
 };
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });

@@ -265,17 +265,17 @@ export const SESSIONS: Record<string, Session> = {
     exB: ['g_legpress', 'g_hipthrust', 'g_splitsquat', 'g_legcurl', 'g_glutekick', 'g_seatedcalf', 'g_plank'],
   },
   push: {
-    n: 'Push: صدر وكتف وترايسبس', pl: 'gym',
+    n: 'دفع: صدر وكتف وترايسبس', pl: 'gym',
     ex: ['g_bench', 'g_chestm', 'g_ohp', 'g_lateral', 'g_pushdown'],
     exB: ['g_inclinedb', 'g_pecdeck', 'g_shoulderm', 'g_cablelateral', 'g_ohtricep'],
   },
   pull: {
-    n: 'Pull: ضهر وباي', pl: 'gym',
+    n: 'سحب: ضهر وباي', pl: 'gym',
     ex: ['g_latpull', 'g_cablerow', 'g_dbrow', 'g_facepull', 'g_curl'],
     exB: ['g_assistpull', 'g_machinerow', 'g_straightarm', 'g_reardelt', 'g_hammer'],
   },
   legs: {
-    n: 'Legs: رجل', pl: 'gym',
+    n: 'رجل: فخاد وأرداف وسمانة', pl: 'gym',
     ex: ['g_squat', 'g_rdl', 'g_legpress', 'g_legcurl', 'g_calf', 'g_plank'],
     exB: ['g_hacksquat', 'g_hipthrust', 'g_splitsquat', 'g_legcurl', 'g_abduct', 'g_seatedcalf', 'g_deadbug'],
   },
@@ -290,12 +290,12 @@ export const SESSIONS: Record<string, Session> = {
     exB: ['h_stepjack', 'h_sumo', 'h_march', 'h_sidelying', 'h_sideplank', 'h_calf'],
   },
   fullA: {
-    n: 'Full Body: الجسم كله (أ)', pl: 'gym',
+    n: 'الجسم كله (أ)', pl: 'gym',
     ex: ['g_squat', 'g_bench', 'g_cablerow', 'g_ohp', 'g_legcurl', 'g_plank'],
     exB: ['g_legpress', 'g_inclinedb', 'g_latpull', 'g_lateral', 'g_hipthrust', 'g_deadbug'],
   },
   fullB: {
-    n: 'Full Body: الجسم كله (ب)', pl: 'gym',
+    n: 'الجسم كله (ب)', pl: 'gym',
     ex: ['g_rdl', 'g_chestm', 'g_latpull', 'g_lunge', 'g_facepull', 'g_curl'],
     exB: ['g_hipthrust', 'g_inclinem', 'g_machinerow', 'g_splitsquat', 'g_reardelt', 'g_pushdown'],
   },
@@ -329,20 +329,23 @@ export const SESSIONS: Record<string, Session> = {
 
 export type ScheduleId = '3' | 'fb3' | 'ul4' | 'glute4' | '5mix' | '5gym' | 'bro5' | 'ppl6' | 'custom';
 /** map: Saturday-first day index → session id. The most common plans that get results, plus "other". */
+/** The plans in the order they're offered (most common first). */
+export const SCHEDULE_ORDER: ScheduleId[] = ['fb3', '3', 'ul4', 'glute4', '5mix', '5gym', 'bro5', 'ppl6', 'custom'];
+
 export const SCHEDULES: Record<ScheduleId, { n: string; d: string; map: Record<number, string> }> = {
-  fb3: { n: 'Full Body: ٣ أيام', d: 'الجسم كله كل مرة: السبت، الاتنين، الأربع. أحسن بداية للمبتدئين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
-  '3': { n: '٣ أيام جيم', d: 'Push / Pull / Legs: السبت، الاتنين، الأربع', map: { 0: 'push', 2: 'pull', 4: 'legs' } },
-  ul4: { n: 'Upper / Lower: ٤ أيام', d: 'علوي وسفلي مرتين في الأسبوع: السبت، الأحد، التلات، الأربع', map: { 0: 'upper', 1: 'lower', 3: 'upper', 4: 'lower' } },
-  glute4: { n: 'تركيز أرداف ورجل: ٤ أيام', d: 'أرداف مرتين + علوي + سفلي: السبت، الأحد، التلات، الأربع', map: { 0: 'glutes', 1: 'upper', 3: 'glutes', 4: 'lower' } },
+  fb3: { n: 'الجسم كله (٣ أيام)', d: 'كل تمرين بيشغّل الجسم كله: السبت والاتنين والأربع. أسهل بداية للمبتدئين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
+  '3': { n: 'دفع وسحب ورجل (٣ أيام)', d: 'يوم صدر وكتف وترايسبس، يوم ضهر وباي، يوم رجل: السبت والاتنين والأربع', map: { 0: 'push', 2: 'pull', 4: 'legs' } },
+  ul4: { n: 'فوق وتحت (٤ أيام)', d: 'يومين للجزء العلوي ويومين للرجل: السبت والأحد والتلات والأربع', map: { 0: 'upper', 1: 'lower', 3: 'upper', 4: 'lower' } },
+  glute4: { n: 'أرداف ورجل (٤ أيام)', d: 'يومين أرداف، يوم للجزء العلوي، ويوم رجل: السبت والأحد والتلات والأربع', map: { 0: 'glutes', 1: 'upper', 3: 'glutes', 4: 'lower' } },
   '5mix': {
-    n: '٥ أيام: ٣ جيم + ٢ بيت',
-    d: 'جيم Push / Pull / Legs: السبت، الاتنين، الخميس. بيت: الأحد، الأربع',
+    n: '٥ أيام: ٣ جيم و٢ بيت',
+    d: 'جيم (دفع، سحب، رجل) السبت والاتنين والخميس، وتمرين في البيت الأحد والأربع',
     map: { 0: 'push', 1: 'homeA', 2: 'pull', 4: 'homeB', 5: 'legs' },
   },
-  '5gym': { n: '٥ أيام جيم', d: 'دفع، سحب، رجل، علوي، سفلي', map: { 0: 'push', 1: 'pull', 2: 'legs', 4: 'upper', 5: 'lower' } },
-  bro5: { n: 'عضلة كل يوم: ٥ أيام', d: 'صدر، ضهر، رجل، كتف، دراع (Bro Split)', map: { 0: 'chest', 1: 'back', 2: 'legs', 3: 'shoulders', 4: 'arms' } },
-  ppl6: { n: 'Push / Pull / Legs: ٦ أيام', d: 'كل عضلة مرتين في الأسبوع، للمستوى المتوسط', map: { 0: 'push', 1: 'pull', 2: 'legs', 3: 'push', 4: 'pull', 5: 'legs' } },
-  custom: { n: 'نظام تاني', d: 'نبدأ بـ ٣ أيام Full Body، وتقدر تختار نوع تمرين كل يوم من صفحة التمرين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
+  '5gym': { n: '٥ أيام جيم', d: 'دفع، سحب، رجل، وبعدهم يوم للجزء العلوي ويوم رجل', map: { 0: 'push', 1: 'pull', 2: 'legs', 4: 'upper', 5: 'lower' } },
+  bro5: { n: 'عضلة كل يوم (٥ أيام)', d: 'يوم صدر، يوم ضهر، يوم رجل، يوم كتف، يوم دراع', map: { 0: 'chest', 1: 'back', 2: 'legs', 3: 'shoulders', 4: 'arms' } },
+  ppl6: { n: 'دفع وسحب ورجل (٦ أيام)', d: 'دفع وسحب ورجل مرتين في الأسبوع، للي بيتمرن بانتظام', map: { 0: 'push', 1: 'pull', 2: 'legs', 3: 'push', 4: 'pull', 5: 'legs' } },
+  custom: { n: 'هختار بنفسي', d: 'نبدأ بـ ٣ أيام للجسم كله، وكل يوم تقدر تغيّر نوع التمرين من صفحة التمرين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
 };
 /** Gym workouts a person can pick for a day under this plan; "other" can pick any. */
 export function gymChoices(id: ScheduleId): string[] {

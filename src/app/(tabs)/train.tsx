@@ -1,3 +1,5 @@
+import { EasyBanner } from '../../components/health.tsx';
+import { easyDay } from '../../lib/health.ts';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -15,8 +17,8 @@ import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
 const SPLIT_LABEL: Record<string, () => string> = {
-  fullA: () => L('Full Body أ', 'Full body A'), fullB: () => L('Full Body ب', 'Full body B'),
-  push: () => 'Push', pull: () => 'Pull', legs: () => 'Legs', upper: () => L('علوي', 'Upper'), lower: () => L('سفلي', 'Lower'),
+  fullA: () => L('الجسم كله أ', 'Full body A'), fullB: () => L('الجسم كله ب', 'Full body B'),
+  push: () => L('دفع', 'Push'), pull: () => L('سحب', 'Pull'), legs: () => L('رجل', 'Legs'), upper: () => L('علوي', 'Upper'), lower: () => L('سفلي', 'Lower'),
   chest: () => L('صدر', 'Chest'), back: () => L('ضهر', 'Back'), shoulders: () => L('كتف', 'Shoulders'), arms: () => L('دراع', 'Arms'), glutes: () => L('أرداف', 'Glutes'),
 };
 
@@ -42,7 +44,9 @@ export default function Train() {
   const past = sel < todayIdx;
   const log = isToday ? day : other;
   const week = programWeek(profile.start, selDate);
-  const ses = sessionFor(profile, sel, !!log?.flare, week);
+  // Easy (recovery) day: a flare, the day after a weekly injection, or a rough check-in.
+  const ez = easyDay(profile, log, selDate);
+  const ses = sessionFor(profile, sel, ez.easy, week);
   const places = weekPlaces(profile);
   const setPlace = (pl: DayPlace) => { play('tap'); saveProfile({ ...profile, places: { ...profile.places, [sel]: pl } }); };
   const split = weekSessions(profile)[sel];
@@ -113,6 +117,8 @@ export default function Train() {
         </View>
       ) : null}
 
+      {isToday ? <EasyBanner why={ez.why} med={ez.med} update={updateDay} g={g} /> : null}
+
       {ses && !ses.flare ? (
         <Card tone="petrol">
           <T kind="label" color={c.onHero}>{L('الأسبوع', 'Week')} {num(week + 1)} · {ses.variant === 'A' ? L('الأجهزة الأساسية', 'Main machines') : L('أجهزة بديلة', 'Alternate machines')}</T>
@@ -128,7 +134,7 @@ export default function Train() {
             <Text style={{ fontFamily: fonts.body, fontSize: 12, borderRadius: 99, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 2,
               backgroundColor: ses.place === 'gym' ? c.petrol : c.lime, color: ses.place === 'gym' ? c.onPetrol : c.onLime }}>{ses.place === 'gym' ? L('جيم', 'Gym') : L('بيت', 'Home')}</Text>
           </View>
-          <T kind="small">{L(`${ses.flare ? `يوم تعافي عشان ${g('قلت', 'قلتي')} إنك ${g('تعبان', 'تعبانة')} النهارده. ` : ''}المجهود المطلوب: ${ses.rpe} (لازم ${g('تكون قادر تكمل', 'تكوني قادرة تكملي')} جملة وانت ${g('بتتمرن', 'بتتمرني')}).`, `${ses.flare ? "Recovery day because you said you're feeling tired today. " : ''}Target effort: ${ses.rpe} (you should be able to finish a sentence while training).`)}</T>
+          <T kind="small">{L(`${ez.why === 'flare' ? `يوم تعافي عشان ${g('قلت', 'قلتي')} إنك ${g('تعبان', 'تعبانة')} النهارده. ` : ''}المجهود المطلوب: ${ses.rpe} (لازم ${g('تكون قادر تكمل', 'تكوني قادرة تكملي')} جملة وانت ${g('بتتمرن', 'بتتمرني')}).`, `${ez.why === 'flare' ? "Recovery day because you said you're feeling tired today. " : ''}Target effort: ${ses.rpe} (you should be able to finish a sentence while training).`)}</T>
           {canTick ? (
             <>
               <View style={{ height: 6, borderRadius: 99, backgroundColor: c.soft, overflow: 'hidden' }}>

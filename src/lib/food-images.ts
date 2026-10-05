@@ -146,6 +146,18 @@ export async function offImage(code: string): Promise<Got<string>> {
   return { ok: true, data: p?.image_front_small_url || p?.image_small_url || p?.image_front_url || null };
 }
 
+/**
+ * A sharper version of a photo URL for big displays (the recipe page): TheMealDB's full photo instead of the
+ * 250 px preview, a 1280 px Wikipedia thumbnail instead of the ~320 px one, Open Food Facts' 400 px image.
+ * The same URL when there's nothing bigger to ask for.
+ */
+export function hiRes(url: string): string {
+  if (/themealdb\.com/.test(url)) return url.replace(/\/(preview|small|medium)$/, '');
+  if (/upload\.wikimedia\.org\/.*\/thumb\//.test(url)) return url.replace(/\/\d+px-([^/]+)$/, '/1280px-$1');
+  if (/openfoodfacts\.org/.test(url)) return url.replace(/\.(100|200)\.jpg$/, '.400.jpg');
+  return url;
+}
+
 /** The barcode of a packaged food from its id ('bc<code>' from scanning, 'off<code>_<grams>' from online search). */
 export const barcodeOf = (id: string): string | null => id.match(/^(?:bc|off)(\d{6,14})(?:_\d+)?$/)?.[1] ?? null;
 

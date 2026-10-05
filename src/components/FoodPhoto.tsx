@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Image, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { foodImage, peekImage, type ImageKey } from '../lib/food-images.ts';
+import { foodImage, hiRes, peekImage, type ImageKey } from '../lib/food-images.ts';
 import { useColors } from '../theme.ts';
 
 export type PhotoKind = 'dish' | 'drink' | 'fruit';
@@ -59,16 +59,19 @@ export function FoodPhoto({ item, size = 52, height, radius = 12, kind = 'dish',
   item: ImageKey | null; size?: number; height?: number; radius?: number; kind?: PhotoKind; style?: StyleProp<ViewStyle>;
 }) {
   const c = useColors();
-  const url = useFoodImage(item);
-  const [broken, setBroken] = useState<string | null>(null);
+  const base = useFoodImage(item);
+  const [broken, setBroken] = useState<string[]>([]);
   const h = height ?? size;
-  const show = url && broken !== url;
+  // Big tiles ask for the sharp version first and fall back to the small one if it doesn't load.
+  const big = Math.max(size, h) > 100 || typeof style === 'object' && style !== null && (style as ViewStyle).width === '100%';
+  const url = base ? [big ? hiRes(base) : base, base].find((u) => !broken.includes(u)) ?? null : null;
+  const show = !!url;
   return (
     <View accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none"
       style={[{ width: size, height: h, borderRadius: radius, overflow: 'hidden', backgroundColor: c.soft, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }, style]}>
       <Icon kind={kind} size={Math.min(size, h) * 0.5} color={c.petrol} />
       {show ? (
-        <Image source={{ uri: url }} resizeMode="cover" onError={() => setBroken(url)} accessibilityIgnoresInvertColors
+        <Image source={{ uri: url }} resizeMode="cover" onError={() => setBroken((b) => [...b, url!])} accessibilityIgnoresInvertColors
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
       ) : null}
     </View>

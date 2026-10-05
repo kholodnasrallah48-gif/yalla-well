@@ -6,21 +6,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { logWeight } from '../lib/weight.ts';
 import { PhotoPicker } from '../components/Photo.tsx';
 import { Bg, Btn, Card, Chip, Choice, NoteView, Ring, START, T, WeekStrip, styles } from '../components/ui.tsx';
-import { CONDITIONS, MEDS, PAINS, SCHEDULES, type ScheduleId } from '../lib/data.ts';
+import { CONDITIONS, MEDS, PAINS, SCHEDULES, SCHEDULE_ORDER } from '../lib/data.ts';
 import { fmt } from '../lib/day.ts';
-import { L, tx } from '../lib/i18n.ts';
+import { L, getLang, setLang, tx } from '../lib/i18n.ts';
 import { genderFor, medical, targets, type CondInfo, type Profile } from '../lib/plan.ts';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
 
-const STEPS = ['basics', 'life', 'plan', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
+const STEPS = ['lang', 'basics', 'life', 'plan', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
 type Draft = Partial<Profile> & Pick<Profile, 'sex' | 'conditions' | 'meds' | 'pains' | 'level'>;
 
 export default function Onboarding() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { profile, saveProfile } = useStore();
-  const [step, setStep] = useState(0);
+  // The language pick only shows the first time; editing starts at the details.
+  const first = profile ? 1 : 0;
+  const [step, setStep] = useState(first);
   const [d, setD] = useState<Draft>(() => profile ? { ...profile } : { sex: 'f', conditions: [], meds: [], pains: [], level: 'beg' });
   const [nums, setNums] = useState({ age: profile ? String(profile.age) : '', height: profile ? String(profile.height) : '', weight: profile ? String(profile.weight) : '' });
   const [err, setErr] = useState('');
@@ -70,6 +72,16 @@ export default function Onboarding() {
         {STEPS.map((s, i) => <View key={s} style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: i <= step ? c.petrol : c.line }} />)}
       </View>
 
+      {st === 'lang' && <>
+        <View style={{ alignItems: 'center', gap: 6, paddingTop: 32, paddingBottom: 16 }}>
+          <T kind="h1" style={{ textAlign: 'center' }}>يلا ويل · Yalla Well</T>
+          <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>اختار لغتك · Choose your language</T>
+        </View>
+        <Choice title="العربية" sub="التطبيق كله بالعربي" on={getLang() === 'ar'} onPress={() => setLang('ar')} />
+        <Choice title="English" sub="The whole app in English" on={getLang() === 'en'} onPress={() => setLang('en')} />
+        <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L('تقدر تغيرها في أي وقت من الصفحة الرئيسية أو ملفي.', 'You can change it any time from Home or Me.')}</T>
+      </>}
+
       {st === 'basics' && <>
         <T kind="h1">{profile ? L('تعديل بياناتك', 'Edit your details') : L(`أهلًا ${g('بيك', 'بيكي')} في يلا ويل`, 'Welcome to Yalla Well')}</T>
         <T kind="body" color={c.muted}>{L(`محتاجين شوية بيانات عشان نحسب السعرات ونعمل خطة تمرين مناسبة ${g('ليك', 'ليكي')}.`, 'We need a few details to work out your calories and build a workout plan that fits you.')}</T>
@@ -104,7 +116,7 @@ export default function Onboarding() {
 
       {st === 'plan' && <>
         <T kind="h1">{L('نظام التمرين', 'Workout plan')}</T>
-        {(Object.keys(SCHEDULES) as ScheduleId[]).map((k) => (
+        {SCHEDULE_ORDER.map((k) => (
           <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={d.schedule === k} onPress={() => set({ schedule: k })} />
         ))}
         <T kind="label">{L(g('مستواك', 'مستواكي'), 'Your level')}</T>
@@ -211,7 +223,7 @@ export default function Onboarding() {
 
       {err ? <T kind="small" color={c.bad}>{err}</T> : null}
       <View style={[styles.row, { gap: 10 }]}>
-        {step > 0
+        {step > first
           ? <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => { setErr(''); setStep(skipTo(step - 1, -1)); }} />
           : profile ? <Btn kind="outline" title={L('إلغاء', 'Cancel')} onPress={() => router.back()} /> : null}
         <Btn title={st === 'done' ? L('يلا نبدأ', "Let's go") : L('التالي', 'Next')} onPress={next} style={{ flex: 1 }} />

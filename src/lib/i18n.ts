@@ -21,11 +21,20 @@ export const num = (n: number, opts?: Intl.NumberFormatOptions) => n.toLocaleStr
 
 export function setLang(l: Lang) {
   lang = l;
-  AsyncStorage.setItem(KEY, l).catch(() => {});
+  try { AsyncStorage.setItem(KEY, l).catch(() => {}); } catch { /* no storage (node tests) */ }
   listeners.forEach((f) => f(l));
 }
 export async function loadLang(): Promise<Lang> {
-  try { const v = await AsyncStorage.getItem(KEY); if (v === 'en' || v === 'ar') lang = v; } catch { /* default Arabic */ }
+  try {
+    const v = await AsyncStorage.getItem(KEY);
+    if (v === 'en' || v === 'ar') lang = v;
+    else {
+      // First open: start in the phone's language (Arabic phones in Arabic, everything else in English);
+      // the first onboarding step lets the person pick.
+      const { getLocales } = require('expo-localization') as typeof import('expo-localization');
+      lang = getLocales()[0]?.languageCode === 'ar' ? 'ar' : 'en';
+    }
+  } catch { /* default Arabic */ }
   return lang;
 }
 export function onLangChange(f: (l: Lang) => void) { listeners.add(f); return () => { listeners.delete(f); }; }

@@ -61,7 +61,8 @@ export default function AddFood() {
   // Typing searches every section; otherwise only the open section is listed.
   const pool = useMemo(() => {
     const s = norm(q);
-    if (s) return byUse(all.filter((f) => norm(f.n).includes(s) || norm(f.u).includes(s)), usage).slice(0, 25);
+    // English mode also matches the English food names.
+    if (s) return byUse(all.filter((f) => norm(f.n).includes(s) || norm(f.u).includes(s) || (isEn() && norm(tx(f.n)).includes(s))), usage).slice(0, 25);
     return cat ? byUse(all.filter((f) => f.cat === cat), usage) : [];
   }, [q, cat, all, usage]);
   const often = useMemo(() => oftenFoods(all, usage), [all, usage]);
@@ -212,12 +213,12 @@ export default function AddFood() {
               <FoodPhoto item={{ id: r.id, n: r.name, img: r.thumb ? r.thumb + '/preview' : undefined }} size={56} radius={12} />
               <View style={{ flex: 1, gap: 2 }}>
                 <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{r.name}</T>
-                <T kind="small">{[r.area, r.category].filter(Boolean).join(' · ')}{L(' · بالإنجليزي', ' · in English')}</T>
+                <T kind="small">{[r.area, r.category].filter(Boolean).join(' · ')}{L(' · بالإنجليزي', '')}</T>
               </View>
               <Text style={{ fontFamily: fonts.display, fontSize: 18, color: c.petrol }}>{L('‹', '›')}</Text>
             </Pressable>
-          )) : <T kind="small" color={c.warn}>{L(`ملقيناش وصفة "${netDishes.q}" على النت، أو مفيش نت دلوقتي. ${g('جرب', 'جربي')} اسم تاني أو بالإنجليزي.`, `No online recipe found for "${netDishes.q}", or you're offline. Try another name or English.`)}</T>}
-          {netDishes.hits.length ? <T kind="small">{L('الوصفات دي من TheMealDB وبالإنجليزي.', 'These recipes are from TheMealDB, in English.')}</T> : null}
+          )) : <T kind="small" color={c.warn}>{L(`ملقيناش وصفة "${netDishes.q}" على النت، أو مفيش نت دلوقتي. ${g('جرب', 'جربي')} اسم تاني أو بالإنجليزي.`, `No online recipe found for "${netDishes.q}", or you're offline. Try another name.`)}</T>}
+          {netDishes.hits.length ? <T kind="small">{L('الوصفات دي من TheMealDB وبالإنجليزي.', 'These recipes are from TheMealDB.')}</T> : null}
         </View>
       ) : null}
     </View>

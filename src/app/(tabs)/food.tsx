@@ -3,11 +3,13 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { MacroChips } from '../../components/food.tsx';
-import { Btn, Card, MacroBar, Screen, T, styles } from '../../components/ui.tsx';
+import { MealIdea } from '../../components/MealIdea.tsx';
+import { Card, MacroBar, Screen, T, styles } from '../../components/ui.tsx';
 import { changePortion, fmt, mealTotals, planned, totals, type LoggedFood } from '../../lib/day.ts';
 import { FOODS, MY_FOODS_CAT, itemAlerts, type Food } from '../../lib/foods.ts';
 import { L, isEn, tx } from '../../lib/i18n.ts';
 import { MEALS, MEAL_NAME, dayPlan, toMeal } from '../../lib/mealplan.ts';
+import { portionFor } from '../../lib/recipe-search.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
 import type { Meal } from '../../lib/recipes-data.ts';
 import { play } from '../../lib/sound.ts';
@@ -70,8 +72,9 @@ export default function FoodScreen() {
         </View>
         <MacroChips p={f.p * f.q} c={f.c * f.q} f={f.f * f.q} />
         {alerts.map((a, k) => (
-          <View key={k} accessibilityRole="alert" style={{ backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-            <T kind="small" color={c.bad} style={a.level === 'bad' ? { fontFamily: fonts.bodyMedium } : undefined}>{a.level === 'bad' ? '⛔ ' : '⚠️ '}{a.text}</T>
+          <View key={k} accessibilityRole="alert" style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+            <View style={{ width: 8, height: 8, borderRadius: a.level === 'bad' ? 2 : 4, backgroundColor: a.level === 'bad' ? c.bad : c.warn, marginTop: 6 }} />
+            <T kind="small" color={c.bad} style={[{ flex: 1 }, a.level === 'bad' ? { fontFamily: fonts.bodyMedium } : null]}>{a.text}</T>
           </View>
         ))}
       </View>
@@ -134,26 +137,14 @@ export default function FoodScreen() {
             {canSuggest ? (
               <Pressable onPress={() => { play('tap'); setIdeas(showIdea ? null : meal); }} accessibilityRole="button" accessibilityState={{ expanded: showIdea }}>
                 <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>
-                  {showIdea ? L('اخفي الاقتراح', 'Hide suggestion') : L(`💡 ${g('عايز', 'عايزة')} اقتراح ${toMeal(meal)}؟`, `💡 Want an idea for ${tx(MEAL_NAME[meal])}?`)}
+                  {showIdea ? L('اخفي الاقتراح', 'Hide suggestion') : L(`${g('عايز', 'عايزة')} اقتراح ${toMeal(meal)}؟`, `Want an idea for ${tx(MEAL_NAME[meal])}?`)}
                 </T>
               </Pressable>
             ) : null}
             {showIdea && r ? (
-              <View style={{ backgroundColor: c.soft, borderRadius: 12, padding: 12, gap: 4 }}>
-                <View style={[styles.row, { gap: 8 }]}>
-                  <Pressable style={{ flex: 1, gap: 2 }} onPress={() => router.push(`/recipe/${r.id}`)} accessibilityRole="button">
-                    <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(r.n)}</T>
-                    <T kind="small">{L(`${fmt(Math.round(r.kcal * entry.portion))} سعرة · ${r.mins} دقيقة`, `${fmt(Math.round(r.kcal * entry.portion))} kcal · ${r.mins} min`)}</T>
-                  </Pressable>
-                  <Pressable onPress={() => { play('tap'); updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } })); }} accessibilityRole="button"
-                    style={{ borderWidth: 1, borderColor: c.line, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.surface }}>
-                    <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>{L('غيّر', 'Swap')}</Text>
-                  </Pressable>
-                </View>
-                {entry.portion < 1 ? <T kind="small" color={c.warn}>{L(`${g('خد', 'خدي')} ${entry.portion === 0.5 ? 'نص' : 'تلات تربع'} الكمية عشان تفضل${g('', 'ي')} في حدود سعراتك`, `Have ${entry.portion === 0.5 ? 'half' : 'three quarters of'} the portion to stay within your calories`)}</T> : null}
-                {entry.why.length ? <T kind="small" color={c.ok}>{entry.why.join(L('، ', ', '))}</T> : null}
-                <Btn kind="outline" title={L(`${g('شوف', 'شوفي')} المكونات والطريقة`, 'See ingredients and steps')} onPress={() => router.push(`/recipe/${r.id}`)} />
-              </View>
+              <MealIdea recipe={r} meal={meal} budget={entry.budget} why={entry.why} g={g}
+                factor={Math.min(entry.portion, portionFor(r.kcal, entry.budget, 1).factor)}
+                onAnother={() => updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [meal]: (d.shuffle?.[meal] ?? 0) + 1 } }))} />
             ) : null}
           </Card>
         );

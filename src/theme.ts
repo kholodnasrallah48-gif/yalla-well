@@ -6,30 +6,30 @@ import { createContext, createElement, useContext, useEffect, useState, type Rea
 import { useColorScheme } from 'react-native';
 
 const light = {
-  petrol: '#0A8F55', lime: '#2E86E8', aqua: '#F0A500', bg: '#EDF3F0', surface: '#FFFFFF',
+  petrol: '#087A48', lime: '#1A65C7', aqua: '#B26B00', bg: '#EDF3F0', surface: '#FFFFFF',
   ink: '#07110D', muted: '#55665E', line: '#D6E2DC', soft: '#E1ECE6',
   onPetrol: '#FFFFFF', onLime: '#FFFFFF', onHero: '#FFFFFF',
-  ok: '#0A8F55', okBg: '#D9F5E7', warn: '#8A5A00', warnBg: '#FFF3C4', bad: '#C62839', badBg: '#FDE2E5',
+  ok: '#087A48', okBg: '#D9F5E7', warn: '#8A5A00', warnBg: '#FFF3C4', bad: '#C62839', badBg: '#FDE2E5',
   /** Gradients: screen background, card, dark hero card, main button. */
   gBg: ['#F8FBF9', '#DCE8E2'] as [string, string],
   gCard: ['#FFFFFF', '#F3F8F5'] as [string, string],
   gHero: ['#173326', '#070D0A'] as [string, string],
-  gBtn: ['#12B06A', '#0A8F55'] as [string, string],
+  gBtn: ['#0E9A5C', '#087A48'] as [string, string],
   /** Soft moving glows behind every screen. */
-  orbs: ['rgba(25,230,140,0.22)', 'rgba(46,155,255,0.16)'] as [string, string],
+  orbs: ['rgba(25,200,120,0.16)', 'rgba(46,140,255,0.10)'] as [string, string],
   shadow: 'rgba(10,40,25,0.12)', glow: 'rgba(25,200,120,0.35)',
 };
 const dark: typeof light = {
-  petrol: '#19E68C', lime: '#2E9BFF', aqua: '#FFC23D', bg: '#040706', surface: '#0E1714',
-  ink: '#EEF6F2', muted: '#8DA399', line: '#1A2A23', soft: '#13211B',
+  petrol: '#19E68C', lime: '#3DA5FF', aqua: '#FFC23D', bg: '#000000', surface: '#0E1110',
+  ink: '#F2F5F3', muted: '#9AA6A0', line: '#1E2422', soft: '#151918',
   onPetrol: '#03140B', onLime: '#FFFFFF', onHero: '#FFFFFF',
   ok: '#19E68C', okBg: '#0D2A1E', warn: '#FFD60A', warnBg: '#2E2708', bad: '#FF5C6C', badBg: '#3A1219',
-  gBg: ['#0B1612', '#020403'] as [string, string],
-  gCard: ['#12201A', '#0A120F'] as [string, string],
-  gHero: ['#103A27', '#06110C'] as [string, string],
+  gBg: ['#060807', '#000000'] as [string, string],
+  gCard: ['#121615', '#0A0C0B'] as [string, string],
+  gHero: ['#0F2E20', '#050A08'] as [string, string],
   gBtn: ['#4CF5A8', '#12C977'] as [string, string],
-  orbs: ['rgba(25,230,140,0.14)', 'rgba(46,155,255,0.12)'] as [string, string],
-  shadow: 'rgba(0,0,0,0.6)', glow: 'rgba(25,230,140,0.40)',
+  orbs: ['rgba(25,230,140,0.11)', 'rgba(61,165,255,0.07)'] as [string, string],
+  shadow: 'rgba(0,0,0,0.7)', glow: 'rgba(25,230,140,0.40)',
 };
 export type Colors = typeof light;
 
@@ -49,11 +49,11 @@ export type ThemePref = 'system' | 'light' | 'dark';
 const THEME_KEY = 'yallawell:theme';
 const ThemeCtx = createContext<{ pref: ThemePref; setPref: (p: ThemePref) => void }>({ pref: 'system', setPref: () => {} });
 
-/** Keeps the person's light/dark choice; 'system' follows the phone. */
+/** Keeps the person's light/dark choice; the app starts in dark (the brand is black) until they switch. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [pref, setPrefState] = useState<ThemePref>('system');
+  const [pref, setPrefState] = useState<ThemePref>('dark');
   useEffect(() => {
-    AsyncStorage.getItem(THEME_KEY).then((v) => { if (v === 'light' || v === 'dark') setPrefState(v); }).catch(() => {});
+    AsyncStorage.getItem(THEME_KEY).then((v) => { if (v === 'light' || v === 'dark' || v === 'system') setPrefState(v); }).catch(() => {});
   }, []);
   const setPref = (p: ThemePref) => { setPrefState(p); AsyncStorage.setItem(THEME_KEY, p).catch(() => {}); };
   return createElement(ThemeCtx.Provider, { value: { pref, setPref } }, children);

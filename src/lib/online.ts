@@ -103,14 +103,16 @@ export function toFood(o: OnlineFood, grams: number, label?: string): Food {
   };
 }
 
-async function getJSON<T>(url: string, ms = 12000, body?: unknown): Promise<T | null> {
+export async function getJSON<T>(url: string, ms = 12000, body?: unknown): Promise<T | null> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
   const host = new URL(url).host;
+  // Browsers send their own User-Agent (setting one can add a CORS preflight some hosts refuse); apps and node send ours.
+  const base: Record<string, string> = typeof document === 'undefined' ? { 'User-Agent': UA, Accept: 'application/json' } : { Accept: 'application/json' };
   try {
     const res = await fetch(url, body === undefined
-      ? { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: ctl.signal }
-      : { method: 'POST', headers: { 'User-Agent': UA, Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
+      ? { headers: base, signal: ctl.signal }
+      : { method: 'POST', headers: { ...base, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
     if (!res.ok) { lastError[host] = `HTTP ${res.status}`; return null; }
     return (await res.json()) as T;
   } catch (e) {

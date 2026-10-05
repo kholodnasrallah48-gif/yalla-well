@@ -5,14 +5,20 @@ import { Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Card, NoteView, Screen, T, lift, placeColor, styles } from '../../components/ui.tsx';
-import { WEEK, WEEK_SHORT } from '../../lib/data.ts';
+import { GEAR, WEEK, WEEK_SHORT, gymChoices } from '../../lib/data.ts';
 import { dayKey, weekIndex, type DayLog } from '../../lib/day.ts';
-import { GYM_SPLITS, genderFor, medical, sessionFor, weekPlaces, weekSessions, type DayPlace, type GymSplit } from '../../lib/plan.ts';
+import { genderFor, medical, sessionFor, weekPlaces, weekSessions, type DayPlace } from '../../lib/plan.ts';
 import { programWeek } from '../../lib/progress.ts';
 import { L, num, tx } from '../../lib/i18n.ts';
 import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
+
+const SPLIT_LABEL: Record<string, () => string> = {
+  fullA: () => L('Full Body أ', 'Full body A'), fullB: () => L('Full Body ب', 'Full body B'),
+  push: () => 'Push', pull: () => 'Pull', legs: () => 'Legs', upper: () => L('علوي', 'Upper'), lower: () => L('سفلي', 'Lower'),
+  chest: () => L('صدر', 'Chest'), back: () => L('ضهر', 'Back'), shoulders: () => L('كتف', 'Shoulders'), arms: () => L('دراع', 'Arms'), glutes: () => L('أرداف', 'Glutes'),
+};
 
 export default function Train() {
   const c = useColors();
@@ -40,7 +46,7 @@ export default function Train() {
   const places = weekPlaces(profile);
   const setPlace = (pl: DayPlace) => { play('tap'); saveProfile({ ...profile, places: { ...profile.places, [sel]: pl } }); };
   const split = weekSessions(profile)[sel];
-  const setSplit = (k: GymSplit) => { play('tap'); saveProfile({ ...profile, splits: { ...profile.splits, [sel]: k } }); };
+  const setSplit = (k: string) => { play('tap'); saveProfile({ ...profile, splits: { ...profile.splits, [sel]: k } }); };
   const done = log?.done ?? [];
   const n = ses ? ses.items.filter((x) => done.includes(x.id)).length : 0;
   const M = medical(profile);
@@ -92,13 +98,13 @@ export default function Train() {
       {!past && places[sel] === 'gym' ? (
         <View style={{ gap: 6 }}>
           <T kind="small">{L(`${g('هتلعب', 'هتلعبي')} إيه في الجيم؟`, 'What are you training at the gym?')}</T>
-          <View style={[styles.row, { gap: 6 }]}>
-            {GYM_SPLITS.map((k) => {
+          <View style={styles.wrap}>
+            {gymChoices(profile.schedule).map((k) => {
               const on = split === k;
-              const label = { push: 'Push', pull: 'Pull', legs: 'Legs', upper: L('علوي', 'Upper'), lower: L('سفلي', 'Lower') }[k];
+              const label = SPLIT_LABEL[k]?.() ?? k;
               return (
                 <Pressable key={k} onPress={() => setSplit(k)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                  style={({ pressed }) => [{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : c.surface, borderRadius: 12, paddingVertical: 8 }, lift(c, on ? 'glow' : 'sm'), pressed && styles.pressed]}>
+                  style={({ pressed }) => [{ minWidth: 64, alignItems: 'center', borderWidth: 1.5, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : c.surface, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 }, lift(c, on ? 'glow' : 'sm'), pressed && styles.pressed]}>
                   <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, color: on ? c.onPetrol : c.ink }}>{label}</Text>
                 </Pressable>
               );
@@ -143,6 +149,7 @@ export default function Train() {
                 <Pressable style={{ flex: 1 }} accessibilityRole="button" onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: x.id, day: String(sel) } })}>
                   <T kind="h3" style={on ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>{tx(x.ex.n)}</T>
                   <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>{x.rx}{logged ? L(` · ${g('سجلت', 'سجلتي')} ${num(logged)} مجموعات`, ` · ${num(logged)} ${logged === 1 ? 'set' : 'sets'} logged`) : ''}</T>
+                  {GEAR[x.id] ? <T kind="label" color={c.lime}>{L('الأداة: ', 'Equipment: ')}{L(GEAR[x.id].ar, GEAR[x.id].en)}</T> : null}
                   {x.why ? <T kind="label" color={c.warn}>{L('اتبدل:', 'Swapped:')} {x.why}</T> : null}
                 </Pressable>
                 <Text style={{ fontFamily: fonts.display, fontSize: 18, color: c.muted, marginTop: 2 }}>{L('‹', '›')}</Text>

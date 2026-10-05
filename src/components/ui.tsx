@@ -4,7 +4,7 @@ import { play } from '../lib/sound.ts';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient as SvgGrad, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGrad, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { WEEK, WEEK_SHORT, SESSIONS, SCHEDULES } from '../lib/data.ts';
@@ -91,38 +91,45 @@ export function lift(c: Colors, size: 'sm' | 'md' | 'glow' = 'md'): ViewStyle {
   return { boxShadow: v } as ViewStyle;
 }
 
-/** One soft glow that drifts slowly in a loop. */
-function Orb({ color, size, top, left, dx, dy, ms, still }: { color: string; size: number; top: `${number}%`; left: `${number}%`; dx: number; dy: number; ms: number; still: boolean }) {
+/** One soft glow that drifts slowly in a loop; the colour fades out gradually so there are no edges. */
+function Orb({ color, size, top, left, dx, dy, ms, still, squash = 1 }: { color: string; size: number; top: `${number}%`; left: `${number}%`; dx: number; dy: number; ms: number; still: boolean; squash?: number }) {
   const t = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (still) return;
+    const ease = Easing.inOut(Easing.sin);
     const loop = Animated.loop(Animated.sequence([
-      Animated.timing(t, { toValue: 1, duration: ms, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web' }),
-      Animated.timing(t, { toValue: 0, duration: ms, easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(t, { toValue: 1, duration: ms, easing: ease, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(t, { toValue: 0, duration: ms, easing: ease, useNativeDriver: Platform.OS !== 'web' }),
     ]));
     loop.start();
     return () => loop.stop();
   }, [still]);
   const move = (d: number) => t.interpolate({ inputRange: [0, 1], outputRange: [0, d] });
-  const scale = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const scale = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] });
+  const opacity = t.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.85, 1, 0.85] });
   const id = `orb${size}${ms}`;
   return (
-    <Animated.View pointerEvents="none" style={{ position: 'absolute', top, left, width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2,
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', top, left, width: size, height: size * squash, marginLeft: -size / 2, marginTop: (-size * squash) / 2, opacity,
       transform: [{ translateX: move(dx) }, { translateY: move(dy) }, { scale }] }}>
-      <Svg width={size} height={size}>
+      <Svg width={size} height={size * squash}>
         <Defs>
-          <RadialGradient id={id} cx="50%" cy="50%" r="50%">
+          <RadialGradient id={id} cx="50%" cy="50%" rx="50%" ry="50%">
             <Stop offset="0" stopColor={color} stopOpacity={1} />
+            <Stop offset="0.35" stopColor={color} stopOpacity={0.55} />
+            <Stop offset="0.7" stopColor={color} stopOpacity={0.14} />
             <Stop offset="1" stopColor={color} stopOpacity={0} />
           </RadialGradient>
         </Defs>
-        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#${id})`} />
+        <Rect width={size} height={size * squash} fill={`url(#${id})`} />
       </Svg>
     </Animated.View>
   );
 }
 
-/** Full-screen background: a gradient with two soft glows drifting behind the content (still when Reduce Motion is on). */
+/**
+ * Full-screen background: deep black (or soft white) with a faint light from the top and two slow glows,
+ * green and blue, that drift behind the content. Still when Reduce Motion is on.
+ */
 export function Bg({ children }: { children: ReactNode }) {
   const c = useColors();
   const [still, setStill] = useState(false);
@@ -132,10 +139,10 @@ export function Bg({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, []);
   return (
-    <LinearGradient colors={c.gBg} start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }} style={{ flex: 1, overflow: 'hidden' }}>
-      <Orb color={c.orbs[0]} size={460} top="8%" left="85%" dx={-70} dy={60} ms={9000} still={still} />
-      <Orb color={c.orbs[1]} size={420} top="70%" left="10%" dx={80} dy={-70} ms={11000} still={still} />
-      <Orb color={c.orbs[0]} size={300} top="105%" left="90%" dx={-50} dy={-60} ms={13000} still={still} />
+    <LinearGradient colors={c.gBg} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ flex: 1, overflow: 'hidden' }}>
+      <Orb color={c.orbs[0]} size={760} squash={0.55} top="0%" left="50%" dx={0} dy={18} ms={7000} still={still} />
+      <Orb color={c.orbs[0]} size={560} top="62%" left="100%" dx={-60} dy={-50} ms={12000} still={still} />
+      <Orb color={c.orbs[1]} size={520} top="96%" left="0%" dx={70} dy={-60} ms={14000} still={still} />
       {children}
     </LinearGradient>
   );

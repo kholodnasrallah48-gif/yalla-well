@@ -3,7 +3,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { EXERCISES, SCHEDULES, SESSIONS } from './data.ts';
+import { EXERCISES, GEAR, SCHEDULES, SESSIONS, VARIANT_GROUPS, gymChoices } from './data.ts';
+import { MEDIA } from './exercise-media.ts';
 import { FOODS, byUse, findSwaps, foodAdvice, itemAlerts, oftenFoods, parseMeal } from './foods.ts';
 import { dayPlan, mealOptions, suitability } from './mealplan.ts';
 import { POINTS, scoreDay, streaks } from './streaks.ts';
@@ -11,7 +12,7 @@ import { reportHTML, weekReport, weekStart } from './report.ts';
 import { fromOFF } from './barcode.ts';
 import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
 import { addFood, blankDay, changePortion, dayKey, totals, weekIndex, type DayLog } from './day.ts';
-import { medical, sessionFor, targets, weekSessions, type Profile } from './plan.ts';
+import { gearOptions, medical, sessionFor, targets, weekSessions, type Profile } from './plan.ts';
 import { PHASES, programWeek, suggestWeight } from './progress.ts';
 
 const base: Profile = {
@@ -368,4 +369,48 @@ test('meal foods count only once the meal is ticked, and over-calorie swaps are 
   const cucumber = FOODS.find((x) => x.n === 'خيار')!;
   const adv = foodAdvice(base, cucumber, 3);
   assert.ok(adv.swaps.every((x) => x.kcal < cucumber.kcal), adv.swaps.map((x) => `${x.n} ${x.kcal}`).join());
+});
+
+test('every plan has valid sessions and every gym exercise names its equipment', () => {
+  for (const [id, sch] of Object.entries(SCHEDULES)) {
+    for (const sid of Object.values(sch.map)) assert.ok(SESSIONS[sid], `${id}: ${sid}`);
+    for (const sid of gymChoices(id as keyof typeof SCHEDULES)) assert.equal(SESSIONS[sid].pl, 'gym');
+  }
+  for (const s of Object.values(SESSIONS)) for (const e of [...s.ex, ...(s.exB ?? [])]) {
+    assert.ok(EXERCISES[e], e);
+    if (e.startsWith('g_')) assert.ok(GEAR[e], `gear for ${e}`);
+  }
+  for (const g of VARIANT_GROUPS) for (const e of g) { assert.ok(EXERCISES[e], e); assert.ok(GEAR[e], e); assert.ok(MEDIA[e], `media for ${e}`); }
+});
+
+test('an exercise can be switched between free weights and a machine, and the pick is kept', () => {
+  const p: Profile = { ...base, schedule: '3', pains: [] };
+  const opts = gearOptions(p, 'g_bench').map((o) => o.id);
+  assert.ok(opts.includes('g_bench') && opts.includes('g_chestm') && opts.includes('g_benchbb'));
+  const q: Profile = { ...p, gear: { g_bench: 'g_chestm' } };
+  const items = sessionFor(q, 0, false)!.items;
+  const it = items.find((x) => x.base === 'g_bench')!;
+  assert.equal(it.id, 'g_chestm');
+  // Shoulder pain: barbell versions that load the shoulder are not offered.
+  const sore = gearOptions({ ...p, pains: ['shoulder'] }, 'g_bench').map((o) => o.id);
+  assert.ok(!sore.includes('g_benchbb'));
+});
+
+test('new plans: full body, upper/lower and bro split give the right sessions', () => {
+  assert.deepEqual(weekSessions({ ...base, schedule: 'fb3' }), ['fullA', null, 'fullB', null, 'fullA', null, null]);
+  assert.deepEqual(weekSessions({ ...base, schedule: 'ul4' }), ['upper', 'lower', null, 'upper', 'lower', null, null]);
+  assert.equal(weekSessions({ ...base, schedule: 'bro5' })[3], 'shoulders');
+  assert.ok(targets({ ...base, schedule: 'ppl6' }).kcal > targets({ ...base, schedule: 'fb3' }).kcal);
+});
+
+test('condition details change the plan: active flare, frequent lows, high HbA1c, doctor advice', () => {
+  const p: Profile = { ...base, conditions: ['ra', 't2d'], condInfo: { ra: { status: 'active' }, t2d: { hypos: 'often', lab: '9.4' } }, doctorSaid: 'بلاش رفع تقيل' };
+  const M = medical(p);
+  assert.equal(M.mod.lowImpact, true);
+  assert.equal(M.mod.shortSessions, true);
+  assert.ok(M.mod.deficit <= 0.1);
+  assert.equal(M.train[0].text.includes('بلاش رفع تقيل'), true);
+  assert.ok(M.train.some((n) => n.tone === 'bad' && n.text.includes('9.4')));
+  const calm = medical({ ...base, conditions: ['ra'], condInfo: { ra: { status: 'stable' } } });
+  assert.equal(calm.mod.shortSessions, false);
 });

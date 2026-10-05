@@ -98,3 +98,24 @@ export async function testReminder(title: string, body: string, seconds = 5): Pr
     return 'unavailable';
   }
 }
+
+const REST_ID = 'yw-rest-end';
+/** Phone alert when a rest between sets ends, so the timer works even with the app in the background. */
+export async function scheduleRestEnd(seconds: number, title: string, body: string) {
+  const N = native();
+  if (!N || seconds <= 0) return;
+  try {
+    await N.cancelScheduledNotificationAsync(REST_ID).catch(() => {});
+    if (!(await allowed(N))) return;
+    await N.scheduleNotificationAsync({
+      identifier: REST_ID,
+      content: { title, body, sound: true },
+      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: Math.round(seconds) },
+    });
+  } catch { /* the on-screen timer still works */ }
+}
+export async function cancelRestEnd() {
+  const N = native();
+  if (!N) return;
+  await N.cancelScheduledNotificationAsync(REST_ID).catch(() => {});
+}

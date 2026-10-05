@@ -1,5 +1,5 @@
 // Calorie targets, medical adjustments and weekly training sessions, derived from the profile.
-import { EXERCISES, PAINS, SCHEDULES, SESSIONS, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
+import { CONDITIONS, EXERCISES, GEAR, PAINS, SCHEDULES, SESSIONS, variantsOf, type Equip, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
 import { L, num, tx } from './i18n.ts';
 import { phaseFor, variantFor, type Phase } from './progress.ts';
 
@@ -28,16 +28,32 @@ export type Profile = {
   start?: string;
   /** The person's own pick per weekday (Saturday = 0): gym, home or rest. Missing days follow the schedule. */
   places?: Partial<Record<number, DayPlace>>;
-  /** The person's own gym workout per weekday (push, pull, legs, upper, lower). Missing days follow the schedule. */
-  splits?: Partial<Record<number, GymSplit>>;
+  /** The person's own gym workout per weekday (a gym session id: push, pull, fullA...). Missing days follow the schedule. */
+  splits?: Partial<Record<number, string>>;
+  /** Equipment the person picked for an exercise: plan exercise id -> the version they use (e.g. dumbbell bench -> chest press machine). */
+  gear?: Record<string, string>;
+  /** Details for each condition picked at the start. */
+  condInfo?: Record<string, CondInfo>;
+  /** Anything the doctor said not to do, in the person's words. */
+  doctorSaid?: string;
   /** Profile picture as a small JPEG data URI. */
   photo?: string;
   /** Weigh-ins, oldest first; the first one is the starting weight. */
   weights?: { d: string; kg: number }[];
 };
 export type DayPlace = Place | 'rest';
-export const GYM_SPLITS = ['push', 'pull', 'legs', 'upper', 'lower'] as const;
-export type GymSplit = (typeof GYM_SPLITS)[number];
+/** How a condition is right now, and condition-specific answers (all optional). */
+export type CondInfo = {
+  status?: 'stable' | 'active' | 'new';
+  /** Diabetes: how often blood sugar drops. */
+  hypos?: 'never' | 'sometimes' | 'often';
+  /** Last lab number the person knows (HbA1c %, TSH...). */
+  lab?: string;
+  /** Joint conditions: morning stiffness. */
+  stiff?: boolean;
+  /** Gut conditions / celiac: foods that upset them. */
+  trigger?: string;
+};
 
 /** Picks the masculine or feminine form of a phrase for the person. */
 export type Gender = (m: string, f: string) => string;
@@ -136,6 +152,50 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
   if (p.otherPain) {
     train.push({ tone: 'warn', title: L('الألم', 'Pain'), text: L(`${g('كتبت', 'كتبتي')} إن عندك ألم في (${p.otherPain}). أي تمرين يضغط عليه ${g('خففه أو بدله', 'خففيه أو بدليه')}، و${g('اسأل', 'اسألي')} دكتور علاج طبيعي.`, `You noted pain in (${p.otherPain}). Go lighter on or swap any exercise that loads it, and ask a physiotherapist.`) });
   }
+  // Details from the start: how each condition is right now and what the doctor said.
+  const info = p.condInfo ?? {};
+  const nameOf = (id: string) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? id);
+  const active = p.conditions.filter((id) => info[id]?.status === 'active');
+  const fresh = p.conditions.filter((id) => info[id]?.status === 'new');
+  if (active.length) {
+    mod.lowImpact = true; mod.shortSessions = true; mod.rpe = L('٥-٦ من ١٠', '5-6 of 10'); mod.deficit = Math.min(mod.deficit, 0.1);
+    train.unshift({ tone: 'bad', title: L('الحالة نشطة دلوقتي', 'Active right now'), text: L(`${g('قلت', 'قلتي')} إن (${active.map(nameOf).join('، ')}) فيها نشاط دلوقتي، فخلينا التمرين أقصر وأخف ومن غير قفز، والعجز في السعرات بسيط. لما الدكتور يطمّن${g('ك', 'كي')} ${g('غيّر', 'غيّري')} الحالة من ملفي.`, `You said ${active.map(nameOf).join(', ')} is active right now, so workouts are shorter, lighter and jump-free, with only a small calorie deficit. Update it from Me once your doctor gives the all-clear.`) });
+  }
+  if (fresh.length) {
+    if (!active.length) mod.rpe = L('٦ من ١٠', '6 of 10');
+    train.push({ tone: 'warn', title: L('تشخيص جديد', 'New diagnosis'), text: L(`عشان (${fresh.map(nameOf).join('، ')}) جديد، أول أسبوعين هنمشي بالراحة لحد ما ${g('تعرف', 'تعرفي')} جسمك بيستجيب إزاي. ${g('اسأل', 'اسألي')} دكتورك عن التمرين لو لسه بيظبط العلاج.`, `Because ${fresh.map(nameOf).join(', ')} is new, take the first two weeks easy while you learn how your body responds. Ask your doctor about exercise if your treatment is still being adjusted.`) });
+  }
+  const sugar = p.conditions.find((id) => ['t1d', 't2d', 'ir'].includes(id) && info[id]);
+  if (sugar) {
+    const hy = info[sugar]?.hypos;
+    if (hy === 'often') {
+      mod.lowImpact = true;
+      train.unshift({ tone: 'bad', title: L('هبوط السكر', 'Low blood sugar'), text: L(`عشان السكر بيهبط معا${g('ك', 'كي')} كتير: ${g('كل', 'كلي')} سناك فيه كارب قبل التمرين بساعة، بلاش كارديو على معدة فاضية، و${g('خلي', 'خلي')} معا${g('ك', 'كي')} عصير أو تمر. ${g('كلم', 'كلمي')} دكتورك عشان جرعة الدوا.`, 'Because your blood sugar often drops: eat a carb snack an hour before training, no fasted cardio, and keep juice or dates with you. Talk to your doctor about your dose.') });
+    } else if (hy === 'sometimes') {
+      train.push({ tone: 'warn', title: L('هبوط السكر', 'Low blood sugar'), text: L(`${g('قيس', 'قيسي')} قبل التمرين، ولو حسيت${g('', 'ي')} برعشة أو عرق ${g('وقف', 'وقفي')} و${g('خد', 'خدي')} حاجة مسكرة.`, 'Check before training, and if you feel shaky or sweaty, stop and have something sweet.') });
+    }
+    const a1c = parseFloat((info[sugar]?.lab ?? '').replace(',', '.'));
+    if (a1c >= 9) train.unshift({ tone: 'bad', title: L('التراكمي عالي', 'High HbA1c'), text: L(`التراكمي ${a1c}٪ عالي. ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل التمرين العنيف، وابدأ${g('', 'ي')} بالمشي والتمارين الخفيفة.`, `An HbA1c of ${a1c}% is high. Show this plan to your doctor before hard training, and start with walking and light workouts.`) });
+    else if (a1c >= 7) food.push({ tone: 'warn', title: L('التراكمي', 'HbA1c'), text: L(`التراكمي ${a1c}٪. هنركز على أكل بطيء في رفع السكر، وده هيبان في الاقتراحات.`, `Your HbA1c is ${a1c}%. We'll favour foods that raise blood sugar slowly in the suggestions.`) });
+  }
+  const tsh = (id: string) => parseFloat((info[id]?.lab ?? '').replace(',', '.'));
+  if (p.conditions.includes('hashimoto') && tsh('hashimoto') > 4.5) {
+    mod.deficit = Math.min(mod.deficit, 0.1);
+    food.push({ tone: 'warn', title: L('الـ TSH عالي', 'High TSH'), text: L(`آخر TSH (${tsh('hashimoto')}) أعلى من الطبيعي، فالطاقة ممكن تكون أقل والنزول أبطأ. خلينا العجز في السعرات ١٠٪ بس لحد ما الدكتور يظبط الجرعة.`, `Your last TSH (${tsh('hashimoto')}) is above normal, so energy may be lower and weight loss slower. The calorie deficit is 10% until your doctor adjusts your dose.`) });
+  }
+  if (p.conditions.includes('graves') && info.graves?.lab && tsh('graves') < 0.1) {
+    mod.lowImpact = true; mod.rpe = L('٥ من ١٠', '5 of 10');
+    train.unshift({ tone: 'bad', title: L('الـ TSH مكبوت', 'Suppressed TSH'), text: L('الغدة لسه نشيطة زيادة، فخلي المجهود خفيف ونبضك تحت السيطرة لحد التحليل الجاي.', 'Your thyroid is still overactive, so keep the effort light and your heart rate in check until your next test.') });
+  }
+  if (p.conditions.some((id) => ['ra', 'psoriasis', 'lupus'].includes(id) && info[id]?.stiff)) {
+    train.push({ tone: 'info', title: L('تيبس الصبح', 'Morning stiffness'), text: L(`${g('سخّن', 'سخّني')} ١٠-١٥ دقيقة بحركة خفيفة، والتمرين بعد الضهر بيبقى أريح من الصبح بدري.`, 'Warm up for 10-15 minutes with gentle movement; training after midday is easier than early morning.') });
+  }
+  const triggers = p.conditions.map((id) => info[id]?.trigger?.trim()).filter(Boolean);
+  if (triggers.length) food.push({ tone: 'warn', title: L(`أكلات بتتعب${g('ك', 'كي')}`, 'Foods that upset you'), text: L(`${g('كتبت', 'كتبتي')} إن (${triggers.join('، ')}) بتتعب${g('ك', 'كي')}. ${g('ابعد', 'ابعدي')} عنها حتى لو ظهرت في الاقتراحات.`, `You noted that ${triggers.join(', ')} upsets you. Skip them even if they show up in suggestions.`) });
+  if (p.doctorSaid?.trim()) {
+    const n: Note = { tone: 'bad', title: L('كلام الدكتور', 'Your doctor said'), text: L(`"${p.doctorSaid.trim()}". كلام دكتورك أهم من أي حاجة في الخطة دي.`, `"${p.doctorSaid.trim()}". Your doctor's advice comes before anything in this plan.`) };
+    train.unshift(n); food.unshift(n);
+  }
   const other = [p.otherCond, p.otherMeds].filter(Boolean).join(L('، ', ', '));
   if (other) {
     train.push({ tone: 'info', title: L('حالات تانية', 'Other conditions'), text: L(`سجلنا اللي ${g('كتبته', 'كتبتيه')} (${other}). ${g('اعرض', 'اعرضي')} الخطة على دكتورك قبل ما ${g('تبدأ', 'تبدأي')}.`, `We saved what you wrote (${other}). Show this plan to your doctor before you start.`) });
@@ -149,7 +209,7 @@ export const CUP_ML = 250;
 export type Targets = { kcal: number; protein: number; fat: number; carbs: number; waterCups: number; tdee: number };
 
 const ACTIVITY_FACTOR: Record<Activity, number> = { low: 1.2, mid: 1.3, high: 1.45 };
-const TRAINING_FACTOR: Record<ScheduleId, number> = { '3': 0.1, '5mix': 0.17, '5gym': 0.2 };
+const TRAINING_FACTOR: Record<ScheduleId, number> = { '3': 0.1, fb3: 0.1, custom: 0.1, ul4: 0.14, glute4: 0.14, '5mix': 0.17, '5gym': 0.2, bro5: 0.2, ppl6: 0.24 };
 
 /** Mifflin-St Jeor BMR × activity, adjusted for the goal and medical caps. */
 export function targets(p: Profile): Targets {
@@ -170,6 +230,8 @@ export function targets(p: Profile): Targets {
 
 export type PlannedExercise = {
   id: string; ex: Exercise; why: string | null; rx: string;
+  /** The plan's exercise this one stands for (differs from id when the person picked other equipment or it was swapped). */
+  base: string;
   /** Strength work only: sets, rep range and rest; 0 sets for timed work. */
   sets: number; reps: [number, number]; rest: number;
 };
@@ -180,7 +242,7 @@ export type DaySession = {
 
 const ar = (n: number) => num(n);
 
-function prescription(p: Profile, e: Exercise, m: Modifiers, phase: Phase): Omit<PlannedExercise, 'id' | 'ex' | 'why'> {
+function prescription(p: Profile, e: Exercise, m: Modifiers, phase: Phase): Omit<PlannedExercise, 'id' | 'ex' | 'why' | 'base'> {
   const beginner = p.level === 'beg';
   const timed = (rx: string) => ({ rx, sets: 0, reps: [0, 0] as [number, number], rest: 0 });
   if (e.k === 'cardio') return timed(m.shortSessions ? L('١٠ دقايق، مجهود متوسط', '10 min, moderate effort') : p.goal === 'lose' ? L('٢٠ دقيقة، مجهود متوسط', '20 min, moderate effort') : L('١٥ دقيقة، مجهود متوسط', '15 min, moderate effort'));
@@ -213,6 +275,18 @@ export function resolveExercise(id: string, p: Profile, m: Modifiers): { id: str
     cur = ex.alt;
   }
   return null;
+}
+
+/**
+ * Ways to do a planned exercise that suit this person (free weights, machine, cable...), each with the
+ * equipment to use. Versions that don't fit their pain or medical needs are left out.
+ */
+export function gearOptions(p: Profile, base: string): { id: string; ex: Exercise; eq: Equip; gear: string }[] {
+  const m = medical(p).mod;
+  return variantsOf(base)
+    .map((id) => ({ id, r: resolveExercise(id, p, m) }))
+    .filter((x) => x.r && x.r.id === x.id)
+    .map(({ id }) => ({ id, ex: EXERCISES[id], eq: GEAR[id]?.eq ?? 'none', gear: GEAR[id] ? L(GEAR[id].ar, GEAR[id].en) : '' }));
 }
 
 /** The session for a Saturday-first day index in a program week, or null on rest days. */
@@ -249,15 +323,17 @@ export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 
   const variant = variantFor(week);
   const phase = phaseFor(week);
   const seen = new Set<string>();
-  let list: { id: string; ex: Exercise; why: string | null }[] = [];
-  for (const id of variant === 'B' && s.exB ? s.exB : s.ex) {
-    const r = resolveExercise(id, p, m);
-    if (r && !seen.has(r.id)) { seen.add(r.id); list.push(r); }
+  let list: { id: string; ex: Exercise; why: string | null; base: string }[] = [];
+  for (const base of variant === 'B' && s.exB ? s.exB : s.ex) {
+    // The version the person picked for this exercise (free weights, machine...), when it still fits them.
+    const id = p.gear?.[base] ?? base;
+    const r = resolveExercise(id, p, m) ?? (id !== base ? resolveExercise(base, p, m) : null);
+    if (r && !seen.has(r.id)) { seen.add(r.id); list.push({ ...r, base }); }
   }
   if (m.shortSessions && !flare && list.length > 5) list = list.slice(0, 5);
   if (!flare && s.pl === 'gym' && !list.some((x) => x.ex.k === 'cardio') && (p.goal === 'lose' || p.schedule === '3')) {
     const c = m.lowImpact ? 'g_bike' : 'g_incline';
-    list.push({ id: c, ex: EXERCISES[c], why: null });
+    list.push({ id: c, ex: EXERCISES[c], why: null, base: c });
   }
   return {
     id: flare ? 'gentle' : sid, n: s.n, place: s.pl, flare,

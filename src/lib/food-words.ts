@@ -57,3 +57,20 @@ export const AR_EN: Record<string, string> = {
 // Words that carry no food meaning on their own.
 export const SKIP = new Set(['من', 'في', 'على', 'مع', 'و', 'او', 'بال', 'ال', 'حبه', 'طبق', 'كوبايه', 'كوب', 'معلقه', 'قطعه', 'حته', 'شويه', 'جم', 'جرام', 'جرامات', 'كيلو', 'نص', 'ربع', 'صغير', 'كبير', 'وسط']);
 
+
+// Dish names for recipe and photo lookups (TheMealDB, Wikipedia), where the nutrition words above would mislead
+// ("ملوخيه" is "jute mallow" for USDA but "molokhia" as a dish). Normalized Arabic → English.
+export const DISH_EN: Record<string, string> = {
+  'كشري': 'koshari', 'كشرى': 'koshari', 'شكشوكه': 'shakshuka', 'مسقعه': 'moussaka', 'ملوخيه': 'molokhia', 'طعميه': 'falafel', 'فلافل': 'falafel',
+  'فول مدمس': 'ful medames', 'حمص بالطحينه': 'hummus', 'كفته': 'kofta', 'شاورما': 'shawarma', 'كباب': 'kebab', 'شيش طاووق': 'shish taouk',
+  'فته': 'fatteh', 'كبسه': 'kabsa', 'مندي': 'mandi', 'بسبوسه': 'basbousa', 'ام علي': 'om ali', 'كنافه': 'kunafa', 'قطايف': 'qatayef',
+  'مكرونه بشاميل': 'pasta bake', 'لازانيا': 'lasagne', 'بيتزا': 'pizza', 'برجر': 'burger', 'كاري': 'curry', 'برياني': 'biryani', 'سوشي': 'sushi',
+  'تاكو': 'tacos', 'رامن': 'ramen', 'بان كيك': 'pancakes', 'بانكيك': 'pancakes', 'كريب': 'crepes', 'مسخن': 'musakhan', 'منسف': 'mansaf',
+  'مقلوبه': 'maqluba', 'طاجن': 'tagine', 'كسكسي': 'couscous', 'شوربه': 'soup', 'سلطه': 'salad', 'ستيك': 'steak', 'كيكه': 'cake', 'كيك': 'cake',
+  'براونيز': 'brownies', 'تشيز كيك': 'cheesecake', 'ريزوتو': 'risotto', 'باستا': 'pasta', 'سباجيتي': 'spaghetti', 'اسباجتي': 'spaghetti',
+  'نودلز': 'noodles', 'اندومي': 'noodles', 'جولاش': 'goulash', 'محشي': 'stuffed', 'ورق عنب': 'dolma', 'بامي': 'okra', 'فاهيتا': 'fajitas',
+  'تبوله': 'tabbouleh', 'فتوش': 'fattoush', 'بابا غنوج': 'baba ghanoush', 'مهلبيه': 'pudding', 'رز بلبن': 'rice pudding', 'بليله': 'belila',
+  'بصاره': 'bissara', 'بيصاره': 'bissara', 'عدس': 'lentil', 'فريك': 'freekeh', 'كبيبه': 'kibbeh', 'حواوشي': 'hawawshi', 'سمبوسك': 'samosa',
+  'كرواسون': 'croissant', 'دونات': 'doughnut', 'مافن': 'muffin', 'وافل': 'waffle', 'اومليت': 'omelette', 'فراخ': 'chicken', 'لحمه': 'beef',
+  'سمك': 'fish', 'سلمون': 'salmon', 'جمبري': 'shrimp', 'تونه': 'tuna', 'بطاطس': 'potato', 'رز': 'rice', 'مكرونه': 'pasta', 'بيض': 'egg',
+};

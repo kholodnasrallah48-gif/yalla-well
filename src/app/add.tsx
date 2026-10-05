@@ -3,13 +3,17 @@ import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { AdviceView, Dot, MacroChips } from '../components/food.tsx';
+import { FoodPhoto, kindOf } from '../components/FoodPhoto.tsx';
+import { MealIdea, openRecipe } from '../components/MealIdea.tsx';
 import { Bg, Btn, Card, START, T, styles } from '../components/ui.tsx';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addFood, fmt, mealTotals, planned } from '../lib/day.ts';
 import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, OFTEN, byUse, oftenFoods, foodAdvice, foodLevel, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../lib/foods.ts';
 import { L, isEn, num, tx } from '../lib/i18n.ts';
 import { searchOnline, toFood, type OnlineFood } from '../lib/online.ts';
-import { MEALS, MEAL_NAME, toMeal } from '../lib/mealplan.ts';
+import { MEALS, MEAL_NAME, dayPlan, mealBudget, mealOptions, toMeal } from '../lib/mealplan.ts';
+import { rememberMeal, searchMealDB, type OnlineRecipe } from '../lib/online-recipes.ts';
+import { portionFor, portionText, searchRecipes } from '../lib/recipe-search.ts';
 import type { Meal } from '../lib/recipes-data.ts';
 import { genderFor, targets } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
@@ -41,7 +45,7 @@ export default function AddFood() {
   const [added, setAdded] = useState<string | null>(null);
   const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flash = (name: string) => { setAdded(name); if (addedTimer.current) clearTimeout(addedTimer.current); addedTimer.current = setTimeout(() => setAdded(null), 2500); };
-  const { profile, day, custom, updateDay, addCustomFood, usage } = useStore();
+  const { profile, day, today, custom, updateDay, addCustomFood, usage } = useStore();
   const [q, setQ] = useState('');
   // The open section of the food menu (null = all closed).
   const [cat, setCat] = useState<string | null>(null);
@@ -61,6 +65,9 @@ export default function AddFood() {
     return cat ? byUse(all.filter((f) => f.cat === cat), usage) : [];
   }, [q, cat, all, usage]);
   const often = useMemo(() => oftenFoods(all, usage), [all, usage]);
+  // Our recipes whose name matches the search, and online ones (TheMealDB) when asked for.
+  const dishes = useMemo(() => searchRecipes(q, undefined, 4), [q]);
+  const [netDishes, setNetDishes] = useState<{ q: string; loading: boolean; hits: OnlineRecipe[] } | null>(null);
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
@@ -126,7 +133,8 @@ export default function AddFood() {
     return (
       <View key={f.id} style={{ gap: 8, paddingVertical: 8, borderBottomWidth: line ? 1 : 0, borderColor: c.line }}>
         <View style={[styles.row, { gap: 10 }]}>
-          <Pressable style={[styles.row, { flex: 1, gap: 8 }]} onPress={() => setOpen(isOpen ? null : f.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}>
+          <Pressable style={[styles.row, { flex: 1, gap: 10 }]} onPress={() => setOpen(isOpen ? null : f.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}>
+            <FoodPhoto item={{ id: f.id, n: f.n }} size={44} radius={11} kind={kindOf(f.cat)} />
             <Dot level={foodLevel(profile, f)} />
             <View style={{ flex: 1 }}>
               <View style={[styles.row, { gap: 6, flexWrap: 'wrap' }]}>
@@ -148,6 +156,72 @@ export default function AddFood() {
   };
 
   const inMeal = mealTotals(day, target);
+  // A dish for this meal, sized to what's left: today's plan pick while the meal is open, else the best fits now.
+  const refs = day.foods.map((x) => x.ref);
+  const plan = dayPlan(profile, today, day.shuffle, refs, t.kcal, day.meals ?? [], MEALS.filter((m) => day.foods.some((x) => x.meal === m)));
+  const budget = mealBudget(profile, plan, target, inMeal.kcal, remaining);
+  const entry = plan.find((e) => e.meal === target);
+  let idea = entry && !entry.eaten && entry.recipe ? entry.recipe : null;
+  if (!idea && budget >= 80) {
+    const opts = mealOptions(profile, target, budget).filter((r) => !refs.includes('r_' + r.id));
+    idea = opts.length ? opts[(day.shuffle?.[target] ?? 0) % opts.length] : null;
+  }
+  const another = () => updateDay((d) => ({ ...d, shuffle: { ...d.shuffle, [target]: (d.shuffle?.[target] ?? 0) + 1 } }));
+  const searchDishes = (text = q.trim()) => {
+    if (!text) return;
+    setNetDishes({ q: text, loading: true, hits: [] });
+    searchMealDB(text).then((hits) => setNetDishes((w) => (w && w.q === text ? { ...w, loading: false, hits } : w)))
+      .catch(() => setNetDishes((w) => (w && w.q === text ? { ...w, loading: false } : w)));
+  };
+
+  // Dishes for the search: our recipes fitted to this meal's calories, else online recipes on request.
+  const dishView = (
+    <View style={{ gap: 8 }}>
+      {dishes.length ? (
+        <>
+          <T kind="h3">{L('وصفات', 'Recipes')}</T>
+          {dishes.map(({ r }, i) => {
+            const pt = portionFor(r.kcal, budget);
+            return (
+              <Pressable key={r.id} onPress={() => { play('tap'); openRecipe(r.id, target, budget, 1.5); }} accessibilityRole="button"
+                style={[styles.row, { gap: 12, paddingVertical: 6, borderBottomWidth: i < dishes.length - 1 ? 1 : 0, borderColor: c.line }]}>
+                <FoodPhoto item={{ id: r.id, n: r.n }} size={56} radius={12} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(r.n)}</T>
+                  <T kind="small">{L(`الطبق ${fmt(r.kcal)} سعرة · ${fmt(r.mins)} دقيقة`, `${fmt(r.kcal)} kcal a serving · ${r.mins} min`)}</T>
+                  {budget >= 80 ? (
+                    <T kind="small" color={pt.tight ? c.warn : c.ok}>{L(`${toMeal(target)}: ${portionText(pt.factor)} ≈ ${fmt(pt.kcal)} سعرة`, `For ${tx(MEAL_NAME[target]).toLowerCase()}: ${portionText(pt.factor)} ≈ ${fmt(pt.kcal)} kcal`)}</T>
+                  ) : null}
+                </View>
+                <Text style={{ fontFamily: fonts.display, fontSize: 18, color: c.petrol }}>{L('‹', '›')}</Text>
+              </Pressable>
+            );
+          })}
+          <T kind="small">{L(`${g('دوس', 'دوسي')} على الوصفة ${g('تشوف', 'تشوفي')} المكونات والطريقة متظبطين على سعراتك (تقريبًا).`, 'Tap a recipe for its ingredients and steps fitted to your calories (roughly).')}</T>
+        </>
+      ) : null}
+      {!dishes.length && q.trim().length > 1 && !netDishes ? (
+        <Btn kind="outline" title={L(`طريقة عمل "${q.trim()}" من النت`, `Find a recipe for "${q.trim()}" online`)} onPress={() => searchDishes()} />
+      ) : null}
+      {netDishes ? (
+        <View style={{ gap: 6 }}>
+          <T kind="h3">{L('وصفات من النت', 'Recipes online')}</T>
+          {netDishes.loading ? <ActivityIndicator color={c.petrol} /> : netDishes.hits.length ? netDishes.hits.map((r, i) => (
+            <Pressable key={r.id} onPress={() => { play('tap'); rememberMeal(r); openRecipe(r.id, target, budget, 1.5); }} accessibilityRole="button"
+              style={[styles.row, { gap: 12, paddingVertical: 6, borderBottomWidth: i < netDishes.hits.length - 1 ? 1 : 0, borderColor: c.line }]}>
+              <FoodPhoto item={{ id: r.id, n: r.name, img: r.thumb ? r.thumb + '/preview' : undefined }} size={56} radius={12} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{r.name}</T>
+                <T kind="small">{[r.area, r.category].filter(Boolean).join(' · ')}{L(' · بالإنجليزي', ' · in English')}</T>
+              </View>
+              <Text style={{ fontFamily: fonts.display, fontSize: 18, color: c.petrol }}>{L('‹', '›')}</Text>
+            </Pressable>
+          )) : <T kind="small" color={c.warn}>{L(`ملقيناش وصفة "${netDishes.q}" على النت، أو مفيش نت دلوقتي. ${g('جرب', 'جربي')} اسم تاني أو بالإنجليزي.`, `No online recipe found for "${netDishes.q}", or you're offline. Try another name or English.`)}</T>}
+          {netDishes.hits.length ? <T kind="small">{L('الوصفات دي من TheMealDB وبالإنجليزي.', 'These recipes are from TheMealDB, in English.')}</T> : null}
+        </View>
+      ) : null}
+    </View>
+  );
 
   return (
     <Bg><ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }} keyboardShouldPersistTaps="handled">
@@ -168,6 +242,16 @@ export default function AddFood() {
         <View accessibilityLiveRegion="polite" style={{ backgroundColor: c.okBg, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
           <T kind="small" color={c.ok}>{L(`✓ اتضاف ${toMeal(target)}: ${added}`, `✓ Added to ${tx(MEAL_NAME[target])}: ${added}`)}</T>
         </View>
+      ) : null}
+
+      {idea ? (
+        <Card>
+          <T kind="h2">{L(`اقتراح ${toMeal(target)}`, `An idea for ${tx(MEAL_NAME[target])}`)}</T>
+          <T kind="small">{L(`على قد اللي فاضلك: حوالي ${fmt(budget)} سعرة ${toMeal(target)}`, `Sized to what's left: about ${fmt(budget)} kcal for ${tx(MEAL_NAME[target]).toLowerCase()}`)}</T>
+          <MealIdea recipe={idea} meal={target} budget={budget} g={g} onAnother={another}
+            why={entry?.recipe?.id === idea.id ? entry.why : []}
+            factor={Math.min(entry?.recipe?.id === idea.id ? entry.portion : 1, portionFor(idea.kcal, budget, 1).factor)} />
+        </Card>
       ) : null}
 
       <Card>
@@ -252,7 +336,8 @@ export default function AddFood() {
 
       <Card>
         <T kind="h2">{L(g('ضيف أكلة', 'ضيفي أكلة'), 'Add a food')}</T>
-        <TextInput value={q} onChangeText={(v) => { setQ(v); setWeb(null); }} onSubmitEditing={searchWeb} returnKeyType="search" placeholder={L(g('دور: فول، فراخ، بيبسي...', 'دوري: فول، فراخ، بيبسي...'), 'Search: fava beans, chicken, Pepsi...')} placeholderTextColor={c.muted} style={input} />
+        <TextInput value={q} onChangeText={(v) => { setQ(v); setWeb(null); setNetDishes(null); }} onSubmitEditing={() => { searchWeb(); if (!dishes.length) searchDishes(); }} returnKeyType="search" placeholder={L(g('دور: فول، فراخ، بيبسي...', 'دوري: فول، فراخ، بيبسي...'), 'Search: fava beans, chicken, Pepsi...')} placeholderTextColor={c.muted} style={input} />
+        {q.trim() ? dishView : null}
         {q.trim() ? (
           pool.length ? <View>{pool.map((f, i) => row(f, i < pool.length - 1))}</View> : <T kind="small">{L('مفيش نتيجة في اللستة.', 'No results in the list.')}</T>
         ) : (
@@ -297,6 +382,7 @@ export default function AddFood() {
               const f = toFood(h, +web.grams || 100, web.q);
               return (
                 <View key={h.id} style={[styles.row, { gap: 10, paddingVertical: 6, borderBottomWidth: i < web.hits.length - 1 ? 1 : 0, borderColor: c.line }]}>
+                  <FoodPhoto item={{ id: h.id, n: h.name }} size={44} radius={11} />
                   <Dot level={foodLevel(profile, f)} />
                   <View style={{ flex: 1 }}>
                     <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{h.name}</T>

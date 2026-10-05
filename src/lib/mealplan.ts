@@ -14,7 +14,7 @@ export const MEAL_NAME: Readonly<Record<Meal, string>> = {
   get dinner() { return L('العشا', 'Dinner'); },
 };
 /** Share of the day's calories for each meal. */
-const SHARE: Record<Meal, number> = { breakfast: 0.25, lunch: 0.35, snack: 0.12, dinner: 0.28 };
+export const SHARE: Record<Meal, number> = { breakfast: 0.25, lunch: 0.35, snack: 0.12, dinner: 0.28 };
 const AUTOIMMUNE = ['hashimoto', 'graves', 'ra', 'psoriasis', 'lupus', 'ms', 'ibd', 'celiac', 't1d'];
 const SUGAR = ['t1d', 't2d', 'ir', 'pcos'];
 
@@ -117,6 +117,16 @@ export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, 
     if (recipe) used.add(recipe.n);
     return { meal, recipe, budget: Math.round(budget), eaten: done, portion, why: recipe ? suitability(p, recipe).why : [] };
   });
+}
+
+/**
+ * Calories to aim for in one meal now: the plan's share when the meal is still open, otherwise (started or ticked)
+ * the meal's usual share minus what's already in it, never more than what's left today.
+ */
+export function mealBudget(p: Profile, plan: PlanEntry[], meal: Meal, inMealKcal: number, leftToday: number): number {
+  const e = plan.find((x) => x.meal === meal);
+  if (e && e.budget > 0) return e.budget;
+  return Math.max(0, Math.round(Math.min(leftToday, targets(p).kcal * SHARE[meal] - inMealKcal)));
 }
 
 /** "للفطار": Arabic "for the meal" (لـ + الفطار contracts to للفطار). */

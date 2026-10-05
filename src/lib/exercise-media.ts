@@ -334,4 +334,129 @@ export const MEDIA: Record<string, ExerciseMedia> = {
     img: [],
     cues: ['قعدة مريحة وضهر مفرود', 'شهيق من الأنف ٤ عدات', 'البطن تطلع مع الشهيق', 'زفير بطيء من البوق ٦ عدات'],
   },
+  g_benchbb: {
+    en: 'Barbell bench press',
+    img: ['Barbell_Bench_Press_-_Medium_Grip/0.jpg', 'Barbell_Bench_Press_-_Medium_Grip/1.jpg'],
+    cues: ['لوحي الكتف مضمومين على البنش', 'البار ينزل لنص الصدر ببطء', 'الرجلين ثابتين على الأرض'],
+  },
+  g_smithbench: {
+    en: 'Smith machine bench press',
+    img: ['Smith_Machine_Bench_Press/0.jpg', 'Smith_Machine_Bench_Press/1.jpg'],
+    cues: ['البنش تحت البار بحيث ينزل على نص الصدر', 'الكوع بزاوية ٤٥ درجة من الجسم', 'قفل الأمان قبل ما تسيب البار'],
+  },
+  g_inclinebb: {
+    en: 'Barbell incline bench press',
+    img: ['Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg', 'Barbell_Incline_Bench_Press_-_Medium_Grip/1.jpg'],
+    cues: ['البنش مايل ٣٠ لـ ٤٥ درجة', 'البار ينزل لأعلى الصدر', 'من غير ما الضهر يتقوس جامد'],
+  },
+  g_cablefly: {
+    en: 'Cable crossover',
+    img: ['Cable_Crossover/0.jpg', 'Cable_Crossover/1.jpg'],
+    cues: ['كوع مثني خفيف وثابت', 'الإيدين يتقابلوا قدام الصدر', 'الرجوع ببطء لحد ما تحس بشد في الصدر'],
+  },
+  g_dbfly: {
+    en: 'Dumbbell fly',
+    img: ['Dumbbell_Flyes/0.jpg', 'Dumbbell_Flyes/1.jpg'],
+    cues: ['كوع مثني خفيف طول الحركة', 'النزول لحد مستوى الصدر بس', 'الطلوع كأنك بتحضن شجرة'],
+  },
+  g_ohpbb: {
+    en: 'Standing barbell overhead press',
+    img: ['Standing_Military_Press/0.jpg', 'Standing_Military_Press/1.jpg'],
+    cues: ['بطن مشدودة ومؤخرة معصورة', 'البار يطلع قريب من الوش', 'من غير ما تميل لورا'],
+  },
+  g_skull: {
+    en: 'EZ-bar skull crusher',
+    img: ['EZ-Bar_Skullcrusher/0.jpg', 'EZ-Bar_Skullcrusher/1.jpg'],
+    cues: ['الكوع ثابت ومتجه للسقف', 'البار ينزل لورا الراس ببطء', 'الفرد من الكوع بس'],
+  },
+  g_dipm: {
+    en: 'Machine triceps dip',
+    img: ['Dip_Machine/0.jpg', 'Dip_Machine/1.jpg'],
+    cues: ['ضهر لازق في المسند', 'الكوع قريب من الجسم', 'الفرد لآخره من غير قفل جامد'],
+  },
+  g_kickback: {
+    en: 'Dumbbell triceps kickback',
+    img: ['Tricep_Dumbbell_Kickback/0.jpg', 'Tricep_Dumbbell_Kickback/1.jpg'],
+    cues: ['الدراع العلوي موازي للأرض وثابت', 'الفرد لورا وعصر التراي', 'وزن خفيف وحركة بطيئة'],
+  },
+  g_pullup: {
+    en: 'Pull-up',
+    img: ['Pullups/0.jpg', 'Pullups/1.jpg'],
+    cues: ['مسكة أعرض من الكتف شوية', 'الصدر يطلع ناحية البار', 'النزول ببطء لحد ما الدراع يتفرد'],
+  },
+  g_bbrow: {
+    en: 'Bent-over barbell row',
+    img: ['Bent_Over_Barbell_Row/0.jpg', 'Bent_Over_Barbell_Row/1.jpg'],
+    cues: ['ضهر مفرود ومايل لقدام', 'البار يتسحب لتحت الصدر', 'من غير ما تشد بالضهر'],
+  },
+  g_highrow: {
+    en: 'Machine high row',
+    img: ['Leverage_High_Row/0.jpg', 'Leverage_High_Row/1.jpg'],
+    cues: ['الصدر لازق في المسند', 'السحب بالكوع لتحت ولورا', 'عصر لوحي الكتف ثانية'],
+  },
+  g_ezcurl: {
+    en: 'EZ-bar curl',
+    img: ['EZ-Bar_Curl/0.jpg', 'EZ-Bar_Curl/1.jpg'],
+    cues: ['الكوع جنب الجسم ثابت', 'الطلوع من غير ما تمرجح', 'النزول ببطء'],
+  },
+  g_preacher: {
+    en: 'Machine preacher curl',
+    img: ['Machine_Preacher_Curls/0.jpg', 'Machine_Preacher_Curls/1.jpg'],
+    cues: ['الباط لازق في المسند', 'الطلوع لحد ما العضلة تتعصر', 'النزول ببطء من غير قفل الكوع'],
+  },
+  g_gobletsquat: {
+    en: 'Goblet squat',
+    img: ['Goblet_Squat/0.jpg', 'Goblet_Squat/1.jpg'],
+    cues: ['الدمبل لازق في الصدر', 'الكوع بين الركب تحت', 'صدر لفوق وضهر مفرود'],
+  },
+  g_smithsquat: {
+    en: 'Smith machine squat',
+    img: ['Smith_Machine_Squat/0.jpg', 'Smith_Machine_Squat/1.jpg'],
+    cues: ['الرجلين قدام البار شوية', 'النزول لحد ما الفخد يوازي الأرض', 'الطلوع بالدفع من الكعب'],
+  },
+  g_rdlbb: {
+    en: 'Barbell Romanian deadlift',
+    img: ['Romanian_Deadlift/0.jpg', 'Romanian_Deadlift/1.jpg'],
+    cues: ['البار قريب من الرجل طول الحركة', 'الحوض لورا والضهر مفرود', 'الطلوع بعصر المؤخرة'],
+  },
+  g_seatedcurl: {
+    en: 'Seated leg curl',
+    img: ['Seated_Leg_Curl/0.jpg', 'Seated_Leg_Curl/1.jpg'],
+    cues: ['المخدة فوق الكاحل', 'الشد لتحت لآخره', 'الرجوع ببطء'],
+  },
+  g_bbthrust: {
+    en: 'Barbell hip thrust',
+    img: ['Barbell_Hip_Thrust/0.jpg', 'Barbell_Hip_Thrust/1.jpg'],
+    cues: ['أعلى الضهر على البنش', 'مخدة تحت البار', 'عصر المؤخرة فوق والدقن لتحت'],
+  },
+  g_dbcalf: {
+    en: 'Dumbbell calf raise',
+    img: ['Standing_Dumbbell_Calf_Raise/0.jpg', 'Standing_Dumbbell_Calf_Raise/1.jpg'],
+    cues: ['صوابع الرجل على حرف السلمة', 'الطلوع لآخره والنزول تحت مستوى السلمة', 'مسكة في الحيطة للتوازن'],
+  },
+  g_smithcalf: {
+    en: 'Smith machine calf raise',
+    img: ['Smith_Machine_Calf_Raise/0.jpg', 'Smith_Machine_Calf_Raise/1.jpg'],
+    cues: ['الكتف تحت البار وصوابع الرجل على الستيب', 'الطلوع لآخره ووقفة ثانية', 'النزول ببطء'],
+  },
+  g_dbreardelt: {
+    en: 'Bent-over dumbbell rear delt raise',
+    img: ['Seated_Bent-Over_Rear_Delt_Raise/0.jpg', 'Seated_Bent-Over_Rear_Delt_Raise/1.jpg'],
+    cues: ['مايل لقدام وضهر مفرود', 'رفع الدمبل للجنب بكوع مثني خفيف', 'وزن خفيف من غير مرجحة'],
+  },
+  g_cablereardelt: {
+    en: 'Cable rear delt fly',
+    img: ['Cable_Rear_Delt_Fly/0.jpg', 'Cable_Rear_Delt_Fly/1.jpg'],
+    cues: ['الكيبلات متقاطعة قدامك', 'فتح الدراعات للجنب في مستوى الكتف', 'الرجوع ببطء'],
+  },
+  g_bblunge: {
+    en: 'Barbell lunge',
+    img: ['Barbell_Lunge/0.jpg', 'Barbell_Lunge/1.jpg'],
+    cues: ['خطوة واسعة وجسم مفرود', 'الركبة الورانية تقرب من الأرض', 'الدفع من كعب الرجل القدامية'],
+  },
+  g_adduct: {
+    en: 'Hip adductor machine',
+    img: ['Cable_Hip_Adduction/0.jpg', 'Cable_Hip_Adduction/1.jpg'],
+    cues: ['ضهر لازق في المسند', 'ضم الرجلين ببطء', 'الفتح ببطء من غير ما الوزن يخبط'],
+  },
 };

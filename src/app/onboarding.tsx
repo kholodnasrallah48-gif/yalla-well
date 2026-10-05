@@ -9,11 +9,11 @@ import { Bg, Btn, Card, Chip, Choice, NoteView, Ring, START, T, WeekStrip, style
 import { CONDITIONS, MEDS, PAINS, SCHEDULES, type ScheduleId } from '../lib/data.ts';
 import { fmt } from '../lib/day.ts';
 import { L, tx } from '../lib/i18n.ts';
-import { genderFor, medical, targets, type Profile } from '../lib/plan.ts';
+import { genderFor, medical, targets, type CondInfo, type Profile } from '../lib/plan.ts';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
 
-const STEPS = ['basics', 'life', 'plan', 'cond', 'meds', 'pain', 'done'] as const;
+const STEPS = ['basics', 'life', 'plan', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
 type Draft = Partial<Profile> & Pick<Profile, 'sex' | 'conditions' | 'meds' | 'pains' | 'level'>;
 
 export default function Onboarding() {
@@ -55,9 +55,12 @@ export default function Onboarding() {
       router.replace('/');
       return;
     }
-    setStep(step + 1);
+    setStep(skipTo(step + 1, 1));
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
+  // The condition-details step only shows when a condition was picked.
+  const skipTo = (i: number, dir: 1 | -1) => (STEPS[i] === 'condx' && !d.conditions.length ? i + dir : i);
+  const setInfo = (id: string, patch: Partial<CondInfo>) => setD((x) => ({ ...x, condInfo: { ...x.condInfo, [id]: { ...x.condInfo?.[id], ...patch } } }));
   const full = st === 'done' ? ({ name: '', ...d } as Profile) : null;
 
   return (
@@ -118,6 +121,51 @@ export default function Onboarding() {
         <View style={{ gap: 4 }}><T kind="label">{L('حاجة تانية مش في القائمة', 'Something else not on the list')}</T><TextInput value={d.otherCond ?? ''} onChangeText={(otherCond) => set({ otherCond })} style={input} /></View>
       </>}
 
+      {st === 'condx' && <>
+        <T kind="h1">{L(`${g('احكيلنا', 'احكيلنا')} أكتر عن حالتك`, 'Tell us more about your condition')}</T>
+        <T kind="body" color={c.muted}>{L('الإجابات دي بتخلي الخطة أدق ليك. كلها اختيارية.', 'These answers make the plan fit you better. All optional.').replace('ليك', g('ليك', 'ليكي'))}</T>
+        {d.conditions.map((id) => {
+          const ci = d.condInfo?.[id] ?? {};
+          const sugar = ['t1d', 't2d', 'ir'].includes(id);
+          const thyroid = id === 'hashimoto' || id === 'graves';
+          const joints = ['ra', 'psoriasis', 'lupus'].includes(id);
+          const gut = id === 'ibd' || id === 'celiac';
+          return (
+            <Card key={id}>
+              <T kind="h2">{tx(CONDITIONS.find((x) => x.id === id)?.n ?? id)}</T>
+              <T kind="label">{L('الحالة دلوقتي', 'How is it right now?')}</T>
+              <View style={styles.wrap}>
+                {([['stable', L('مستقرة ومتابعة', 'Stable and followed up')], ['active', L('فيها نشاط أو هجمة دلوقتي', 'Active or flaring now')], ['new', L('متشخصة جديد (أقل من ٦ شهور)', 'Newly diagnosed (under 6 months)')]] as const).map(([k, l]) => (
+                  <Chip key={k} label={l} on={ci.status === k} onPress={() => setInfo(id, { status: ci.status === k ? undefined : k })} />
+                ))}
+              </View>
+              {sugar ? <>
+                <T kind="label">{L('السكر بيهبط معاك؟', 'Does your blood sugar drop?').replace('معاك', g('معاك', 'معاكي'))}</T>
+                <View style={styles.wrap}>
+                  {([['never', L('لأ', 'No')], ['sometimes', L('أحيانًا', 'Sometimes')], ['often', L('كتير', 'Often')]] as const).map(([k, l]) => (
+                    <Chip key={k} label={l} on={ci.hypos === k} onPress={() => setInfo(id, { hypos: ci.hypos === k ? undefined : k })} />
+                  ))}
+                </View>
+                <View style={{ gap: 4 }}><T kind="label">{L('آخر تحليل تراكمي HbA1c (٪) لو فاكر', 'Last HbA1c (%) if you know it').replace('فاكر', g('فاكر', 'فاكرة'))}</T><TextInput value={ci.lab ?? ''} onChangeText={(v) => setInfo(id, { lab: v })} keyboardType="decimal-pad" placeholder="7.2" placeholderTextColor={c.muted} style={input} /></View>
+              </> : null}
+              {thyroid ? <View style={{ gap: 4 }}><T kind="label">{L('آخر تحليل TSH لو فاكر', 'Last TSH result if you know it').replace('فاكر', g('فاكر', 'فاكرة'))}</T><TextInput value={ci.lab ?? ''} onChangeText={(v) => setInfo(id, { lab: v })} keyboardType="decimal-pad" placeholder="2.5" placeholderTextColor={c.muted} style={input} /></View> : null}
+              {joints ? <>
+                <T kind="label">{L('عندك تيبس الصبح أكتر من نص ساعة؟', 'Morning stiffness over half an hour?')}</T>
+                <View style={styles.wrap}>
+                  <Chip label={L('أيوة', 'Yes')} on={ci.stiff === true} onPress={() => setInfo(id, { stiff: ci.stiff === true ? undefined : true })} />
+                  <Chip label={L('لأ', 'No')} on={ci.stiff === false} onPress={() => setInfo(id, { stiff: ci.stiff === false ? undefined : false })} />
+                </View>
+              </> : null}
+              {gut ? <View style={{ gap: 4 }}><T kind="label">{L('أكلات بتتعبك', 'Foods that upset you').replace('بتتعبك', g('بتتعبك', 'بتتعبكي'))}</T><TextInput value={ci.trigger ?? ''} onChangeText={(v) => setInfo(id, { trigger: v })} placeholder={L('مثلًا: اللبن، المقلي', 'e.g. milk, fried food')} placeholderTextColor={c.muted} style={input} /></View> : null}
+            </Card>
+          );
+        })}
+        <View style={{ gap: 4 }}>
+          <T kind="label">{L(`الدكتور قال${g('لك', 'لك')} تبعد${g('', 'ي')} عن حاجة؟`, 'Did your doctor tell you to avoid anything?')}</T>
+          <TextInput value={d.doctorSaid ?? ''} onChangeText={(v) => set({ doctorSaid: v })} multiline placeholder={L('مثلًا: بلاش رفع أوزان تقيلة، بلاش صيام', 'e.g. no heavy lifting, no fasting')} placeholderTextColor={c.muted} style={[input, { minHeight: 70, textAlignVertical: 'top' }]} />
+        </View>
+      </>}
+
       {st === 'meds' && <>
         <T kind="h1">{L(`${g('بتاخد', 'بتاخدي')} أدوية بشكل مستمر؟`, 'Do you take any regular medication?')}</T>
         <T kind="body" color={c.muted}>{L('ده بيأثر على الأكل والتمرين، زي الكورتيزون ودوا الغدة.', 'Some medications, like cortisone and thyroid meds, affect food and training.')}</T>
@@ -164,7 +212,7 @@ export default function Onboarding() {
       {err ? <T kind="small" color={c.bad}>{err}</T> : null}
       <View style={[styles.row, { gap: 10 }]}>
         {step > 0
-          ? <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => { setErr(''); setStep(step - 1); }} />
+          ? <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => { setErr(''); setStep(skipTo(step - 1, -1)); }} />
           : profile ? <Btn kind="outline" title={L('إلغاء', 'Cancel')} onPress={() => router.back()} /> : null}
         <Btn title={st === 'done' ? L('يلا نبدأ', "Let's go") : L('التالي', 'Next')} onPress={next} style={{ flex: 1 }} />
       </View>

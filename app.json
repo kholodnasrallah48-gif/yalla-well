@@ -62,6 +62,9 @@
     "runtimeVersion": {
       "policy": "sdkVersion"
     },
-    "owner": "my-team-yalla-fit"
+    "owner": "my-team-yalla-fit",
+    "experiments": {
+      "baseUrl": "/yalla-well"
+    }
   }
 }

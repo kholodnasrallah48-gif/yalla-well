@@ -9,7 +9,7 @@ import { Bg, Btn, Card, START, T, styles } from '../components/ui.tsx';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addFood, fmt, mealTotals, planned } from '../lib/day.ts';
 import { ALL_CAT, FOOD_CATS, FOODS, MY_FOODS_CAT, OFTEN, byUse, oftenFoods, foodAdvice, foodLevel, norm, parseMeal, type Food, type ParsedItem, type Unknown } from '../lib/foods.ts';
-import { L, isEn, num, tx } from '../lib/i18n.ts';
+import { L, isEn, latin, num, toNum, tx } from '../lib/i18n.ts';
 import { searchOnline, toFood, type OnlineFood } from '../lib/online.ts';
 import { MEALS, MEAL_NAME, dayPlan, mealBudget, mealOptions, toMeal } from '../lib/mealplan.ts';
 import { rememberMeal, searchMealDB, type OnlineRecipe } from '../lib/online-recipes.ts';
@@ -119,7 +119,7 @@ export default function AddFood() {
 
   const saveCustom = () => {
     if (!form.n.trim() || !form.kcal) return;
-    const f: Food = { id: 'c' + Date.now(), cat: MY_FOODS_CAT, n: form.n.trim(), u: form.u.trim() || 'حصة', kcal: +form.kcal || 0, p: +form.p || 0, c: +form.c || 0, f: +form.f || 0 };
+    const f: Food = { id: 'c' + Date.now(), cat: MY_FOODS_CAT, n: form.n.trim(), u: form.u.trim() || 'حصة', kcal: toNum(form.kcal) || 0, p: toNum(form.p) || 0, c: toNum(form.c) || 0, f: toNum(form.f) || 0 };
     addCustomFood(f);
     play('add');
     updateDay((d) => addFood(d, f, target));
@@ -198,7 +198,7 @@ export default function AddFood() {
               </Pressable>
             );
           })}
-          <T kind="small">{L(`${g('دوس', 'دوسي')} على الوصفة ${g('تشوف', 'تشوفي')} المكونات والطريقة متظبطين على سعراتك (تقريبًا).`, 'Tap a recipe for its ingredients and steps fitted to your calories (roughly).')}</T>
+          <T kind="small">{L(`${g('دوس', 'دوسي')} على الوصفة ${g('تشوف', 'تشوفي')} المكونات والطريقة متظبطين على سعراتك (تقريبا).`, 'Tap a recipe for its ingredients and steps fitted to your calories (roughly).')}</T>
         </>
       ) : null}
       {!dishes.length && q.trim().length > 1 && !netDishes ? (
@@ -257,11 +257,11 @@ export default function AddFood() {
 
       <Card>
         <T kind="h2">{L(`${g('اكتب', 'اكتبي')} ${g('أكلت', 'أكلتي')} إيه`, 'Type what you ate')}</T>
-        <TextInput value={text} onChangeText={(v) => { setText(v); setParsed(null); setFound({}); }} multiline placeholder={L('مثلًا: ٢ بيض وعيش بلدي وجبنة قريش وكوباية شاي بلبن', 'e.g. 2 eggs, baladi bread, cottage cheese and a cup of tea with milk')} placeholderTextColor={c.muted}
+        <TextInput value={text} onChangeText={(v) => { setText(v); setParsed(null); setFound({}); }} multiline placeholder={L('مثلا: ٢ بيض وعيش بلدي وجبنة قريش وكوباية شاي بلبن', 'e.g. 2 eggs, baladi bread, cottage cheese and a cup of tea with milk')} placeholderTextColor={c.muted}
           style={[input, { minHeight: 64, textAlignVertical: 'top' }]} />
         <View style={[styles.row, { gap: 8 }]}>
           <Btn kind="secondary" title={L('احسب', 'Calculate')} onPress={calc} disabled={!text.trim()} style={{ flex: 1 }} />
-          <Btn kind="outline" title={L(g('صوّر باركود', 'صوّري باركود'), 'Scan barcode')} onPress={() => router.push({ pathname: '/scan', params: { meal: target } })} style={{ flex: 1 }} />
+          <Btn kind="outline" title={L(g('صور باركود', 'صوري باركود'), 'Scan barcode')} onPress={() => router.push({ pathname: '/scan', params: { meal: target } })} style={{ flex: 1 }} />
         </View>
         {parsed ? (
           <View style={{ gap: 8 }}>
@@ -287,7 +287,7 @@ export default function AddFood() {
               if (!x || x.loading) return (
                 <View key={'u' + i} style={[styles.row, { gap: 8, paddingVertical: 6 }]}>
                   <ActivityIndicator color={c.petrol} />
-                  <T kind="small">{L(`بندوّر على "${u.text}" أونلاين…`, `Searching online for "${u.text}"…`)}</T>
+                  <T kind="small">{L(`بندور على "${u.text}" أونلاين…`, `Searching online for "${u.text}"…`)}</T>
                 </View>
               );
               if (!x.hits.length) return (
@@ -304,7 +304,7 @@ export default function AddFood() {
                       <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{u.text}</T>
                       <T kind="small">{f ? L(`${f.u} · ${fmt(f.kcal)} سعرة`, `${showU(f.u)} · ${fmt(f.kcal)} kcal`) : L('اكتبي الوزن', 'Enter the weight')}</T>
                     </View>
-                    <TextInput value={x.grams} onChangeText={(v) => set({ grams: v.replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel={L('الوزن بالجرام', 'Weight in grams')}
+                    <TextInput value={x.grams} onChangeText={(v) => set({ grams: latin(v).replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel={L('الوزن بالجرام', 'Weight in grams')}
                       style={[input, { width: 64, textAlign: 'center', paddingHorizontal: 4 }]} />
                     <T kind="small">{L('جم', 'g')}</T>
                   </View>
@@ -345,7 +345,7 @@ export default function AddFood() {
           <>
             {often.length ? (
               <View style={{ gap: 2 }}>
-                <T kind="h3">{L('الأكتر استخدامًا', 'Most used')}</T>
+                <T kind="h3">{L('الأكتر استخداما', 'Most used')}</T>
                 {often.map((f, i) => row(f, i < often.length - 1))}
               </View>
             ) : <T kind="small">{L(`الأكل اللي ${g('بتاكله', 'بتاكليه')} كتير هيظهر هنا فوق عشان ${g('تضيفه', 'تضيفيه')} بسرعة.`, 'Foods you eat often will show up here so you can add them quickly.')}</T>}
@@ -369,13 +369,13 @@ export default function AddFood() {
             </View>
           </>
         )}
-        {q.trim().length > 1 && !web ? <Btn kind="outline" title={L(`${g('دوّر', 'دوّري')} على "${q.trim()}" أونلاين`, `Search online for "${q.trim()}"`)} onPress={searchWeb} /> : null}
+        {q.trim().length > 1 && !web ? <Btn kind="outline" title={L(`${g('دور', 'دوري')} على "${q.trim()}" أونلاين`, `Search online for "${q.trim()}"`)} onPress={searchWeb} /> : null}
         {web ? (
           <View style={{ gap: 8 }}>
             <View style={[styles.row, { gap: 8 }]}>
               <T kind="h3" style={{ flex: 1 }}>{L('نتايج أونلاين', 'Online results')}</T>
               <T kind="small">{L('الوزن', 'Weight')}</T>
-              <TextInput value={web.grams} onChangeText={(v) => setWeb({ ...web, grams: v.replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel={L('الوزن بالجرام', 'Weight in grams')}
+              <TextInput value={web.grams} onChangeText={(v) => setWeb({ ...web, grams: latin(v).replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel={L('الوزن بالجرام', 'Weight in grams')}
                 style={[input, { width: 64, textAlign: 'center', paddingHorizontal: 4 }]} />
               <T kind="small">{L('جم', 'g')}</T>
             </View>
@@ -400,7 +400,7 @@ export default function AddFood() {
 
       <Card>
         <T kind="h2">{L(`أكلة خاصة ${g('بيك', 'بيكي')}`, 'Your own food')}</T>
-        <TextInput value={form.n} onChangeText={(n) => setForm({ ...form, n })} placeholder={L('الاسم، مثلًا: سلطة تونة', 'Name, e.g. tuna salad')} placeholderTextColor={c.muted} style={input} />
+        <TextInput value={form.n} onChangeText={(n) => setForm({ ...form, n })} placeholder={L('الاسم، مثلا: سلطة تونة', 'Name, e.g. tuna salad')} placeholderTextColor={c.muted} style={input} />
         <View style={[styles.row, { gap: 8 }]}>
           <TextInput value={form.u} onChangeText={(u) => setForm({ ...form, u })} placeholder={L('الكمية: طبق', 'Portion: plate')} placeholderTextColor={c.muted} style={[input, { flex: 1 }]} />
           <TextInput value={form.kcal} onChangeText={(kcal) => setForm({ ...form, kcal })} placeholder={L('السعرات', 'Calories')} keyboardType="numeric" placeholderTextColor={c.muted} style={[input, { flex: 1 }]} />

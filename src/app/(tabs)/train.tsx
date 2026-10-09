@@ -21,7 +21,7 @@ import { fonts, useColors } from '../../theme.ts';
 const two = (n: number) => String(n).padStart(2, '0');
 const clock = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${two(Math.floor(s / 60))}:${two(s % 60)}`; };
 
-/** The match clock: how long today's workout has been going (frozen once it's finished). */
+/** The workout clock: how long today's workout has been going (frozen once it's finished). */
 function MatchClock({ start, end }: { start?: number; end?: number }) {
   const c = useColors();
   const [now, setNow] = useState(Date.now());
@@ -35,7 +35,7 @@ function MatchClock({ start, end }: { start?: number; end?: number }) {
     <View style={{ alignItems: 'flex-end', marginTop: 10 }} accessibilityLabel={L('وقت التمرين', 'Workout time')}>
       <View style={[styles.row, { gap: 6 }]}>
         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: end ? c.dim : c.petrol }} />
-        <T kind="label" style={{ fontSize: 11 }}>{end ? L('خلص في', 'Finished in') : L('وقت الماتش', 'Match clock')}</T>
+        <T kind="label" style={{ fontSize: 11 }}>{end ? L('خلص في', 'Finished in') : L('وقت التمرين', 'Workout time')}</T>
       </View>
       <Num size={30}>{clock((end ?? now) - start)}</Num>
     </View>
@@ -170,7 +170,7 @@ export default function Train() {
         ) : (
           <NoteView note={{ tone: 'warn', title: L('يوم تعافي', 'Recovery day'), text: L(`عشان ${g('قلت', 'قلتي')} إنك ${g('تعبان', 'تعبانة')} النهارده: حركة خفيفة بس.`, "Because you said you're feeling tired today: light movement only.") }} />
         )}
-        {!canTick ? <T kind="small" color={c.warn}>{past ? L(`اليوم ده اتقفل واتسجل في التقرير: ${g('خلصت', 'خلصتي')} ${n} من ${total}.`, `This day is closed and saved to your report: you did ${n} of ${total}.`) : L(`ده يوم جاي، ${g('هتقدر تعلّم', 'هتقدري تعلّمي')} على التمارين يومها.`, 'This day is still ahead; you can tick off the exercises on the day.')}</T> : null}
+        {!canTick ? <T kind="small" color={c.warn}>{past ? L(`اليوم ده اتقفل واتسجل في التقرير: ${g('خلصت', 'خلصتي')} ${n} من ${total}.`, `This day is closed and saved to your report: you did ${n} of ${total}.`) : L(`ده يوم جاي، ${g('هتقدر تعلم', 'هتقدري تعلمي')} على التمارين يومها.`, 'This day is still ahead; you can tick off the exercises on the day.')}</T> : null}
 
         <TourTarget id="train.list">
           <View style={{ borderTopWidth: 1, borderColor: c.line }}>
@@ -207,8 +207,8 @@ export default function Train() {
 
         {canTick && total > 0 && n === total ? (
           <Card tone="accent" style={{ alignItems: 'center' }}>
-            <T kind="h2" color={c.onPetrol} style={{ textAlign: 'center' }}>{L('صفّارة النهاية!', 'Final whistle!')}</T>
-            <T kind="small" color={c.onPetrol} style={{ textAlign: 'center' }}>{L(`${g('خلصت', 'خلصتي')} تمرين النهارده. اشرب${g('', 'ي')} مياه وريّح${g('', 'ي')}.`, "You finished today's workout. Drink some water and rest.")}</T>
+            <T kind="h2" color={c.onPetrol} style={{ textAlign: 'center' }}>{L('صفارة النهاية!', 'Final whistle!')}</T>
+            <T kind="small" color={c.onPetrol} style={{ textAlign: 'center' }}>{L(`${g('خلصت', 'خلصتي')} تمرين النهارده. اشرب${g('', 'ي')} مياه وريح${g('', 'ي')}.`, "You finished today's workout. Drink some water and rest.")}</T>
           </Card>
         ) : null}
 
@@ -220,14 +220,14 @@ export default function Train() {
             ) : (
               <View style={[styles.row, { gap: 8 }]}>
                 <Btn kind="outline" title={L(`+ ${g('ضيف', 'ضيفي')} تمرين أو جهاز`, '+ Add exercise or machine')} onPress={() => { setAdding(true); setEditing(false); setSaved(''); }} style={{ flex: 1 }} />
-                <Btn kind="secondary" title={editing ? L('تمام', 'Done') : L(g('عدّل القايمة', 'عدّلي القايمة'), 'Edit list')} onPress={() => { setEditing(!editing); setSaved(''); }} />
+                <Btn kind="secondary" title={editing ? L('تمام', 'Done') : L(g('عدل القايمة', 'عدلي القايمة'), 'Edit list')} onPress={() => { setEditing(!editing); setSaved(''); }} />
               </View>
             )}
             {saved ? <T kind="small" color={c.petrol}>{saved}</T> : null}
             {editing ? <T kind="small">{L(`${g('دوس', 'دوسي')} على الدايرة الحمرا عشان ${g('تشيل', 'تشيلي')} التمرين من يوم ${splitLabel(sid)}.`, `Tap the red circle to take an exercise out of ${splitLabel(sid)} days.`)}</T> : null}
             {dropped.length ? (
               <Pressable onPress={restore} accessibilityRole="button" hitSlop={6}>
-                <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>{L(`${g('رجّع', 'رجّعي')} التمارين اللي ${g('شلتها', 'شلتيها')} (${num(dropped.length)})`, `Bring back removed exercises (${dropped.length})`)}</T>
+                <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>{L(`${g('رجع', 'رجعي')} التمارين اللي ${g('شلتها', 'شلتيها')} (${num(dropped.length)})`, `Bring back removed exercises (${dropped.length})`)}</T>
               </Pressable>
             ) : null}
           </TourTarget>
@@ -239,6 +239,18 @@ export default function Train() {
         </CaptainCard>
       )}
 
+      {M.watch.length ? (
+        <Card>
+          <Kicker color={c.bad}>{L(`${g('وقف', 'وقفي')} التمرين فورا لو ${g('حسيت', 'حسيتي')} بـ`, 'Stop training right away if you feel')}</Kicker>
+          {M.watch.map((w, i) => (
+            <View key={i} style={[styles.row, { gap: 8 }]}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.bad }} />
+              <T kind="body" style={{ flex: 1 }}>{w}</T>
+            </View>
+          ))}
+          <T kind="small" color={c.muted}>{L(`${g('اقعد', 'اقعدي')} و${g('اشرب', 'اشربي')} مياه، ولو مراحتش في دقايق ${g('كلم', 'كلمي')} دكتورك أو الطوارئ.`, "Sit down and drink some water; if it doesn't pass in a few minutes, call your doctor or emergency services.")}</T>
+        </Card>
+      ) : null}
       {M.train.length ? (
         <Card>
           <Kicker color={c.warn}>{L('على حسب حالتك', 'For your condition')}</Kicker>

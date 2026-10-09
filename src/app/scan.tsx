@@ -51,7 +51,7 @@ export default function Scan() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: 16, paddingBottom: insets.bottom + 16, paddingHorizontal: 16, gap: 12 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <T kind="h1">{L(`${g('صوّر', 'صوّري')} الباركود`, 'Scan a barcode')}</T>
+        <T kind="h1">{L(`${g('صور', 'صوري')} الباركود`, 'Scan a barcode')}</T>
         <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={L('قفل', 'Close')} hitSlop={10}><Text style={{ fontSize: 26, color: c.muted }}>×</Text></Pressable>
       </View>
 
@@ -65,7 +65,7 @@ export default function Scan() {
           <CameraView style={{ flex: 1 }} facing="back" onBarcodeScanned={({ data }) => onScan(data)}
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }} />
           <View pointerEvents="none" style={{ position: 'absolute', left: '12%', right: '12%', top: '38%', height: '22%', borderWidth: 3, borderColor: c.lime, borderRadius: 4 }} />
-          <T kind="small" color="#FFFFFF" style={{ position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center' }}>{L(`${g('قرّب', 'قرّبي')} الباركود جوه المربع`, 'Bring the barcode inside the frame')}</T>
+          <T kind="small" color="#FFFFFF" style={{ position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center' }}>{L(`${g('قرب', 'قربي')} الباركود جوه المربع`, 'Bring the barcode inside the frame')}</T>
         </View>
       ) : state === 'loading' ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}><ActivityIndicator color={c.petrol} /><T kind="small">{L('بندور على المنتج...', 'Looking up the product...')}</T></View>
@@ -77,7 +77,7 @@ export default function Scan() {
           <T kind="small">{L(`بروتين ${food.p} جم · كارب ${food.c} جم · دهون ${food.f} جم`, `Protein ${food.p} g · Carbs ${food.c} g · Fat ${food.f} g`)}</T>
           <AdviceView advice={foodAdvice(profile, food, remaining)} onSwap={add} female={profile.sex !== 'm'} />
           <Btn title={L(g('ضيفها لأكل النهارده', 'ضيفيها لأكل النهارده'), "Add to today's food")} onPress={() => add(food)} />
-          <Btn kind="text" title={L(g('صوّر منتج تاني', 'صوّري منتج تاني'), 'Scan another product')} onPress={again} />
+          <Btn kind="text" title={L(g('صور منتج تاني', 'صوري منتج تاني'), 'Scan another product')} onPress={again} />
         </Card>
       ) : (
         <Card>

@@ -89,7 +89,7 @@ export function DailyFire({ streak }: { streak: number }) {
               <Text style={{ fontFamily: fonts.display, fontSize: 30, lineHeight: 42, color: '#FFFFFF' }}>{L('يوم جديد!', 'A new day!')}</Text>
               <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, lineHeight: 24, color: '#FFFFFF', opacity: 0.85, textAlign: 'center' }}>
                 {streak > 0
-                  ? L(`الستريك ${num(streak)} ${streak === 1 ? 'يوم' : 'أيام'} في السعرات، كمّل النهارده`, `${num(streak)}-day streak, keep it going today`)
+                  ? L(`الستريك ${num(streak)} ${streak === 1 ? 'يوم' : 'أيام'} في السعرات، كمل النهارده`, `${num(streak)}-day streak, keep it going today`)
                   : L('يلا نبدأ الستريك من النهارده', "Let's start a streak today")}
               </Text>
               <View style={{ marginTop: 10, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 99, backgroundColor: c.petrol }}>

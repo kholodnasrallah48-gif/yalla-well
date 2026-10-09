@@ -57,7 +57,7 @@ export function AddExercise({ profile, sid, place, have, g, onSave, onClose }: {
       <T kind="small">{L(`هيفضل في قايمتك كل مرة ${g('تلعب', 'تلعبي')} ${day}.`, `It stays on your list every time you do ${day}.`)}</T>
       <View style={{ gap: 4 }}>
         <T kind="label">{L('اسم التمرين أو الجهاز', 'Exercise or machine name')}</T>
-        <TextInput value={name} onChangeText={setName} autoFocus placeholder={L('مثلًا: هاك سكوات، جهاز صدر هامر، Cable fly', 'e.g. Hack squat, Hammer chest press, cable fly')}
+        <TextInput value={name} onChangeText={setName} autoFocus placeholder={L('مثلا: هاك سكوات، جهاز صدر هامر، Cable fly', 'e.g. Hack squat, Hammer chest press, cable fly')}
           placeholderTextColor={c.dim} style={input} returnKeyType="done" />
       </View>
       {hits.length ? (
@@ -78,7 +78,7 @@ export function AddExercise({ profile, sid, place, have, g, onSave, onClose }: {
       {name.trim() ? <>
         <View style={{ gap: 4 }}>
           <T kind="label">{L('الجهاز أو الأداة (اختياري)', 'Machine or equipment (optional)')}</T>
-          <TextInput value={gear} onChangeText={setGear} placeholder={L('مثلًا: Smith machine، دمبل، كيبل', 'e.g. Smith machine, dumbbells, cable')} placeholderTextColor={c.dim} style={input} />
+          <TextInput value={gear} onChangeText={setGear} placeholder={L('مثلا: Smith machine، دمبل، كيبل', 'e.g. Smith machine, dumbbells, cable')} placeholderTextColor={c.dim} style={input} />
         </View>
         <Btn title={L(`${g('ضيف', 'ضيفي')} «${name.trim()}»`, `Add “${name.trim()}”`)} sound="add"
           onPress={() => save({ id: `u_${Date.now().toString(36)}`, n: name.trim(), gear: gear.trim() || undefined })} />

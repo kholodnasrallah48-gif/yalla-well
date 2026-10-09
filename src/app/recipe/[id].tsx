@@ -118,10 +118,10 @@ function LocalRecipeScreen() {
         <Card>
           <T kind="h2">{L('على قد سعراتك', 'Fitted to your calories')}</T>
           {budget < 80 ? (
-            <T kind="body" color={c.warn}>{L(`مفضلش سعرات تقريبًا ${toMeal(meal)} النهارده. لو ${g('هتاكلها', 'هتاكليها')} ${g('خد', 'خدي')} حاجة صغيرة، أو خليها لبكرة.`, `There are almost no calories left for ${tx(MEAL_NAME[meal]).toLowerCase()} today. If you have it, keep it very small, or save it for tomorrow.`)}</T>
+            <T kind="body" color={c.warn}>{L(`مفضلش سعرات تقريبا ${toMeal(meal)} النهارده. لو ${g('هتاكلها', 'هتاكليها')} ${g('خد', 'خدي')} حاجة صغيرة، أو خليها لبكرة.`, `There are almost no calories left for ${tx(MEAL_NAME[meal]).toLowerCase()} today. If you have it, keep it very small, or save it for tomorrow.`)}</T>
           ) : (
             <>
-              <T kind="body">{L(`${toMeal(meal)} فاضلك حوالي ${fmt(budget)} سعرة، ف${g('كُل', 'كُلي')} `, `You have about ${fmt(budget)} kcal left for ${tx(MEAL_NAME[meal]).toLowerCase()}, so have `)}
+              <T kind="body">{L(`${toMeal(meal)} فاضلك حوالي ${fmt(budget)} سعرة، ف${g('كل', 'كلي')} `, `You have about ${fmt(budget)} kcal left for ${tx(MEAL_NAME[meal]).toLowerCase()}, so have `)}
                 <Text style={{ fontFamily: fonts.displaySemi, color: c.petrol }}>{portionText(pt.factor)}</Text>
                 {L(` (≈ ${fmt(pt.kcal)} سعرة).`, ` (≈ ${fmt(pt.kcal)} kcal).`)}</T>
               {pt.tight ? <T kind="small" color={c.warn}>{L(`حتى ربع الطبق أكتر من اللي فاضلك. ${g('اختار', 'اختاري')} أكلة أخف لو ${g('تقدر', 'تقدري')}.`, 'Even a quarter is more than you have left. Pick a lighter dish if you can.')}</T> : null}
@@ -149,7 +149,7 @@ function LocalRecipeScreen() {
           : factor !== 1 ? L(`${g('ضيف', 'ضيفي')} ${portionText(factor)} ${toMeal(meal)}`, `Add ${portionText(factor)} to ${tx(MEAL_NAME[meal])}`)
           : L(`${g('ضيفها', 'ضيفيها')} ${toMeal(meal)}`, `Add to ${tx(MEAL_NAME[meal])}`)}
         onPress={() => { updateDay((d) => addFood(d, food, meal, factor)); router.back(); }} />
-      <T kind="small">{L(`بتتحسب في سعراتك لما ${g('تعلّم', 'تعلّمي')} إنك ${g('خلصت', 'خلصتي')} الوجبة.`, 'It counts toward your calories once you tick the meal as done.')}</T>
+      <T kind="small">{L(`بتتحسب في سعراتك لما ${g('تعلم', 'تعلمي')} إنك ${g('خلصت', 'خلصتي')} الوجبة.`, 'It counts toward your calories once you tick the meal as done.')}</T>
     </ScrollView></Bg>
   );
 }
@@ -189,7 +189,7 @@ function OnlineRecipeScreen() {
       ) : r === null ? (
         <Card>
           <T kind="h2">{L('مقدرناش نفتح الوصفة', "Couldn't open the recipe")}</T>
-          <T kind="body">{L(`غالبًا مفيش نت دلوقتي. ${g('جرب', 'جربي')} تاني بعدين.`, "You're probably offline. Try again later.")}</T>
+          <T kind="body">{L(`غالبا مفيش نت دلوقتي. ${g('جرب', 'جربي')} تاني بعدين.`, "You're probably offline. Try again later.")}</T>
         </Card>
       ) : (
         <>
@@ -200,8 +200,8 @@ function OnlineRecipeScreen() {
             <T kind="h2">{L('السعرات', 'Calories')}</T>
             {est === undefined ? (
               <>
-                <T kind="body">{L('السعرات مش معروفة للوصفة دي. نقدر نحسبها تقريبًا من المكونات وكمياتها.', "This recipe's calories aren't known. We can estimate them roughly from the ingredients and amounts.")}</T>
-                <Btn kind="outline" title={L('احسب السعرات تقريبًا', 'Estimate the calories')} onPress={estimate} />
+                <T kind="body">{L('السعرات مش معروفة للوصفة دي. نقدر نحسبها تقريبا من المكونات وكمياتها.', "This recipe's calories aren't known. We can estimate them roughly from the ingredients and amounts.")}</T>
+                <Btn kind="outline" title={L('احسب السعرات تقريبا', 'Estimate the calories')} onPress={estimate} />
               </>
             ) : est === 'loading' ? (
               <View style={[styles.row, { gap: 8 }]}>

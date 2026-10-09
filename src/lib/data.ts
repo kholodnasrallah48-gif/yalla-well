@@ -25,7 +25,7 @@ export const MEDS: Option[] = [
   { id: 'bio', n: 'علاج بيولوجي أو مثبط مناعة' },
   { id: 'hcq', n: 'هيدروكسي كلوروكين (بلاكونيل)' },
   { id: 'beta', n: 'حاصرات بيتا (كونكور، إندرال)' },
-  { id: 'anticoag', n: 'مسيّل للدم' },
+  { id: 'anticoag', n: 'مسيل للدم' },
 ];
 
 export type Joint = 'knee' | 'back' | 'shoulder' | 'wrist';
@@ -333,7 +333,7 @@ export type ScheduleId = '3' | 'fb3' | 'ul4' | 'glute4' | '5mix' | '5gym' | 'bro
 export const SCHEDULE_ORDER: ScheduleId[] = ['fb3', '3', 'ul4', 'glute4', '5mix', '5gym', 'bro5', 'ppl6', 'custom'];
 
 export const SCHEDULES: Record<ScheduleId, { n: string; d: string; map: Record<number, string> }> = {
-  fb3: { n: 'الجسم كله (٣ أيام)', d: 'كل تمرين بيشغّل الجسم كله: السبت والاتنين والأربع. أسهل بداية للمبتدئين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
+  fb3: { n: 'الجسم كله (٣ أيام)', d: 'كل تمرين بيشغل الجسم كله: السبت والاتنين والأربع. أسهل بداية للمبتدئين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
   '3': { n: 'دفع وسحب ورجل (٣ أيام)', d: 'يوم صدر وكتف وترايسبس، يوم ضهر وباي، يوم رجل: السبت والاتنين والأربع', map: { 0: 'push', 2: 'pull', 4: 'legs' } },
   ul4: { n: 'فوق وتحت (٤ أيام)', d: 'يومين للجزء العلوي ويومين للرجل: السبت والأحد والتلات والأربع', map: { 0: 'upper', 1: 'lower', 3: 'upper', 4: 'lower' } },
   glute4: { n: 'أرداف ورجل (٤ أيام)', d: 'يومين أرداف، يوم للجزء العلوي، ويوم رجل: السبت والأحد والتلات والأربع', map: { 0: 'glutes', 1: 'upper', 3: 'glutes', 4: 'lower' } },
@@ -345,7 +345,7 @@ export const SCHEDULES: Record<ScheduleId, { n: string; d: string; map: Record<n
   '5gym': { n: '٥ أيام جيم', d: 'دفع، سحب، رجل، وبعدهم يوم للجزء العلوي ويوم رجل', map: { 0: 'push', 1: 'pull', 2: 'legs', 4: 'upper', 5: 'lower' } },
   bro5: { n: 'عضلة كل يوم (٥ أيام)', d: 'يوم صدر، يوم ضهر، يوم رجل، يوم كتف، يوم دراع', map: { 0: 'chest', 1: 'back', 2: 'legs', 3: 'shoulders', 4: 'arms' } },
   ppl6: { n: 'دفع وسحب ورجل (٦ أيام)', d: 'دفع وسحب ورجل مرتين في الأسبوع، للي بيتمرن بانتظام', map: { 0: 'push', 1: 'pull', 2: 'legs', 3: 'push', 4: 'pull', 5: 'legs' } },
-  custom: { n: 'هختار بنفسي', d: 'نبدأ بـ ٣ أيام للجسم كله، وكل يوم تقدر تغيّر نوع التمرين من صفحة التمرين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
+  custom: { n: 'هختار بنفسي', d: 'نبدأ بـ ٣ أيام للجسم كله، وكل يوم تقدر تغير نوع التمرين من صفحة التمرين', map: { 0: 'fullA', 2: 'fullB', 4: 'fullA' } },
 };
 /** Gym workouts a person can pick for a day under this plan; "other" can pick any. */
 export function gymChoices(id: ScheduleId): string[] {

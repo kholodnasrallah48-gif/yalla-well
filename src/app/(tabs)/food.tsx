@@ -125,7 +125,7 @@ export default function FoodScreen() {
           <MacroBar label={L('بروتين', 'Protein')} value={t.p} target={T0.protein} />
           <MacroBar label={L('كارب', 'Carbs')} value={t.c} target={T0.carbs} />
           <MacroBar label={L('دهون', 'Fat')} value={t.f} target={T0.fat} />
-          {waiting > 0 ? <T kind="small" color={c.warn} style={{ marginTop: 6 }}>{L(`+ ${fmt(waiting)} سعرة في وجبات لسه ${g('معلمتش', 'معلمتيش')} عليها. بتتحسب لما ${g('تعلّم', 'تعلّمي')} إنك ${g('خلصتها', 'خلصتيها')}.`, `+ ${fmt(waiting)} kcal in meals not ticked yet. They count once you tick the meal as done.`)}</T> : null}
+          {waiting > 0 ? <T kind="small" color={c.warn} style={{ marginTop: 6 }}>{L(`+ ${fmt(waiting)} سعرة في وجبات لسه ${g('معلمتش', 'معلمتيش')} عليها. بتتحسب لما ${g('تعلم', 'تعلمي')} إنك ${g('خلصتها', 'خلصتيها')}.`, `+ ${fmt(waiting)} kcal in meals not ticked yet. They count once you tick the meal as done.`)}</T> : null}
         </Rise>
       </TourTarget>
 
@@ -146,7 +146,7 @@ export default function FoodScreen() {
                 <View style={{ flex: 1 }}>
                   <T kind="h2" style={{ fontSize: 19, lineHeight: 28 }}>{tx(MEAL_NAME[meal])}</T>
                   <T kind="small" numberOfLines={1} color={done ? c.ok : undefined}>
-                    {foods.length ? (done ? names : L(`${names} · ${g('علّم', 'علّمي')} لما ${g('تخلص', 'تخلصي')}`, `${names} · tick when done`)) : done ? L('اتعلّمت', 'Ticked') : L('لسه', 'Nothing yet')}
+                    {foods.length ? (done ? names : L(`${names} · ${g('علم', 'علمي')} لما ${g('تخلص', 'تخلصي')}`, `${names} · tick when done`)) : done ? L('اتعلمت', 'Ticked') : L('لسه', 'Nothing yet')}
                   </T>
                 </View>
                 {foods.length ? <Num size={24} color={done ? c.ink : c.dim}>{fmt(sum.kcal)}</Num> : null}

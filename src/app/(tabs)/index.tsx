@@ -50,7 +50,7 @@ export default function Home() {
   const loose = day.foods.filter((x) => !x.meal).reduce((a, f) => a + f.kcal * f.q, 0);
   if (loose) segs.push({ kcal: loose, label: L('تاني', 'Other'), kind: 'done' });
   const waiting = planned(day).kcal - t.kcal;
-  if (waiting > 0) segs.push({ kcal: waiting, label: L('لسه متعلّمتش', 'Not ticked'), kind: 'wait' });
+  if (waiting > 0) segs.push({ kcal: waiting, label: L('لسه متعلمتش', 'Not ticked'), kind: 'wait' });
   const next = MEALS.find((m) => !ticked.includes(m));
   if (left - waiting > 0) segs.push({ kcal: left - waiting, label: next ? `${MEAL_NAME[next]}${L('؟', '?')}` : L('فاضل', 'Left'), kind: 'left' });
   else if (left < 0) segs.push({ kcal: -left, label: L('زيادة', 'Over'), kind: 'over' });
@@ -95,7 +95,7 @@ export default function Home() {
             <MacroBar label={L('كارب', 'Carbs')} value={t.c} target={T0.carbs} />
             <MacroBar label={L('دهون', 'Fat')} value={t.f} target={T0.fat} />
           </View>
-          <Btn kind="outline" title={L(g('سجّل أكل', 'سجّلي أكل'), 'Log food')} onPress={() => router.navigate('/food')} />
+          <Btn kind="outline" title={L(g('سجل أكل', 'سجلي أكل'), 'Log food')} onPress={() => router.navigate('/food')} />
         </TourTarget>
       </Rise>
 
@@ -119,7 +119,7 @@ export default function Home() {
               </View>
               <View style={{ alignItems: 'center', gap: 6 }}>
                 <Mascot pose={finished ? 'cheer' : 'lift'} size={58} color={c.onPetrol} head={c.onPetrol} excited={finished} />
-                <Btn kind="dark" sound="whistle" title={finished ? L('شوف', 'View') : doneN ? L('كمّل', 'Continue') : L('يلا نبدأ', "Let's go")} onPress={() => router.navigate('/train')} style={{ paddingHorizontal: 16, minHeight: 44, paddingVertical: 8 }} />
+                <Btn kind="dark" sound="whistle" title={finished ? L('شوف', 'View') : doneN ? L('كمل', 'Continue') : L('يلا نبدأ', "Let's go")} onPress={() => router.navigate('/train')} style={{ paddingHorizontal: 16, minHeight: 44, paddingVertical: 8 }} />
               </View>
             </Card>
           ) : (
@@ -169,7 +169,7 @@ export default function Home() {
             {day.water > 0 ? (
               <Pressable accessibilityRole="button" onPress={() => { play('remove'); updateDay((d) => ({ ...d, water: 0 })); }}
                 style={({ pressed }) => [styles.chip, { borderColor: 'transparent' }, pressed && styles.pressed]}>
-                <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>{L('صفّر', 'Reset')}</Text>
+                <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>{L('صفر', 'Reset')}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -180,7 +180,7 @@ export default function Home() {
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <T kind="h3">{L(`${g('حاسس', 'حاسة')} بإرهاق أو نشاط للمرض النهارده؟`, 'Feeling fatigued or having a flare-up today?')}</T>
-            <T kind="small">{L('هنحوّل تمرين النهارده ليوم تعافي خفيف.', "We'll switch today's workout to a light recovery day.")}</T>
+            <T kind="small">{L('هنحول تمرين النهارده ليوم تعافي خفيف.', "We'll switch today's workout to a light recovery day.")}</T>
           </View>
           <Switch value={day.flare} onValueChange={(v) => { play('tap'); updateDay((d) => ({ ...d, flare: v })); }}
             trackColor={{ true: c.petrol, false: c.line }} thumbColor={c.ink} accessibilityLabel={L('يوم تعافي', 'Recovery day')} />

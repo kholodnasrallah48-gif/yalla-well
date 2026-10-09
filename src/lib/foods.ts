@@ -3,6 +3,7 @@ import { AR_EN } from './food-words.ts';
 import { FOOD_ROWS } from './foods-data.ts';
 import { RECIPES, type Meal, type Recipe } from './recipes-data.ts';
 import { L, num } from './i18n.ts';
+import { FLAG_TAGS, effective, type FoodFlag } from './kb.ts';
 import { genderFor, type Profile } from './plan.ts';
 
 export type GI = 'low' | 'mid' | 'high' | 'none';
@@ -52,17 +53,21 @@ type Note = { level: Level; text: string; salt?: boolean };
 function judge(p: Profile, f: Food): Note[] {
   const g = genderFor(p.sex);
   const t = new Set(f.tags ?? []);
-  const has = (id: string) => p.conditions.includes(id) || p.meds.includes(id);
-  const auto = p.conditions.filter((x) => AUTOIMMUNE.includes(x));
+  const eff = effective(p);
+  const has = (id: string) => eff.ids.has(id);
+  const auto = [...eff.ids].filter((x) => AUTOIMMUNE.includes(x));
   const sugar = SUGAR.some(has) || has('insulin');
-  const disease = auto.length ? L(COND_NAME[auto[0]], COND_NAME_EN[auto[0]]) : '';
+  const disease = auto.length ? L(COND_NAME[auto[0]], COND_NAME_EN[auto[0]]) : eff.auto.length ? eff.auto[0] : '';
   const out: Note[] = [];
+  const name = norm(f.n);
+  // Foods a typed condition, allergy or medicine rules out by name (fava beans with G6PD, grapefruit with statins).
+  for (const a of eff.avoid) if (a.re.test(name)) { const [ar, en] = a.text(g); out.push({ level: a.level, text: L(ar, en) }); }
 
   if (has('celiac') && t.has('gluten')) out.push({ level: 'bad', text: L('فيه جلوتين، وده ممنوع مع السيلياك.', 'Contains gluten, which is off-limits with celiac disease.') });
-  if (auto.length) {
+  if (auto.length || eff.auto.length) {
     if (t.has('soda')) out.push({ level: 'bad', text: L(`المياه الغازية فيها سكر وإضافات ممكن تزود الالتهاب في الجسم وتهيج ${disease}.`, `Soft drinks have sugar and additives that can raise inflammation and flare up ${disease}.`) });
     else if (t.has('sugary')) out.push({ level: 'warn', text: L(`السكر الكتير بيزود الالتهاب، وده مش في صالح ${disease}.`, `A lot of sugar raises inflammation, which is bad for ${disease}.`) });
-    if (t.has('processed') || t.has('canned')) out.push({ level: 'warn', text: L(`أكل مصنّع أو معلب، فيه مواد حافظة وملح ممكن يزودوا الالتهاب. ${g('خليه', 'خليه')} مرة على قد ما ${g('تقدر', 'تقدري')}.`, 'Processed or canned, with preservatives and salt that can raise inflammation. Keep it occasional if you can.'), salt: true });
+    if (t.has('processed') || t.has('canned')) out.push({ level: 'warn', text: L(`أكل مصنع أو معلب، فيه مواد حافظة وملح ممكن يزودوا الالتهاب. ${g('خليه', 'خليه')} مرة على قد ما ${g('تقدر', 'تقدري')}.`, 'Processed or canned, with preservatives and salt that can raise inflammation. Keep it occasional if you can.'), salt: true });
     if (t.has('fried')) out.push({ level: 'warn', text: L('المقلي بيزود الالتهاب. المشوي أو اللي في الفرن أحسن.', 'Fried food raises inflammation. Grilled or baked is better.') });
     if (t.has('redmeat')) out.push({ level: 'ok', text: L('اللحمة الحمرا كويسة مرة أو مرتين في الأسبوع، والفراخ والسمك أحسن لباقي الأيام.', 'Red meat is fine once or twice a week; chicken and fish are better the rest of the time.') });
     if (t.has('omega3')) out.push({ level: 'good', text: L('فيه أوميجا ٣، وده بيقلل الالتهاب.', 'Has omega-3, which lowers inflammation.') });
@@ -76,7 +81,22 @@ function judge(p: Profile, f: Food): Note[] {
   }
   if (has('steroids') && (t.has('salty') || t.has('sugary') || t.has('soda'))) out.push({ level: 'warn', text: L('مع الكورتيزون قللي الملح والسكر عشان الضغط والسكر والمياه في الجسم.', 'On steroids, cut back on salt and sugar for your blood pressure, blood sugar and water retention.'), salt: true });
   if (has('thyroxine') && t.has('caffeine')) out.push({ level: 'ok', text: L(`القهوة والشاي بعد دوا الغدة بساعة على الأقل.`, 'Coffee and tea at least an hour after your thyroid medicine.') });
-  if (!auto.length && !sugar && (t.has('soda') || t.has('sugary'))) out.push({ level: 'warn', text: L('سكر كتير وقيمة غذائية قليلة.', 'Lots of sugar, little nutrition.') });
+  // What typed conditions (or the answers about them) ask to cut down on.
+  const flagged = (fl: FoodFlag) => {
+    const x = FLAG_TAGS[fl];
+    if (fl === 'sugar') return t.has('soda') || t.has('sugary') || f.gi === 'high';
+    if (fl === 'fat') return t.has('fried') || f.f >= 18;
+    return x.tags.some((tag) => t.has(tag)) || (x.re ? x.re.test(name) : false);
+  };
+  const said = new Set(out.map((n) => n.text));
+  for (const fl of eff.food) {
+    if (!flagged(fl) || (fl === 'gluten' && has('celiac'))) continue;
+    if ((fl === 'salt' && out.some((n) => n.salt)) || (fl === 'sugar' && sugar)) continue;
+    const x = FLAG_TAGS[fl];
+    const text = L(`فيه ${x.has}، و${g('انت محتاج تقلل', 'انتي محتاجة تقللي')} ${x.ar} على حسب حالتك.`, `Contains ${x.en}, which you're cutting down on for your health.`);
+    if (!said.has(text)) out.push({ level: fl === 'gluten' ? 'bad' : 'warn', text, salt: fl === 'salt' });
+  }
+  if (!auto.length && !sugar && (t.has('soda') || t.has('sugary')) && !eff.food.has('sugar')) out.push({ level: 'warn', text: L('سكر كتير وقيمة غذائية قليلة.', 'Lots of sugar, little nutrition.') });
   if (f.p >= 20 && !out.some((x) => x.level === 'bad')) out.push({ level: 'good', text: L('مصدر بروتين كويس.', 'A good source of protein.') });
   return out;
 }
@@ -130,7 +150,12 @@ export function foodAdvice(p: Profile, f: Food, remaining: number, pool: Food[] 
 const MEAL_CAT: Record<Meal, string> = { breakfast: 'فطار', lunch: 'غدا', dinner: 'عشا', snack: 'سناك' };
 /** A recipe as a loggable food. */
 export const recipeFood = (r: Recipe): Food => ({ id: 'r_' + r.id, cat: MEAL_CAT[r.meal], n: r.n, u: r.serving, kcal: r.kcal, p: r.p, c: r.c, f: r.f, gi: r.gi, tags: r.tags });
-export const recipeFits = (p: Profile, r: Recipe) => !(r.avoid ?? []).some((x) => p.conditions.includes(x));
+export const recipeFits = (p: Profile, r: Recipe) => {
+  const eff = effective(p);
+  if ((r.avoid ?? []).some((x) => eff.ids.has(x))) return false;
+  const name = norm(r.n);
+  return !eff.avoid.some((a) => a.level === 'bad' && a.re.test(name)) && !(eff.food.has('gluten') && r.tags.includes('gluten'));
+};
 
 type Kind = { re: RegExp; alts: string[]; recipes?: RegExp; meal?: Meal; drink?: boolean };
 // What the food is, so a swap stays in the same craving: crunchy snack → crunchy snack, dessert → something sweet.
@@ -193,7 +218,7 @@ export const foodLevel = (p: Profile, f: Food): Level => worst(judge(p, f));
 
 const DIGITS: Record<string, string> = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' };
 export const norm = (s: string) =>
-  s.replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+  s.replace(/[\u064B-\u0652\u0670\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
     .replace(/[٠-٩]/g, (d) => DIGITS[d]).toLowerCase().trim();
 
 const QTY_WORDS: Record<string, number> = {

@@ -49,7 +49,8 @@ export async function translate(text: string, to?: Lang, timeoutMs = 8000): Prom
   const target = to ?? (from === 'ar' ? 'en' : 'ar');
   if (target === from) return t;
   const ok = (out: string | null | undefined) => {
-    const o = out?.trim();
+    // Arabic diacritics (shadda, tashkeel) are dropped: the app writes Arabic without them.
+    const o = out?.replace(/[\u064B-\u0652\u0670]/g, '').trim();
     // Reject quota/error messages, markup leaking from subtitle memories, and replies in the wrong script.
     if (!o || /MYMEMORY|INVALID|QUERY LENGTH|[{}\\]/i.test(o) || scriptOf(o) !== target) return null;
     return o;

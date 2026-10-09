@@ -49,7 +49,7 @@ export function suitability(p: Profile, r: Recipe): { score: number; why: string
     score -= 2; why.push(L(`${g('خده', 'خديه')} بعد دوا الغدة بساعة على الأقل`, 'Have it at least an hour after your thyroid medicine'));
   }
   if (has('ibd') && t.has('fiber')) score -= 1;
-  if (p.goal === 'lose' && protein) { score += 1; if (!highProtein) why.push(L(`بروتين عالي يشبّع${g('ك', 'كي')}`, 'High protein, keeps you full')); }
+  if (p.goal === 'lose' && protein) { score += 1; if (!highProtein) why.push(L(`بروتين عالي يشبع${g('ك', 'كي')}`, 'High protein, keeps you full')); }
   if (p.goal === 'gain' && r.kcal >= 450) score += 1;
   return { score, why: why.slice(0, 2) };
 }

@@ -19,6 +19,18 @@ export const tx = (ar: string) => (lang === 'en' ? EN_DATA[ar.trim()] ?? ar : ar
 /** Number in the app's digits: Arabic-Indic in Arabic, Western in English. */
 export const num = (n: number, opts?: Intl.NumberFormatOptions) => n.toLocaleString(lang === 'en' ? 'en-US' : 'ar-EG', opts);
 
+/** A typed number with Western digits: Arabic-Indic (٠-٩) and Persian (۰-۹) digits become 0-9 and the Arabic
+ * decimal mark or a comma becomes a dot, so numbers can be typed on an Arabic or an English keyboard. */
+export const latin = (s: string) => s
+  .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660))
+  .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x6f0))
+  .replace(/[٫,،]/g, '.').replace(/٬/g, '');
+/** The number a person typed (Arabic or Western digits), or NaN when it isn't one. */
+export const toNum = (s: string | undefined | null) => {
+  const t = latin(s ?? '').trim();
+  return /^(\d+\.?\d*|\.\d+)$/.test(t) ? parseFloat(t) : NaN;
+};
+
 export function setLang(l: Lang) {
   lang = l;
   try { AsyncStorage.setItem(KEY, l).catch(() => {}); } catch { /* no storage (node tests) */ }

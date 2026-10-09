@@ -20,14 +20,14 @@ const PATH: Record<Tab, '/' | '/food' | '/train' | '/me'> = { index: '/', food: 
 
 function steps(name: string, g: (m: string, f: string) => string): Step[] {
   return [
-    { tab: 'index', pose: 'cheer', head: L(`أهلًا${name ? ' يا ' + name : ''}!`, `Hi${name ? ' ' + name : ''}!`),
-      body: L(`أنا الكابتن، صاحبك في الماتش. ${g('تعالى', 'تعالي')} ألفّ ${g('بيك', 'بيكي')} على التطبيق في دقيقة.`, "I'm the Captain, your teammate. Let me show you around in a minute.") },
+    { tab: 'index', pose: 'cheer', head: L(`أهلا${name ? ' يا ' + name : ''}!`, `Hi${name ? ' ' + name : ''}!`),
+      body: L(`أنا الكابتن، هكون ${g('معاك', 'معاكي')} كل يوم. ${g('تعالى', 'تعالي')} ألف ${g('بيك', 'بيكي')} على التطبيق في دقيقة.`, "I'm the Captain, and I'll be with you every day. Let me show you around in a minute.") },
     { tab: 'index', target: 'home.left', pose: 'point', head: L('فاضلك كام سعرة', 'Calories left'),
-      body: L(`ده أهم رقم في يومك. بيقل لما ${g('تعلّم', 'تعلّمي')} في صفحة الأكل إنك ${g('خلصت', 'خلصتي')} وجبة.`, 'Your most important number today. It drops when you tick a meal as eaten on the Food page.') },
+      body: L(`ده أهم رقم في يومك. بيقل لما ${g('تعلم', 'تعلمي')} في صفحة الأكل إنك ${g('خلصت', 'خلصتي')} وجبة.`, 'Your most important number today. It drops when you tick a meal as eaten on the Food page.') },
     { tab: 'index', target: 'home.bar', pose: 'point', head: L('يومك في شريط', 'Your day in one bar'),
       body: L(`كل حتة وجبة، وراسي الخضرا بتقولك ${g('وصلت', 'وصلتي')} فين. وتحتها البروتين والكارب والدهون.`, 'Each block is a meal and my green head shows how far you are. Below it: protein, carbs and fat.') },
     { tab: 'index', target: 'home.week', pose: 'point', head: L('أسبوعك', 'Your week'),
-      body: L(`النهارده منوّر بالأخضر. الدايرة بتتملي لما ${g('تخلص', 'تخلصي')} تمرين اليوم ده، والمتقطع يعني راحة.`, "Today is lit in green. The dot fills in when you finish that day's workout; dashed days are rest.") },
+      body: L(`النهارده منور بالأخضر. الدايرة بتتملي لما ${g('تخلص', 'تخلصي')} تمرين اليوم ده، والمتقطع يعني راحة.`, "Today is lit in green. The dot fills in when you finish that day's workout; dashed days are rest.") },
     { tab: 'index', target: 'home.today', pose: 'lift', head: L('تمرين النهارده', "Today's workout"),
       body: L(`${g('دوس', 'دوسي')} «يلا نبدأ»، ${g('هتسمع', 'هتسمعي')} صفارة البداية ${g('وتروح', 'وتروحي')} على التمرين على طول.`, 'Tap “Let\'s go”, hear the whistle, and jump straight into your workout.') },
     { tab: 'index', target: 'home.water', pose: 'point', head: L('المياه', 'Water'),
@@ -41,12 +41,12 @@ function steps(name: string, g: (m: string, f: string) => string): Step[] {
     { tab: 'train', target: 'train.days', pose: 'row', head: L(`${g('هتتمرن', 'هتتمرني')} فين؟`, 'Where are you training?'),
       body: L(`${g('اختار', 'اختاري')} اليوم، وبعدين جيم ولا بيت ولا راحة. في الجيم ${g('اختار', 'اختاري')} دفع ولا سحب ولا رجل، والتمارين بتتغير على طول.`, 'Pick the day, then gym, home or rest. At the gym pick push, pull, legs and more, and the exercises change right away.') },
     { tab: 'train', target: 'train.list', before: 'train.workout', pose: 'row', head: L('تمارينك', 'Your exercises'),
-      body: L(`${g('دوس', 'دوسي')} على أي تمرين: صور وشرح وفيديو. ${g('سجّل', 'سجّلي')} الوزن والعدات والراحة بتتعد لوحدها، ${g('وبدّل', 'وبدّلي')} بين الدمبل والجهاز براحتك.`, 'Tap any exercise for pictures, tips and a video. Log weight and reps and the rest timer runs on its own. Switch between dumbbells and machines anytime.') },
+      body: L(`${g('دوس', 'دوسي')} على أي تمرين: صور وشرح وفيديو. ${g('سجل', 'سجلي')} الوزن والعدات والراحة بتتعد لوحدها، ${g('وبدل', 'وبدلي')} بين الدمبل والجهاز براحتك.`, 'Tap any exercise for pictures, tips and a video. Log weight and reps and the rest timer runs on its own. Switch between dumbbells and machines anytime.') },
     { tab: 'train', target: 'train.add', before: 'train.workout', pose: 'lift', head: L(`تمرينك على ذوقك`, 'Your workout, your way'),
-      body: L(`تمرين أو جهاز مش موجود؟ ${g('ضيفه', 'ضيفيه')} وهيفضل في قايمتك كل مرة اليوم ده ييجي. ومن «${g('عدّل', 'عدّلي')} القايمة» ${g('شيل', 'شيلي')} أي تمرين مش ${g('عايزه', 'عايزاه')}.`, "Missing an exercise or machine? Add it and it stays on your list every time this workout comes up. “Edit list” removes anything you don't want.") },
+      body: L(`تمرين أو جهاز مش موجود؟ ${g('ضيفه', 'ضيفيه')} وهيفضل في قايمتك كل مرة اليوم ده ييجي. ومن «${g('عدل', 'عدلي')} القايمة» ${g('شيل', 'شيلي')} أي تمرين مش ${g('عايزه', 'عايزاه')}.`, "Missing an exercise or machine? Add it and it stays on your list every time this workout comes up. “Edit list” removes anything you don't want.") },
     { tab: 'me', target: 'me.plan', pose: 'point', head: L('ملفك', 'Your profile'),
-      body: L(`من هنا ${g('تغيّر', 'تغيّري')} نظام التمرين وأيام الأسبوع والأصوات والتنبيهات، ${g('وتشوف', 'وتشوفي')} الجولة دي تاني.`, 'Change your plan, training days, sounds and reminders here, and replay this tour.') },
-    { tab: 'index', pose: 'cheer', head: L(`كده ${g('إنت جاهز', 'إنتي جاهزة')}!`, "You're all set!"), body: L('يلا نكسب ماتش النهارده.', "Let's win today's match.") },
+      body: L(`من هنا ${g('تغير', 'تغيري')} نظام التمرين وأيام الأسبوع والأصوات والتنبيهات، ${g('وتشوف', 'وتشوفي')} الجولة دي تاني.`, 'Change your plan, training days, sounds and reminders here, and replay this tour.') },
+    { tab: 'index', pose: 'cheer', head: L(`كده ${g('إنت جاهز', 'إنتي جاهزة')}!`, "You're all set!"), body: L('يلا نبدأ يومنا.', "Let's get today going.") },
   ];
 }
 

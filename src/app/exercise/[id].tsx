@@ -9,7 +9,7 @@ import { Head } from '../../components/Mascot.tsx';
 import { Bg, Btn, Card, Kicker, NoteView, Num, RADIUS, START, T, styles } from '../../components/ui.tsx';
 import { weekIndex } from '../../lib/day.ts';
 import { MEDIA } from '../../lib/exercise-media.ts';
-import { L, num, tx } from '../../lib/i18n.ts';
+import { L, latin, num, tx } from '../../lib/i18n.ts';
 import { gearOptions, genderFor, sessionFor } from '../../lib/plan.ts';
 import { GEAR, isFreeWeight, variantsOf } from '../../lib/data.ts';
 import { programWeek, suggestWeight } from '../../lib/progress.ts';
@@ -50,7 +50,7 @@ function WeightInput({ label, value, onChange }: { label: string; value: number;
       <T kind="label">{label}</T>
       <TextInput value={text} keyboardType="decimal-pad" inputMode="decimal" returnKeyType="done" selectTextOnFocus placeholder="0" placeholderTextColor={c.muted}
         accessibilityLabel={label}
-        onChangeText={(t) => { const clean = t.replace(',', '.').replace(/[^0-9.]/g, ''); setText(clean); const n = parseFloat(clean); if (!Number.isNaN(n)) onChange(Math.min(500, n)); else if (!clean) onChange(0); }}
+        onChangeText={(t) => { const clean = latin(t).replace(/[^0-9.]/g, ''); setText(clean); const n = parseFloat(clean); if (!Number.isNaN(n)) onChange(Math.min(500, n)); else if (!clean) onChange(0); }}
         style={{ width: '100%', height: 48, borderRadius: RADIUS, borderWidth: 1, borderColor: c.dim, backgroundColor: c.panel, textAlign: 'center', fontFamily: fonts.numSemi, fontSize: 26, color: c.ink }} />
     </View>
   );
@@ -232,7 +232,7 @@ export default function ExerciseScreen() {
               ))}
             </View>
           ) : null}
-          {!done ? <Btn title={L(`سجّل${g('', 'ي')} مجموعة ${ar(sets.length + 1)}`, `Log set ${ar(sets.length + 1)}`)} onPress={logSet} sound="add" /> : null}
+          {!done ? <Btn title={L(`سجل${g('', 'ي')} مجموعة ${ar(sets.length + 1)}`, `Log set ${ar(sets.length + 1)}`)} onPress={logSet} sound="add" /> : null}
           {sets.length ? <Btn kind="text" title={L('امسح آخر مجموعة', 'Delete last set')} onPress={() => updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: (d.sets[id] ?? []).slice(0, -1) } }))} /> : null}
         </Card>
       ) : null}

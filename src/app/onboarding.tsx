@@ -5,11 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { logWeight } from '../lib/weight.ts';
 import { PhotoPicker } from '../components/Photo.tsx';
+import { KnownCard, TypedList, UnknownCard } from '../components/Extra.tsx';
+import { MedList, migrateMeds } from '../components/MedList.tsx';
+import { itemKey, matchItems, splitItems } from '../lib/kb.ts';
 import { Mascot } from '../components/Mascot.tsx';
 import { Bg, Btn, Card, Chip, Choice, Kicker, NoteView, RADIUS, Ring, START, Segmented, T, WeekStrip, styles } from '../components/ui.tsx';
-import { CONDITIONS, MEDS, PAINS, SCHEDULES, SCHEDULE_ORDER, WEEK, type ScheduleId } from '../lib/data.ts';
+import { CONDITIONS, PAINS, SCHEDULES, SCHEDULE_ORDER, WEEK, type ScheduleId } from '../lib/data.ts';
 import { fmt } from '../lib/day.ts';
-import { L, getLang, setLang, tx } from '../lib/i18n.ts';
+import { L, getLang, setLang, toNum, tx } from '../lib/i18n.ts';
 import { allGymChoices, genderFor, medical, recommendPlan, splitLabel, targets, weekPlaces, weekSessions, type CondInfo, type DayPlace, type Profile, type Quiz } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
 import { useStore } from '../store/AppStore.tsx';
@@ -31,7 +34,7 @@ export default function Onboarding() {
   const first = profile && flow === STEPS ? 1 : 0;
   const [more, setMore] = useState(false);
   const [step, setStep] = useState(first);
-  const [d, setD] = useState<Draft>(() => profile ? { ...profile } : { sex: 'f', conditions: [], meds: [], pains: [], level: 'beg' });
+  const [d, setD] = useState<Draft>(() => profile ? migrateMeds({ ...profile }) : { sex: 'f', conditions: [], meds: [], pains: [], level: 'beg' });
   const [nums, setNums] = useState({ age: profile ? String(profile.age) : '', height: profile ? String(profile.height) : '', weight: profile ? String(profile.weight) : '' });
   const [err, setErr] = useState('');
   const [otherPain, setOtherPain] = useState(!!profile?.otherPain);
@@ -45,16 +48,27 @@ export default function Onboarding() {
 
   const validate = (): string | null => {
     if (st === 'basics') {
-      const age = +nums.age, height = +nums.height, weight = +nums.weight.replace(',', '.');
+      const age = Math.round(toNum(nums.age)), height = toNum(nums.height), weight = toNum(nums.weight);
       if (!(age >= 14 && age <= 90)) return L(`${g('اكتب', 'اكتبي')} السن (من ١٤ لـ ٩٠).`, 'Enter your age (14 to 90).');
-      if (!(height >= 120 && height <= 220)) return L(`${g('اكتب', 'اكتبي')} الطول بالسنتي (مثلًا 165).`, 'Enter your height in cm (e.g. 165).');
-      if (!(weight >= 30 && weight <= 250)) return L(`${g('اكتب', 'اكتبي')} الوزن بالكيلو (مثلًا 68).`, 'Enter your weight in kg (e.g. 68).');
+      if (!(height >= 120 && height <= 220)) return L(`${g('اكتب', 'اكتبي')} الطول بالسنتي (مثلا 165).`, 'Enter your height in cm (e.g. 165).');
+      if (!(weight >= 30 && weight <= 250)) return L(`${g('اكتب', 'اكتبي')} الوزن بالكيلو (مثلا 68).`, 'Enter your weight in kg (e.g. 68).');
       setD((x) => ({ ...x, age, height, weight }));
     }
     if (st === 'life' && (!d.activity || !d.goal)) return L(`${g('اختار', 'اختاري')} حركتك في اليوم وهدفك.`, 'Pick your daily activity and your goal.');
     if (st === 'has' && !d.trains) return L(`${g('اختار', 'اختاري')} إجابة.`, 'Pick an answer.');
     if (st === 'plan' && d.trains === 'no' && !(d.quiz?.days && d.quiz.where && d.quiz.focus)) return L(`${g('جاوب', 'جاوبي')} على الـ٣ أسئلة.`, 'Answer the three questions.');
     if (st === 'plan' && !d.schedule) return L(`${g('اختار', 'اختاري')} نظام التمرين.`, 'Pick a workout plan.');
+    if (st === 'cond') {
+      // Typed conditions that are on the list (روماتيزم → rheumatoid arthritis) become picked ones.
+      const keep: string[] = [];
+      const picked = [...d.conditions];
+      for (const t of splitItems(d.otherCond)) {
+        const same = matchItems(t).map((k) => k.same).filter((x): x is string => !!x && CONDITIONS.some((c) => c.id === x));
+        if (same.length && matchItems(t).every((k) => k.same)) same.forEach((id) => { if (!picked.includes(id)) picked.push(id); });
+        else keep.push(t);
+      }
+      setD((x) => ({ ...x, conditions: picked, otherCond: keep.join('، ') }));
+    }
     return null;
   };
   const next = () => {
@@ -77,7 +91,7 @@ export default function Onboarding() {
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
   // The condition-details step only shows when a condition was picked.
-  const skipTo = (i: number, dir: 1 | -1) => (flow[i] === 'condx' && !d.conditions.length ? i + dir : i);
+  const skipTo = (i: number, dir: 1 | -1) => (flow[i] === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length ? i + dir : i);
   // The draft as a profile, for the week preview.
   const draft = { name: '', ...d, schedule: d.schedule ?? 'fb3' } as Profile;
   const pickSchedule = (k: ScheduleId) => set({ schedule: k, places: undefined, splits: undefined });
@@ -114,9 +128,9 @@ export default function Onboarding() {
       </>}
 
       {st === 'basics' && <>
-        <T kind="h1">{profile ? L('تعديل بياناتك', 'Edit your details') : L(`أهلًا ${g('بيك', 'بيكي')} في يلا ويل`, 'Welcome to Yalla Well')}</T>
+        <T kind="h1">{profile ? L('تعديل بياناتك', 'Edit your details') : L(`أهلا ${g('بيك', 'بيكي')} في يلا ويل`, 'Welcome to Yalla Well')}</T>
         <T kind="body" color={c.muted}>{L(`محتاجين شوية بيانات عشان نحسب السعرات ونعمل خطة تمرين مناسبة ${g('ليك', 'ليكي')}.`, 'We need a few details to work out your calories and build a workout plan that fits you.')}</T>
-        <PhotoPicker photo={d.photo} name={d.name} onChange={(photo) => set({ photo })} />
+        <PhotoPicker photo={d.photo} name={d.name} sex={d.sex} onChange={(photo) => set({ photo })} />
         <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L('الصورة اختيارية، تقدر تضيفها بعدين من ملفي.', 'Photo is optional; you can add it later from Me.')}</T>
         <View style={{ gap: 4 }}><T kind="label">{L('الاسم', 'Name')}</T><TextInput value={d.name ?? ''} onChangeText={(name) => set({ name })} style={input} autoComplete="given-name" /></View>
         <View style={[styles.row, { gap: 8 }]}>
@@ -199,7 +213,7 @@ export default function Onboarding() {
 
       {st === 'week' && <>
         <T kind="h1">{L('ده أسبوعك', 'Your week')}</T>
-        <T kind="body" color={c.muted}>{L(`${g('غيّر', 'غيّري')} أي يوم زي ما ${g('انت بتتمرن', 'انتي بتتمرني')}: جيم ولا بيت ولا راحة، ونوع التمرين. ${g('تقدر', 'تقدري')} ${g('تغيّره', 'تغيّريه')} بعدين من صفحة التمرين.`, 'Set each day the way you train: gym, home or rest, and the workout. You can change it later on the Train page.')}</T>
+        <T kind="body" color={c.muted}>{L(`${g('غير', 'غيري')} أي يوم زي ما ${g('انت بتتمرن', 'انتي بتتمرني')}: جيم ولا بيت ولا راحة، ونوع التمرين. ${g('تقدر', 'تقدري')} ${g('تغيره', 'تغيريه')} بعدين من صفحة التمرين.`, 'Set each day the way you train: gym, home or rest, and the workout. You can change it later on the Train page.')}</T>
         <WeekStrip profile={draft} today={-1} />
         <View style={{ borderTopWidth: 1, borderColor: c.line }}>
           {WEEK.map((w, i) => {
@@ -236,7 +250,12 @@ export default function Onboarding() {
         <T kind="h1">{L('عندك أي مرض مناعي أو مزمن؟', 'Any autoimmune or chronic condition?')}</T>
         <T kind="body" color={c.muted}>{L(`${g('اختار', 'اختاري')} كل اللي ينطبق. لو مفيش، ${g('دوس', 'دوسي')} التالي على طول.`, 'Pick all that apply. If none, just tap Next.')}</T>
         <View style={styles.wrap}>{CONDITIONS.map((x) => <Chip key={x.id} label={tx(x.n)} on={d.conditions.includes(x.id)} onPress={() => toggle('conditions', x.id)} />)}</View>
-        <View style={{ gap: 4 }}><T kind="label">{L('حاجة تانية مش في القائمة', 'Something else not on the list')}</T><TextInput value={d.otherCond ?? ''} onChangeText={(otherCond) => set({ otherCond })} style={input} /></View>
+        <View style={{ gap: 4 }}>
+          <T kind="label">{L('حاجة تانية مش في القائمة', 'Something else not on the list')}</T>
+          <TextInput value={d.otherCond ?? ''} onChangeText={(otherCond) => set({ otherCond })} placeholder={L('مثلا: ضغط عالي، قولون عصبي، أنيميا', 'e.g. high blood pressure, IBS, anaemia')} placeholderTextColor={c.muted} style={input} />
+          <T kind="small" color={c.muted}>{L(`لو أكتر من حاجة ${g('افصل', 'افصلي')} بينهم بفاصلة.`, 'Separate several with commas.')}</T>
+        </View>
+        <TypedList text={d.otherCond} g={g} />
       </>}
 
       {st === 'condx' && <>
@@ -260,7 +279,7 @@ export default function Onboarding() {
               {sugar ? <>
                 <T kind="label">{L('السكر بيهبط معاك؟', 'Does your blood sugar drop?').replace('معاك', g('معاك', 'معاكي'))}</T>
                 <View style={styles.wrap}>
-                  {([['never', L('لأ', 'No')], ['sometimes', L('أحيانًا', 'Sometimes')], ['often', L('كتير', 'Often')]] as const).map(([k, l]) => (
+                  {([['never', L('لأ', 'No')], ['sometimes', L('أحيانا', 'Sometimes')], ['often', L('كتير', 'Often')]] as const).map(([k, l]) => (
                     <Chip key={k} label={l} on={ci.hypos === k} onPress={() => setInfo(id, { hypos: ci.hypos === k ? undefined : k })} />
                   ))}
                 </View>
@@ -274,21 +293,26 @@ export default function Onboarding() {
                   <Chip label={L('لأ', 'No')} on={ci.stiff === false} onPress={() => setInfo(id, { stiff: ci.stiff === false ? undefined : false })} />
                 </View>
               </> : null}
-              {gut ? <View style={{ gap: 4 }}><T kind="label">{L('أكلات بتتعبك', 'Foods that upset you').replace('بتتعبك', g('بتتعبك', 'بتتعبكي'))}</T><TextInput value={ci.trigger ?? ''} onChangeText={(v) => setInfo(id, { trigger: v })} placeholder={L('مثلًا: اللبن، المقلي', 'e.g. milk, fried food')} placeholderTextColor={c.muted} style={input} /></View> : null}
+              {gut ? <View style={{ gap: 4 }}><T kind="label">{L('أكلات بتتعبك', 'Foods that upset you').replace('بتتعبك', g('بتتعبك', 'بتتعبكي'))}</T><TextInput value={ci.trigger ?? ''} onChangeText={(v) => setInfo(id, { trigger: v })} placeholder={L('مثلا: اللبن، المقلي', 'e.g. milk, fried food')} placeholderTextColor={c.muted} style={input} /></View> : null}
             </Card>
           );
         })}
+        {splitItems(d.otherCond).map((t, i) => {
+          const hit = matchItems(t);
+          if (hit.length) return hit.map((k) => <KnownCard key={`${i}-${k.id}`} item={k} text={t} g={g} />);
+          const key = itemKey(t);
+          return <UnknownCard key={`${i}-u`} text={t} ans={d.extra?.[key]} g={g} onChange={(a) => setD((x) => ({ ...x, extra: { ...x.extra, [key]: a } }))} />;
+        })}
         <View style={{ gap: 4 }}>
           <T kind="label">{L(`الدكتور قال${g('لك', 'لك')} تبعد${g('', 'ي')} عن حاجة؟`, 'Did your doctor tell you to avoid anything?')}</T>
-          <TextInput value={d.doctorSaid ?? ''} onChangeText={(v) => set({ doctorSaid: v })} multiline placeholder={L('مثلًا: بلاش رفع أوزان تقيلة، بلاش صيام', 'e.g. no heavy lifting, no fasting')} placeholderTextColor={c.muted} style={[input, { minHeight: 70, textAlignVertical: 'top' }]} />
+          <TextInput value={d.doctorSaid ?? ''} onChangeText={(v) => set({ doctorSaid: v })} multiline placeholder={L('مثلا: بلاش رفع أوزان تقيلة، بلاش صيام', 'e.g. no heavy lifting, no fasting')} placeholderTextColor={c.muted} style={[input, { minHeight: 70, textAlignVertical: 'top' }]} />
         </View>
       </>}
 
       {st === 'meds' && <>
         <T kind="h1">{L(`${g('بتاخد', 'بتاخدي')} أدوية بشكل مستمر؟`, 'Do you take any regular medication?')}</T>
-        <T kind="body" color={c.muted}>{L('ده بيأثر على الأكل والتمرين، زي الكورتيزون ودوا الغدة.', 'Some medications, like cortisone and thyroid meds, affect food and training.')}</T>
-        <View style={styles.wrap}>{MEDS.map((x) => <Chip key={x.id} label={tx(x.n)} on={d.meds.includes(x.id)} onPress={() => toggle('meds', x.id)} />)}</View>
-        <View style={{ gap: 4 }}><T kind="label">{L('دوا تاني', 'Other medication')}</T><TextInput value={d.otherMeds ?? ''} onChangeText={(otherMeds) => set({ otherMeds })} style={input} /></View>
+        <T kind="body" color={c.muted}>{L(`والفيتامينات والمكملات كمان. ${g('حدد', 'حددي')} لكل واحد الجرعة والعدد وكل قد إيه والميعاد، وهنفكر${g('ك', 'كي')} بيه وهنراعيه في الأكل والتمرين.`, "Vitamins and supplements too. Set each one's dose, how many, how often and when; we'll remind you and take it into account in food and training.")}</T>
+        <MedList value={d} onChange={(patch) => setD((x) => ({ ...x, ...patch }))} />
       </>}
 
       {st === 'pain' && <>
@@ -322,7 +346,7 @@ export default function Onboarding() {
             <T kind="h2" color={c.onHero}>{tx(SCHEDULES[full.schedule].n)}</T>
             <WeekStrip profile={full} today={-1} />
           </Card>
-          {notes.length ? <Card><T kind="h2">{L('عدّلنا الخطة على حسب حالتك', 'We adjusted the plan to your health')}</T>{notes.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
+          {notes.length ? <Card><T kind="h2">{L('عدلنا الخطة على حسب حالتك', 'We adjusted the plan to your health')}</T>{notes.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}
           <T kind="small" style={{ textAlign: 'center' }}>{L(`التطبيق ده للمساعدة ومش بديل عن دكتورك. لو عندك مرض مناعي أو ${g('بتاخد', 'بتاخدي')} أدوية، ${g('اعرض', 'اعرضي')} الخطة على دكتورك.`, "This app is here to help, not to replace your doctor. If you have an autoimmune condition or take medication, show this plan to your doctor.")}</T>
         </>;
       })()}

@@ -3,12 +3,13 @@ import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import type { DayLog } from '../lib/day.ts';
-import { CHECK_ITEMS, checkDone, dosesOn, roughDay, timeText, type CheckIn, type EasyWhy, type Level } from '../lib/health.ts';
+import { CHECK_ITEMS, checkDone, dosesOn, roughDay, type CheckIn, type EasyWhy, type Level } from '../lib/health.ts';
 import { L } from '../lib/i18n.ts';
 import type { Profile } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
 import { fonts, useColors } from '../theme.ts';
-import { Card, T, styles } from './ui.tsx';
+import { timeLabel } from './pickers.tsx';
+import { Card, RoundCheck, T, styles } from './ui.tsx';
 
 type G = (m: string, f: string) => string;
 
@@ -26,25 +27,22 @@ export function TodayDoses({ profile, day, update, g }: { profile: Profile; day:
   return (
     <Card>
       <View style={styles.rowBetween}>
-        <T kind="h2">{L('أدوية النهارده', "Today's medicines")}</T>
+        <T kind="h2">{doses.some((x) => x.kind === 'vit') ? doses.some((x) => x.kind === 'med') ? L('أدوية وفيتامينات النهارده', "Today's medicines and supplements") : L('فيتامينات النهارده', "Today's supplements") : L('أدوية النهارده', "Today's medicines")}</T>
         <Pressable onPress={() => { play('tap'); router.push('/health'); }} hitSlop={8} accessibilityRole="button">
-          <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>{L(g('عدّل المواعيد', 'عدّلي المواعيد'), 'Edit times')}</T>
+          <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>{L(g('عدل المواعيد', 'عدلي المواعيد'), 'Edit times')}</T>
         </Pressable>
       </View>
       {doses.map((x, i) => {
         const on = taken.includes(x.key);
         return (
           <View key={x.key} style={[styles.row, { gap: 10, alignItems: 'flex-start', paddingVertical: 6, borderTopWidth: i ? 1 : 0, borderColor: c.line }]}>
-            <Pressable onPress={() => tick(x.key)} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
-              accessibilityLabel={L(`${g('خدت', 'خدتي')} ${x.name}`, `Took ${x.name}`)}
-              style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: c.petrol, backgroundColor: on ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
-              {on ? <Text style={{ color: c.onPetrol, fontSize: 15, fontWeight: '700' }}>✓</Text> : null}
-            </Pressable>
+            <View style={{ marginTop: 2 }}><RoundCheck on={on} onPress={() => tick(x.key)} label={L(`${g('خدت', 'خدتي')} ${x.name}`, `Took ${x.name}`)} /></View>
             <View style={{ flex: 1, gap: 2 }}>
               <View style={[styles.row, { gap: 8 }]}>
                 <T kind="body" style={{ fontFamily: fonts.bodyMedium, flexShrink: 1, opacity: on ? 0.6 : 1 }}>{x.name}</T>
-                <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, color: c.lime }}>{timeText(x.time)}</Text>
+                <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, color: c.petrol }}>{timeLabel(x.time)}</Text>
               </View>
+              {x.dose ? <T kind="small" color={c.ink}>{x.dose}</T> : null}
               {x.how && !on ? <T kind="small">{x.how}</T> : null}
             </View>
           </View>
@@ -105,7 +103,7 @@ export function EasyBanner({ why, med, update, g }: { why: EasyWhy | null; med?:
           : L(`من إجاباتك النهارده خلينا التمرين يوم تعافي خفيف.`, "From your check-in, today's workout is an easy recovery day.")}
       </T>
       <Pressable onPress={() => { play('tap'); update((d) => ({ ...d, normalDay: true })); }} accessibilityRole="button" hitSlop={6}>
-        <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>{L(`${g('أنا كويس', 'أنا كويسة')}، رجّع التمرين العادي`, "I'm fine, bring back my normal workout")}</T>
+        <T kind="small" color={c.petrol} style={{ fontFamily: fonts.bodyMedium }}>{L(`${g('أنا كويس', 'أنا كويسة')}، رجع التمرين العادي`, "I'm fine, bring back my normal workout")}</T>
       </Pressable>
     </View>
   );

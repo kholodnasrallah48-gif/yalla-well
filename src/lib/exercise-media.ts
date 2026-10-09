@@ -52,7 +52,7 @@ export const MEDIA: Record<string, ExerciseMedia> = {
   g_calf: {
     en: 'Standing calf raise machine',
     img: ['Standing_Calf_Raises/0.jpg', 'Standing_Calf_Raises/1.jpg'],
-    cues: ['الطلوع لأعلى نقطة على المشط', 'ثبات ثانية فوق', 'النزول ببطء لآخر مطّة', 'الركبة مفرودة من غير قفل'],
+    cues: ['الطلوع لأعلى نقطة على المشط', 'ثبات ثانية فوق', 'النزول ببطء لآخر مطة', 'الركبة مفرودة من غير قفل'],
   },
   g_bench: {
     en: 'Dumbbell bench press',
@@ -67,7 +67,7 @@ export const MEDIA: Record<string, ExerciseMedia> = {
   g_pecdeck: {
     en: 'Pec deck machine fly',
     img: ['Butterfly/0.jpg', 'Butterfly/1.jpg'],
-    cues: ['الكوع مثني خفيف وثابت', 'الضم قدام الصدر وعصر ثانية', 'الفتح ببطء لحد مطّة مريحة', 'الكتف لتحت بعيد عن الودن'],
+    cues: ['الكوع مثني خفيف وثابت', 'الضم قدام الصدر وعصر ثانية', 'الفتح ببطء لحد مطة مريحة', 'الكتف لتحت بعيد عن الودن'],
   },
   g_latpull: {
     en: 'Lat pulldown',
@@ -117,7 +117,7 @@ export const MEDIA: Record<string, ExerciseMedia> = {
   g_inclinedb: {
     en: 'Incline dumbbell press',
     img: ['Incline_Dumbbell_Press/0.jpg', 'Incline_Dumbbell_Press/1.jpg'],
-    cues: ['البنش على ميل ٣٠ درجة تقريباً', 'لوحين الكتف مضمومين', 'النزول ببطء لأعلى الصدر', 'زفير مع الدفع لفوق'],
+    cues: ['البنش على ميل ٣٠ درجة تقريبا', 'لوحين الكتف مضمومين', 'النزول ببطء لأعلى الصدر', 'زفير مع الدفع لفوق'],
   },
   g_inclinem: {
     en: 'Incline machine chest press',
@@ -137,7 +137,7 @@ export const MEDIA: Record<string, ExerciseMedia> = {
   g_ohtricep: {
     en: 'Cable overhead triceps extension',
     img: ['Cable_Rope_Overhead_Triceps_Extension/0.jpg', 'Cable_Rope_Overhead_Triceps_Extension/1.jpg'],
-    cues: ['الكوع ثابت وقريب من الراس', 'الفرد لقدام وفوق لآخر المدى', 'البطن مشدودة من غير تقويس', 'الرجوع ببطء لمطّة كاملة'],
+    cues: ['الكوع ثابت وقريب من الراس', 'الفرد لقدام وفوق لآخر المدى', 'البطن مشدودة من غير تقويس', 'الرجوع ببطء لمطة كاملة'],
   },
   g_assistpull: {
     en: 'Assisted pull-up machine',
@@ -177,7 +177,7 @@ export const MEDIA: Record<string, ExerciseMedia> = {
   g_seatedcalf: {
     en: 'Seated calf raise machine',
     img: ['Seated_Calf_Raise/0.jpg', 'Seated_Calf_Raise/1.jpg'],
-    cues: ['المشط على الحافة والكعب حر', 'الطلوع لأعلى نقطة وثبات ثانية', 'النزول ببطء لآخر مطّة', 'حركة كاملة من غير نط'],
+    cues: ['المشط على الحافة والكعب حر', 'الطلوع لأعلى نقطة وثبات ثانية', 'النزول ببطء لآخر مطة', 'حركة كاملة من غير نط'],
   },
   g_glutekick: {
     en: 'Cable glute kickback',
@@ -327,7 +327,7 @@ export const MEDIA: Record<string, ExerciseMedia> = {
   h_mobility: {
     en: 'Full body mobility stretching routine',
     img: ['Worlds_Greatest_Stretch/0.jpg', 'Worlds_Greatest_Stretch/1.jpg'],
-    cues: ['حركات بطيئة من غير شد زيادة', 'ثبات ٢٠-٣٠ ثانية في كل مطّة', 'نفس عميق مع كل مطّة', 'من غير ألم، مطّة مريحة بس'],
+    cues: ['حركات بطيئة من غير شد زيادة', 'ثبات ٢٠-٣٠ ثانية في كل مطة', 'نفس عميق مع كل مطة', 'من غير ألم، مطة مريحة بس'],
   },
   h_breath: {
     en: 'Diaphragmatic breathing relaxation',

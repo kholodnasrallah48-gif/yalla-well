@@ -32,7 +32,7 @@ export function MealIdea({ recipe: r, meal, budget, factor, why, g, onAnother }:
         </View>
       </Pressable>
       {factor < 1 ? (
-        <T kind="small" color={c.warn}>{L(`${g('خد', 'خدي')} ${portionText(factor)} بس عشان ${g('تفضل', 'تفضلي')} في حدود سعراتك (تقريبًا)`, `Have ${portionText(factor)} to stay within your calories (roughly)`)}</T>
+        <T kind="small" color={c.warn}>{L(`${g('خد', 'خدي')} ${portionText(factor)} بس عشان ${g('تفضل', 'تفضلي')} في حدود سعراتك (تقريبا)`, `Have ${portionText(factor)} to stay within your calories (roughly)`)}</T>
       ) : null}
       <View style={[styles.row, { gap: 8 }]}>
         <Pressable onPress={open} accessibilityRole="button"

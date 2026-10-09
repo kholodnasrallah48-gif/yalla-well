@@ -7,9 +7,10 @@ import { TourTarget, startTour } from '../../components/TourTarget.tsx';
 import { Btn, Card, Chip, NoteView, Screen, T, WeekStrip, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
 import { notifyOn, onNotifyChange, setNotifyOn, testReminder } from '../../lib/notify.ts';
-import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
+import { CONDITIONS, PAINS, SCHEDULES } from '../../lib/data.ts';
+import { doseText, medIds, medName, medPlan } from '../../lib/health.ts';
 import { fmt } from '../../lib/day.ts';
-import { L, getLang, num, setLang, tx } from '../../lib/i18n.ts';
+import { L, getLang, num, setLang, toNum, tx } from '../../lib/i18n.ts';
 import { genderFor, medical, targets } from '../../lib/plan.ts';
 import { ux } from '../../lib/translate.ts';
 import { logWeight, weightChange } from '../../lib/weight.ts';
@@ -35,9 +36,9 @@ export default function Me() {
   const T0 = targets(p);
   const M = medical(p);
   const W = weightChange(p);
-  const okKg = Number(kg) >= 30 && Number(kg) <= 300;
+  const okKg = toNum(kg) >= 30 && toNum(kg) <= 300;
   const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherCond)].filter(Boolean);
-  const meds = [...p.meds.map((id) => tx(MEDS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherMeds)].filter(Boolean);
+  const meds = [...medIds(p).map((id) => { const pl = medPlan(p, id); const d = doseText(pl); return `${id.startsWith('x:') ? ux(p, medName(id, pl)) : medName(id, pl)}${d ? ` (${d})` : ''}`; }), ux(p, p.otherMeds)].filter(Boolean);
   const ownCount = Object.values(p.own ?? {}).reduce((a, x) => a + x.length, 0);
   const dropCount = Object.values(p.drop ?? {}).reduce((a, x) => a + x.length, 0);
   const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherPain)].filter(Boolean);
@@ -45,11 +46,11 @@ export default function Me() {
   return (
     <Screen title={L('ملفي', 'Me')} name="me">
       <Card>
-        <PhotoPicker photo={p.photo} name={p.name} onChange={(photo) => saveProfile({ ...p, photo })} />
+        <PhotoPicker photo={p.photo} name={p.name} sex={p.sex} onChange={(photo) => saveProfile({ ...p, photo })} />
         <T kind="h2" style={{ textAlign: 'center' }}>{p.name || L('بياناتي', 'My details')}</T>
         <T kind="small">{L(`${p.sex === 'm' ? 'ذكر' : 'أنثى'} · ${p.age} سنة · ${p.height} سم · ${p.weight} كجم`, `${p.sex === 'm' ? 'Male' : 'Female'} · ${p.age} yrs · ${p.height} cm · ${p.weight} kg`)}</T>
         <T kind="small">{L('الهدف:', 'Goal:')} {L(GOALS[p.goal], GOALS_EN[p.goal])} · {tx(SCHEDULES[p.schedule].n)}</T>
-        <Btn kind="outline" title={L(g('عدّل بياناتي', 'عدّلي بياناتي'), 'Edit my details')} onPress={() => router.push('/onboarding')} />
+        <Btn kind="outline" title={L(g('عدل بياناتي', 'عدلي بياناتي'), 'Edit my details')} onPress={() => router.push('/onboarding')} />
       </Card>
 
       <TourTarget id="me.plan">
@@ -58,7 +59,7 @@ export default function Me() {
           <T kind="h2">{tx(SCHEDULES[p.schedule].n)}</T>
           <WeekStrip profile={p} today={-1} />
           {ownCount || dropCount ? <T kind="small">{L(`${g('ضفت', 'ضفتي')} ${num(ownCount)} تمرين بنفسك، و${g('شلت', 'شلتي')} ${num(dropCount)} من الخطة.`, `You added ${ownCount} exercises of your own and removed ${dropCount} from the plan.`)}</T> : null}
-          <Btn kind="outline" title={L(`${g('غيّر', 'غيّري')} النظام أو ${g('رتّب', 'رتّبي')} أيامك`, 'Change plan or arrange your days')} onPress={() => router.push({ pathname: '/onboarding', params: { part: 'plan' } })} />
+          <Btn kind="outline" title={L(`${g('غير', 'غيري')} النظام أو ${g('رتب', 'رتبي')} أيامك`, 'Change plan or arrange your days')} onPress={() => router.push({ pathname: '/onboarding', params: { part: 'plan' } })} />
           <Btn kind="text" title={L(`${g('شوف', 'شوفي')} الجولة التعريفية تاني`, 'Replay the app tour')} sound="swoosh" onPress={startTour} />
         </Card>
       </TourTarget>
@@ -74,12 +75,12 @@ export default function Me() {
       </Card>
 
       <Card>
-        <T kind="h2">{L(g('سجّل وزنك', 'سجّلي وزنك'), 'Log your weight')}</T>
+        <T kind="h2">{L(g('سجل وزنك', 'سجلي وزنك'), 'Log your weight')}</T>
         {W.diff !== 0 ? <T kind="small" color={W.diff < 0 ? c.ok : c.muted}>{L(`بدأت ${W.start} كجم، دلوقتي ${W.now} كجم (${W.diff > 0 ? '+' : ''}${W.diff} كجم)`, `Started ${W.start} kg, now ${W.now} kg (${W.diff > 0 ? '+' : ''}${W.diff} kg)`)}</T> : null}
         <View style={[styles.row, { gap: 8 }]}>
           <TextInput value={kg} onChangeText={setKg} keyboardType="decimal-pad" placeholder={String(p.weight)} placeholderTextColor={c.muted}
             style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, textAlign: 'center' }} />
-          <Btn title={L('حفظ', 'Save')} disabled={!okKg} onPress={() => { saveProfile(logWeight(p, Number(kg))); setKg(''); }} />
+          <Btn title={L('حفظ', 'Save')} disabled={!okKg} onPress={() => { saveProfile(logWeight(p, toNum(kg))); setKg(''); }} />
         </View>
       </Card>
 
@@ -105,7 +106,7 @@ export default function Me() {
       <Card>
         <T kind="h2">{L('الهيستوري الطبي', 'Medical history')}</T>
         <T kind="small">{L('الأمراض:', 'Conditions:')} {conds.length ? conds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
-        <T kind="small">{L('الأدوية المستمرة:', 'Regular medications:')} {meds.length ? meds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
+        <T kind="small">{L('الأدوية والفيتامينات:', 'Medicines and supplements:')} {meds.length ? meds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
         <T kind="small">{L('أماكن الألم:', 'Pain areas:')} {pains.length ? pains.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
       </Card>
 

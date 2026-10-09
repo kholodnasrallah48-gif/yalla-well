@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { AppState, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Bg, Btn, Card, NoteView, T, styles } from '../../components/ui.tsx';
+import { Head } from '../../components/Mascot.tsx';
+import { Bg, Btn, Card, Kicker, NoteView, Num, RADIUS, START, T, styles } from '../../components/ui.tsx';
 import { weekIndex } from '../../lib/day.ts';
 import { MEDIA } from '../../lib/exercise-media.ts';
 import { L, num, tx } from '../../lib/i18n.ts';
@@ -22,17 +23,17 @@ const ar = (n: number) => num(n);
 
 function Stepper({ label, value, step, onChange }: { label: string; value: number; step: number; onChange: (v: number) => void }) {
   const c = useColors();
-  const btn = { width: 44, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' } as const;
+  const btn = { width: 44, height: 48, borderRadius: RADIUS, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' } as const;
   return (
     <View style={{ flex: 1, gap: 4, alignItems: 'center' }}>
       <T kind="label">{label}</T>
       <View style={[styles.row, { gap: 8 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={L(`أقل ${label}`, `Less ${label}`)} onPress={() => onChange(Math.max(0, +(value - step).toFixed(1)))} style={btn}>
-          <Text style={{ fontSize: 22, color: c.petrol, fontFamily: fonts.display }}>−</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={L(`أقل ${label}`, `Less ${label}`)} onPress={() => { play('pop'); onChange(Math.max(0, +(value - step).toFixed(1))); }} style={({ pressed }) => [btn, pressed && styles.pressed]}>
+          <Text style={{ fontSize: 22, lineHeight: 26, color: c.ink, fontFamily: fonts.displaySemi }}>−</Text>
         </Pressable>
-        <Text style={{ minWidth: 48, textAlign: 'center', fontFamily: fonts.display, fontSize: 24, color: c.ink, fontVariant: ['tabular-nums'] }}>{value}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={L(`أكتر ${label}`, `More ${label}`)} onPress={() => onChange(+(value + step).toFixed(1))} style={btn}>
-          <Text style={{ fontSize: 22, color: c.petrol, fontFamily: fonts.display }}>+</Text>
+        <Num size={32} weight="black" color={c.petrol} style={{ minWidth: 48, textAlign: 'center' }}>{String(value)}</Num>
+        <Pressable accessibilityRole="button" accessibilityLabel={L(`أكتر ${label}`, `More ${label}`)} onPress={() => { play('pop'); onChange(+(value + step).toFixed(1)); }} style={({ pressed }) => [btn, pressed && styles.pressed]}>
+          <Text style={{ fontSize: 22, lineHeight: 26, color: c.ink, fontFamily: fonts.displaySemi }}>+</Text>
         </Pressable>
       </View>
     </View>
@@ -50,7 +51,7 @@ function WeightInput({ label, value, onChange }: { label: string; value: number;
       <TextInput value={text} keyboardType="decimal-pad" inputMode="decimal" returnKeyType="done" selectTextOnFocus placeholder="0" placeholderTextColor={c.muted}
         accessibilityLabel={label}
         onChangeText={(t) => { const clean = t.replace(',', '.').replace(/[^0-9.]/g, ''); setText(clean); const n = parseFloat(clean); if (!Number.isNaN(n)) onChange(Math.min(500, n)); else if (!clean) onChange(0); }}
-        style={{ width: '100%', height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: c.petrol, backgroundColor: c.surface, textAlign: 'center', fontFamily: fonts.display, fontSize: 24, color: c.ink }} />
+        style={{ width: '100%', height: 48, borderRadius: RADIUS, borderWidth: 1, borderColor: c.dim, backgroundColor: c.panel, textAlign: 'center', fontFamily: fonts.numSemi, fontSize: 26, color: c.ink }} />
     </View>
   );
 }
@@ -115,12 +116,14 @@ export default function ExerciseScreen() {
   const done = sets.length >= item.sets;
 
   const logSet = () => {
-    updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: [...(d.sets[id] ?? []), { w, r }] } }));
+    updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: [...(d.sets[id] ?? []), { w, r }] }, trainStart: d.trainStart ?? Date.now() }));
     if (sets.length + 1 < item.sets) startRest(item.rest);
   };
   const finish = () => {
     if (strength && sets.length) saveLift(id, { date: today, w: Math.max(...sets.map((s) => s.w)), reps: sets.map((s) => s.r), top: item.reps[1] });
-    updateDay((d) => ({ ...d, done: d.done.includes(id) ? d.done : [...d.done, id] }));
+    const all = ses.items.every((x) => x.id === id || day.done.includes(x.id));
+    if (all) play('win');
+    updateDay((d) => ({ ...d, done: d.done.includes(id) ? d.done : [...d.done, id], trainStart: d.trainStart ?? Date.now(), trainEnd: all ? Date.now() : d.trainEnd }));
     router.back();
   };
   const video = () => WebBrowser.openBrowserAsync(`https://www.youtube.com/results?search_query=${encodeURIComponent((media?.en ?? tx(item.ex.n)) + ' proper form')}`, {
@@ -129,18 +132,22 @@ export default function ExerciseScreen() {
 
   return (
     <Bg><ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 32, gap: 12 }}>
-      <View style={styles.rowBetween}>
-        <T kind="h1" style={{ flexShrink: 1 }}>{tx(item.ex.n)}</T>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={L('قفل', 'Close')} hitSlop={10}>
-          <Text style={{ fontSize: 26, color: c.muted }}>×</Text>
+      <View style={[styles.rowBetween, { alignItems: 'flex-start' }]}>
+        <View style={{ flexShrink: 1 }}>
+          <Kicker>{L(`التمرين ${num(ses.items.indexOf(item) + 1)} من ${num(ses.items.length)}`, `Exercise ${ses.items.indexOf(item) + 1} of ${ses.items.length}`)}</Kicker>
+          <T kind="h1" style={{ fontSize: 30, lineHeight: 46 }}>{tx(item.ex.n)}</T>
+        </View>
+        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={L('قفل', 'Close')} hitSlop={10}
+          style={({ pressed }) => [{ width: 36, height: 36, borderRadius: RADIUS, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
+          <Text style={{ fontSize: 22, lineHeight: 24, color: c.muted }}>×</Text>
         </Pressable>
       </View>
       <T kind="small">{item.rx}</T>
-      {GEAR[item.id] ? <T kind="label" color={c.lime}>{L('الأداة: ', 'Equipment: ')}{L(GEAR[item.id].ar, GEAR[item.id].en)}</T> : null}
+      {GEAR[item.id] || item.gear ? <T kind="label" color={c.lime}>{L('الأداة: ', 'Equipment: ')}{GEAR[item.id] ? L(GEAR[item.id].ar, GEAR[item.id].en) : item.gear}</T> : null}
       {item.why ? <T kind="label" color={c.warn}>{L('اتبدل: ', 'Swapped: ')}{item.why}</T> : null}
 
       {media?.img.length ? (
-        <View style={{ borderRadius: 18, overflow: 'hidden', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: c.line }}>
+        <View style={{ borderRadius: RADIUS, overflow: 'hidden', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: c.line }}>
           <Image source={{ uri: IMG + media.img[frame % media.img.length] }} style={{ width: '100%', aspectRatio: 4 / 3 }} resizeMode="contain" accessibilityLabel={L(`صورة توضيحية لـ ${item.ex.n}`, `How-to picture of ${tx(item.ex.n)}`)} />
         </View>
       ) : null}
@@ -157,7 +164,7 @@ export default function ExerciseScreen() {
                 const on = o.id === item.id;
                 return (
                   <Pressable key={o.id} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => pickGear(o.id)}
-                    style={({ pressed }) => [{ borderRadius: 14, borderWidth: on ? 2 : 1, borderColor: on ? c.petrol : c.line, backgroundColor: c.surface, paddingVertical: 10, paddingHorizontal: 12, gap: 2 }, pressed && styles.pressed]}>
+                    style={({ pressed }) => [{ borderRadius: RADIUS, borderWidth: on ? 2 : 1, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.soft : 'transparent', paddingVertical: 10, paddingHorizontal: 12, gap: 2 }, pressed && styles.pressed]}>
                     <T kind="h3">{tx(o.ex.n)}</T>
                     {o.gear ? <T kind="small">{o.gear}</T> : null}
                   </Pressable>
@@ -174,7 +181,7 @@ export default function ExerciseScreen() {
           <T kind="h2">{L('خلي بالك من', 'Watch your form')}</T>
           {media.cues.map((cue, i) => (
             <View key={i} style={[styles.row, { gap: 8, alignItems: 'flex-start' }]}>
-              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.lime, marginTop: 9 }} />
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.petrol, marginTop: 9 }} />
               <T kind="body" style={{ flex: 1 }}>{tx(cue)}</T>
             </View>
           ))}
@@ -197,19 +204,35 @@ export default function ExerciseScreen() {
             <Stepper label={L('العدات', 'Reps')} value={r} step={1} onChange={setR} />
           </View>
           {rest > 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: 8, borderRadius: 14, backgroundColor: c.soft }}>
-              <T kind="label">{L('راحة', 'Rest')}</T>
-              <Text style={{ fontFamily: fonts.display, fontSize: 36, color: c.petrol, fontVariant: ['tabular-nums'] }}>{Math.floor(rest / 60)}:{String(rest % 60).padStart(2, '0')}</Text>
-              <Btn kind="text" title={L('تخطي الراحة', 'Skip rest')} onPress={skipRest} />
+            <View style={[styles.row, { gap: 12, minHeight: 58, paddingHorizontal: 14, borderRadius: RADIUS, backgroundColor: c.panel, borderWidth: 1, borderColor: c.line }]}>
+              <T kind="h2" style={{ fontSize: 18 }}>{L('راحة', 'Rest')}</T>
+              <Num size={36} weight="black" color={c.petrol}>{`${String(Math.floor(rest / 60)).padStart(2, '0')}:${String(rest % 60).padStart(2, '0')}`}</Num>
+              <View style={{ flex: 1, height: 4, backgroundColor: c.soft }}>
+                <View style={{ height: 4, width: `${Math.min(100, (rest / Math.max(1, item.rest)) * 100)}%`, backgroundColor: c.petrol }} />
+              </View>
+              <Pressable onPress={() => { play('tap'); skipRest(); }} accessibilityRole="button"
+                style={({ pressed }) => [{ minHeight: 36, paddingHorizontal: 12, borderRadius: RADIUS, borderWidth: 1, borderColor: c.line, justifyContent: 'center' }, pressed && styles.pressed]}>
+                <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, color: c.ink }}>{L('تخطي', 'Skip')}</Text>
+              </Pressable>
             </View>
           ) : null}
-          {sets.map((s, i) => (
-            <View key={i} style={[styles.rowBetween, { paddingVertical: 4 }]}>
-              <T kind="body">{L(`مجموعة ${ar(i + 1)}`, `Set ${ar(i + 1)}`)}</T>
-              <T kind="body" style={{ fontVariant: ['tabular-nums'] }}>{s.w} {L('كجم', 'kg')} × {s.r}</T>
+          {sets.length ? (
+            <View>
+              <View style={[styles.row, { paddingBottom: 2 }]}>
+                {[L('مجموعة', 'Set'), L('كجم', 'kg'), L('عدات', 'Reps')].map((h) => <T key={h} kind="label" color={c.dim} style={{ flex: 1, fontSize: 11 }}>{h}</T>)}
+                <View style={{ width: 28 }} />
+              </View>
+              {sets.map((s, i) => (
+                <View key={i} style={[styles.row, { minHeight: 40, borderTopWidth: 1, borderColor: c.line }]}>
+                  <Num size={22} color={c.dim} style={{ flex: 1, textAlign: START() }}>{String(i + 1)}</Num>
+                  <Num size={22} color={c.muted} style={{ flex: 1, textAlign: START() }}>{String(s.w)}</Num>
+                  <Num size={22} color={c.muted} style={{ flex: 1, textAlign: START() }}>{String(s.r)}</Num>
+                  <View style={{ width: 28, alignItems: 'center' }} accessibilityLabel={L(`مجموعة ${ar(i + 1)} اتسجلت`, `Set ${i + 1} logged`)}><Head on size={16} /></View>
+                </View>
+              ))}
             </View>
-          ))}
-          {!done ? <Btn title={L(`سجّل${g('', 'ي')} مجموعة ${ar(sets.length + 1)}`, `Log set ${ar(sets.length + 1)}`)} onPress={logSet} /> : null}
+          ) : null}
+          {!done ? <Btn title={L(`سجّل${g('', 'ي')} مجموعة ${ar(sets.length + 1)}`, `Log set ${ar(sets.length + 1)}`)} onPress={logSet} sound="add" /> : null}
           {sets.length ? <Btn kind="text" title={L('امسح آخر مجموعة', 'Delete last set')} onPress={() => updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: (d.sets[id] ?? []).slice(0, -1) } }))} /> : null}
         </Card>
       ) : null}

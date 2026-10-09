@@ -7,6 +7,7 @@ import Svg, { Defs, Path, RadialGradient, Circle, Stop, LinearGradient } from 'r
 import { dayKey } from '../lib/day.ts';
 import { L, num } from '../lib/i18n.ts';
 import { play } from '../lib/sound.ts';
+import { tourSeen } from './TourTarget.tsx';
 import { fonts, useColors } from '../theme.ts';
 
 const KEY = 'yallawell:lastOpen';
@@ -39,10 +40,11 @@ export function DailyFire({ streak }: { streak: number }) {
   const flick = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const today = dayKey(new Date());
-    AsyncStorage.getItem(KEY).then((last) => {
+    Promise.all([AsyncStorage.getItem(KEY), tourSeen()]).then(([last, seen]) => {
       if (last === today) return;
       AsyncStorage.setItem(KEY, today).catch(() => {});
-      setShow(true);
+      // On the very first visit the guided tour plays instead.
+      if (seen) setShow(true);
     }).catch(() => {});
   }, []);
   useEffect(() => {
@@ -91,7 +93,7 @@ export function DailyFire({ streak }: { streak: number }) {
                   : L('يلا نبدأ الستريك من النهارده', "Let's start a streak today")}
               </Text>
               <View style={{ marginTop: 10, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 99, backgroundColor: c.petrol }}>
-                <Text style={{ fontFamily: fonts.display, fontSize: 15, color: c.onPetrol }}>{L('يلا بينا', "Let's go")}</Text>
+                <Text style={{ fontFamily: fonts.displaySemi, fontSize: 15, color: c.onPetrol }}>{L('يلا بينا', "Let's go")}</Text>
               </View>
             </View>
           </Animated.View>

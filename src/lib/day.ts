@@ -22,6 +22,9 @@ export type DayLog = {
   check?: CheckIn;
   /** The person chose the normal workout on a day we'd made easy (after a weekly dose or a rough check-in). */
   normalDay?: boolean;
+  /** When the workout started (first exercise or set ticked) and finished (last one ticked), in ms, for the match clock. */
+  trainStart?: number;
+  trainEnd?: number;
 };
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });

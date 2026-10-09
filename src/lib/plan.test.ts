@@ -12,7 +12,7 @@ import { reportHTML, weekReport, weekStart } from './report.ts';
 import { fromOFF } from './barcode.ts';
 import { fromOFFHit, fromUSDA, toEnglish, toFood } from './online.ts';
 import { addFood, blankDay, changePortion, dayKey, totals, weekIndex, type DayLog } from './day.ts';
-import { gearOptions, medical, sessionFor, targets, weekSessions, type Profile } from './plan.ts';
+import { gearOptions, medical, recommendPlan, sessionFor, splitLabel, targets, weekSessions, type Profile } from './plan.ts';
 import { PHASES, programWeek, suggestWeight } from './progress.ts';
 
 const base: Profile = {
@@ -413,4 +413,47 @@ test('condition details change the plan: active flare, frequent lows, high HbA1c
   assert.ok(M.train.some((n) => n.tone === 'bad' && n.text.includes('9.4')));
   const calm = medical({ ...base, conditions: ['ra'], condInfo: { ra: { status: 'stable' } } });
   assert.equal(calm.mod.shortSessions, false);
+});
+
+test('exercises the person adds show every time that workout comes up, after the plan ones', () => {
+  const p: Profile = { ...base, schedule: '3', own: { push: [{ id: 'u_1', n: 'تمرين صدر على جهاز الهامر', gear: 'Hammer Strength Chest Press' }, { id: 'g_dbfly', ref: 'g_dbfly' }] } };
+  for (const week of [0, 1]) {
+    const s = sessionFor(p, 0, false, week)!;
+    const own = s.items.filter((x) => x.own);
+    assert.deepEqual(own.map((x) => x.id), ['u_1', 'g_dbfly']);
+    assert.equal(own[0].gear, 'Hammer Strength Chest Press');
+    assert.ok(own[0].sets > 0, 'own exercises get sets and reps');
+  }
+  // Pull day is untouched.
+  assert.ok(!sessionFor(p, 2, false, 0)!.items.some((x) => x.own));
+  // A recovery day doesn't add them.
+  assert.ok(!sessionFor(p, 0, true, 0)!.items.some((x) => x.own));
+});
+
+test('an exercise taken out of a workout stays out in both weeks', () => {
+  const p: Profile = { ...base, schedule: '3', drop: { push: ['g_bench'] } };
+  const a = sessionFor(p, 0, false, 0)!.items.map((x) => x.base);
+  const b = sessionFor(p, 0, false, 1)!.items.map((x) => x.base);
+  assert.ok(!a.includes('g_bench'));
+  assert.ok(!b.includes(SESSIONS.push.exB![SESSIONS.push.ex.indexOf('g_bench')]), 'its alternate-week twin is out too');
+  assert.equal(a.length, sessionFor({ ...p, drop: undefined }, 0, false, 0)!.items.length - 1);
+});
+
+test('the plan quiz picks a plan that matches days, place and focus', () => {
+  assert.equal(recommendPlan({ days: 3, where: 'gym', focus: 'any' }, 'beg').schedule, 'fb3');
+  assert.equal(recommendPlan({ days: 3, where: 'gym', focus: 'any' }, 'mid').schedule, '3');
+  assert.equal(recommendPlan({ days: 4, where: 'gym', focus: 'glutes' }, 'beg').schedule, 'glute4');
+  assert.equal(recommendPlan({ days: 5, where: 'both', focus: 'any' }, 'mid').schedule, '5mix');
+  assert.equal(recommendPlan({ days: 5, where: 'gym', focus: 'upper' }, 'mid').schedule, 'bro5');
+  const home = recommendPlan({ days: 3, where: 'home', focus: 'full' }, 'beg');
+  const p: Profile = { ...base, schedule: home.schedule, places: home.places };
+  assert.deepEqual(weekSessions(p).filter(Boolean), ['homeA', 'homeB', 'homeA'], 'home-only plans train at home on the plan days');
+  for (const q of [3, 4, 5, 6] as const) for (const where of ['gym', 'home', 'both'] as const) {
+    const r = recommendPlan({ days: q, where, focus: 'any' }, 'mid');
+    assert.equal(weekSessions({ ...base, schedule: r.schedule, places: r.places }).filter(Boolean).length, q, `${q} days ${where}`);
+  }
+});
+
+test('every workout has a short name', () => {
+  for (const id of Object.keys(SESSIONS)) assert.notEqual(splitLabel(id), id);
 });

@@ -3,6 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import * as Haptics from 'expo-haptics';
 
 const FILES = {
   tap: require('../../assets/sounds/tap.wav'),
@@ -13,6 +14,12 @@ const FILES = {
   warn: require('../../assets/sounds/warn.wav'),
   /** Played once when the app opens, in time with the logo animation. */
   intro: require('../../assets/sounds/intro.wav'),
+  /** Referee whistle: a workout starts. */
+  whistle: require('../../assets/sounds/whistle.wav'),
+  /** Moving on (tour steps, opening a panel). */
+  swoosh: require('../../assets/sounds/swoosh.wav'),
+  /** A counter going up. */
+  pop: require('../../assets/sounds/pop.wav'),
 };
 export type Sound = keyof typeof FILES;
 const KEY = 'yallawell:sound';
@@ -23,8 +30,21 @@ const listeners = new Set<(v: boolean) => void>();
 const loaded = AsyncStorage.getItem(KEY).then((v) => { if (v === 'off') { on = false; listeners.forEach((f) => f(on)); } }).catch(() => {});
 setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(() => {});
 
+// A light tap of the phone's vibration goes with each sound, so actions are felt as well as heard.
+const FEEL: Partial<Record<Sound, () => Promise<void>>> = {
+  tap: () => Haptics.selectionAsync(),
+  pop: () => Haptics.selectionAsync(),
+  add: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+  check: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+  remove: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+  whistle: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+  win: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+  warn: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
+};
+
 export function play(s: Sound) {
   if (!on) return;
+  if (Platform.OS !== 'web') FEEL[s]?.().catch(() => {});
   try {
     const p = (players[s] ??= createAudioPlayer(FILES[s]));
     p.seekTo(0);

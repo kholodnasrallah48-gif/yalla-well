@@ -36,7 +36,7 @@ export default function Report() {
 
   const Arrow = ({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) => (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button"
-      style={{ minHeight: 40, paddingHorizontal: 10, borderRadius: 12, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.4 : 1 }}>
+      style={{ minHeight: 40, paddingHorizontal: 10, borderRadius: 4, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.4 : 1 }}>
       <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>{label}</Text>
     </Pressable>
   );
@@ -61,13 +61,13 @@ export default function Report() {
           <Card>
             <T kind="h2" color={c.ok}>{L(g('حققت', 'حققتي'), 'Wins')}</T>
             {r.wins.length ? r.wins.map((w, i) => (
-              <View key={i} style={{ backgroundColor: c.okBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}><T kind="small" color={c.ok}>✓ {w}</T></View>
+              <View key={i} style={{ backgroundColor: c.okBg, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 6 }}><T kind="small" color={c.ok}>✓ {w}</T></View>
             )) : <T kind="small">{L(`لسه مفيش حاجة ${g('سجلتها', 'سجلتيها')} الأسبوع ده.`, "You haven't logged anything this week yet.")}</T>}
           </Card>
           <Card>
             <T kind="h2" color={c.bad}>{L('محتاج يتحسن', 'Needs work')}</T>
             {r.misses.length ? r.misses.map((m, i) => (
-              <View key={i} style={{ backgroundColor: c.badBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}><T kind="small" color={c.bad}>✗ {m}</T></View>
+              <View key={i} style={{ backgroundColor: c.badBg, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 6 }}><T kind="small" color={c.bad}>✗ {m}</T></View>
             )) : <T kind="small">{L('ولا حاجة، أسبوع ممتاز.', 'Nothing, great week.')}</T>}
           </Card>
           <Card>

@@ -20,7 +20,7 @@ export function AdviceView({ advice, onSwap, female }: { advice: Advice; onSwap?
   const c = useColors();
   const title = advice.level === 'bad' ? L(female ? 'مش مناسب ليكي' : 'مش مناسب ليك', 'Not a good fit for you') : TITLE(advice.level);
   return (
-    <View style={{ gap: 8, borderRadius: 14, padding: 12, backgroundColor: levelBg(c, advice.level) }}>
+    <View style={{ gap: 8, borderRadius: 4, padding: 12, backgroundColor: levelBg(c, advice.level) }}>
       <T kind="h3" color={levelColor(c, advice.level)}>{title}</T>
       {advice.notes.map((n, i) => (
         <View key={i} style={[styles.row, { gap: 8, alignItems: 'flex-start' }]}>
@@ -39,7 +39,7 @@ export function AdviceView({ advice, onSwap, female }: { advice: Advice; onSwap?
               </View>
               {onSwap ? (
                 <Pressable accessibilityRole="button" accessibilityLabel={L(`إضافة ${s.n} بدلها`, `Add ${tx(s.n)} instead`)} onPress={() => onSwap(s)}
-                  style={{ borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.petrol }}>
+                  style={{ borderRadius: 4, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: c.petrol }}>
                   <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.onPetrol }}>{L(female ? 'خديها بدلها' : 'خدها بدلها', 'Swap it in')}</Text>
                 </Pressable>
               ) : null}
@@ -62,7 +62,7 @@ export function MacroChips({ p, c: carbs, f }: { p: number; c: number; f: number
   return (
     <View style={[styles.wrap, { gap: 6 }]}>
       {items.map(([k, v, dot]) => (
-        <View key={k} style={[styles.row, { gap: 6, backgroundColor: c.soft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 }]}>
+        <View key={k} style={[styles.row, { gap: 6, backgroundColor: c.soft, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 3 }]}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: dot }} />
           <Text style={{ fontFamily: fonts.displayMedium, fontSize: 13, lineHeight: 20, color: c.ink }}>{k} {arNum(v)} {L('جم', 'g')}</Text>
         </View>

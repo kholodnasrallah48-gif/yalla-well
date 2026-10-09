@@ -1,27 +1,35 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { logWeight } from '../lib/weight.ts';
 import { PhotoPicker } from '../components/Photo.tsx';
-import { Bg, Btn, Card, Chip, Choice, NoteView, Ring, START, T, WeekStrip, styles } from '../components/ui.tsx';
-import { CONDITIONS, MEDS, PAINS, SCHEDULES, SCHEDULE_ORDER } from '../lib/data.ts';
+import { Mascot } from '../components/Mascot.tsx';
+import { Bg, Btn, Card, Chip, Choice, Kicker, NoteView, RADIUS, Ring, START, Segmented, T, WeekStrip, styles } from '../components/ui.tsx';
+import { CONDITIONS, MEDS, PAINS, SCHEDULES, SCHEDULE_ORDER, WEEK, type ScheduleId } from '../lib/data.ts';
 import { fmt } from '../lib/day.ts';
 import { L, getLang, setLang, tx } from '../lib/i18n.ts';
-import { genderFor, medical, targets, type CondInfo, type Profile } from '../lib/plan.ts';
+import { allGymChoices, genderFor, medical, recommendPlan, splitLabel, targets, weekPlaces, weekSessions, type CondInfo, type DayPlace, type Profile, type Quiz } from '../lib/plan.ts';
+import { play } from '../lib/sound.ts';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
 
-const STEPS = ['lang', 'basics', 'life', 'plan', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
+const STEPS = ['lang', 'basics', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
+type Step = (typeof STEPS)[number];
+/** Changing only the training plan (from Me): the three plan questions, then save. */
+const PLAN_STEPS: Step[] = ['has', 'plan', 'week'];
 type Draft = Partial<Profile> & Pick<Profile, 'sex' | 'conditions' | 'meds' | 'pains' | 'level'>;
 
 export default function Onboarding() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { profile, saveProfile } = useStore();
+  const { part } = useLocalSearchParams<{ part?: string }>();
+  const flow: readonly Step[] = profile && part === 'plan' ? PLAN_STEPS : STEPS;
   // The language pick only shows the first time; editing starts at the details.
-  const first = profile ? 1 : 0;
+  const first = profile && flow === STEPS ? 1 : 0;
+  const [more, setMore] = useState(false);
   const [step, setStep] = useState(first);
   const [d, setD] = useState<Draft>(() => profile ? { ...profile } : { sex: 'f', conditions: [], meds: [], pains: [], level: 'beg' });
   const [nums, setNums] = useState({ age: profile ? String(profile.age) : '', height: profile ? String(profile.height) : '', weight: profile ? String(profile.weight) : '' });
@@ -29,11 +37,11 @@ export default function Onboarding() {
   const [otherPain, setOtherPain] = useState(!!profile?.otherPain);
   const scroll = useRef<ScrollView>(null);
   const g = genderFor(d.sex);
-  const st = STEPS[step];
+  const st = flow[step];
   const set = (patch: Partial<Draft>) => { setErr(''); setD((x) => ({ ...x, ...patch })); };
   const toggle = (key: 'conditions' | 'meds' | 'pains', id: string) =>
     setD((x) => { const a = x[key] as string[]; return { ...x, [key]: a.includes(id) ? a.filter((v) => v !== id) : [...a, id] }; });
-  const input = { borderWidth: 1.5, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, textAlign: START() } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, textAlign: START() } as const;
 
   const validate = (): string | null => {
     if (st === 'basics') {
@@ -44,12 +52,20 @@ export default function Onboarding() {
       setD((x) => ({ ...x, age, height, weight }));
     }
     if (st === 'life' && (!d.activity || !d.goal)) return L(`${g('اختار', 'اختاري')} حركتك في اليوم وهدفك.`, 'Pick your daily activity and your goal.');
+    if (st === 'has' && !d.trains) return L(`${g('اختار', 'اختاري')} إجابة.`, 'Pick an answer.');
+    if (st === 'plan' && d.trains === 'no' && !(d.quiz?.days && d.quiz.where && d.quiz.focus)) return L(`${g('جاوب', 'جاوبي')} على الـ٣ أسئلة.`, 'Answer the three questions.');
     if (st === 'plan' && !d.schedule) return L(`${g('اختار', 'اختاري')} نظام التمرين.`, 'Pick a workout plan.');
     return null;
   };
   const next = () => {
     const e = validate();
     if (e) { setErr(e); return; }
+    if (flow !== STEPS && step === flow.length - 1) {
+      saveProfile({ ...profile!, ...d } as Profile);
+      play('win');
+      router.back();
+      return;
+    }
     if (st === 'done') {
       const next = { name: '', start: profile?.start ?? new Date().toISOString().slice(0, 10), ...d } as Profile;
       // A changed weight counts as a weigh-in, so progress follows it.
@@ -61,7 +77,22 @@ export default function Onboarding() {
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
   // The condition-details step only shows when a condition was picked.
-  const skipTo = (i: number, dir: 1 | -1) => (STEPS[i] === 'condx' && !d.conditions.length ? i + dir : i);
+  const skipTo = (i: number, dir: 1 | -1) => (flow[i] === 'condx' && !d.conditions.length ? i + dir : i);
+  // The draft as a profile, for the week preview.
+  const draft = { name: '', ...d, schedule: d.schedule ?? 'fb3' } as Profile;
+  const pickSchedule = (k: ScheduleId) => set({ schedule: k, places: undefined, splits: undefined });
+  const answer = (patch: Partial<Quiz>) => {
+    const quiz = { ...d.quiz, ...patch } as Quiz;
+    const level = d.level;
+    // Once the three answers are in, the plan that fits is picked (and can still be changed below).
+    if (quiz.days && quiz.where && quiz.focus) {
+      const r = recommendPlan(quiz, level);
+      set({ quiz, schedule: r.schedule, places: r.places, splits: undefined });
+    } else set({ quiz });
+  };
+  const rec = d.trains === 'no' && d.quiz?.days && d.quiz.where && d.quiz.focus ? recommendPlan(d.quiz, d.level) : null;
+  const setDay = (i: number, pl: DayPlace) => { const places = weekPlaces(draft); places[i] = pl; set({ places: { ...places } }); };
+  const setSplit = (i: number, k: string) => { play('tap'); set({ splits: { ...d.splits, [i]: k } }); };
   const setInfo = (id: string, patch: Partial<CondInfo>) => setD((x) => ({ ...x, condInfo: { ...x.condInfo, [id]: { ...x.condInfo?.[id], ...patch } } }));
   const full = st === 'done' ? ({ name: '', ...d } as Profile) : null;
 
@@ -69,7 +100,7 @@ export default function Onboarding() {
     <Bg><ScrollView ref={scroll} style={{ flex: 1 }} keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ padding: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, gap: 16 }}>
       <View style={[styles.row, { gap: 4 }]}>
-        {STEPS.map((s, i) => <View key={s} style={{ flex: 1, height: 4, borderRadius: 99, backgroundColor: i <= step ? c.petrol : c.line }} />)}
+        {flow.map((s, i) => <View key={s} style={{ flex: 1, height: 4, backgroundColor: i <= step ? c.petrol : c.line }} />)}
       </View>
 
       {st === 'lang' && <>
@@ -114,15 +145,90 @@ export default function Onboarding() {
         <Choice title={L('زيادة عضل', 'Build muscle')} sub={L('نبني عضل بزيادة بسيطة في السعرات', 'Build muscle with a small calorie surplus')} on={d.goal === 'gain'} onPress={() => set({ goal: 'gain' })} />
       </>}
 
-      {st === 'plan' && <>
-        <T kind="h1">{L('نظام التمرين', 'Workout plan')}</T>
+      {st === 'has' && <>
+        <View style={[styles.row, { gap: 12 }]}>
+          <Mascot pose="lift" size={64} />
+          <View style={{ flex: 1 }}>
+            <Kicker>{L('الكابتن بيسأل', 'The Captain asks')}</Kicker>
+            <T kind="h1" style={{ fontSize: 24, lineHeight: 38 }}>{L(`${g('بتتمرن', 'بتتمرني')} دلوقتي على نظام معين؟`, 'Do you already follow a training plan?')}</T>
+          </View>
+        </View>
+        <T kind="body" color={c.muted}>{L('في الجيم أو في البيت. مفيش إجابة غلط، الخطة هتتعمل على مقاسك.', 'At the gym or at home. There is no wrong answer; the plan is built around you.')}</T>
+        <Choice title={L(`أيوه، عندي نظام ${g('ماشي', 'ماشية')} عليه`, 'Yes, I have a plan I follow')} sub={L(`${g('هتختار', 'هتختاري')} نظامك وأيامك، والتمارين هتمشي عليه، ${g('وتقدر', 'وتقدري')} ${g('تضيف', 'تضيفي')} أجهزتك وتمارينك.`, 'Pick your split and days; the workouts follow it, and you can add your own machines and exercises.')}
+          on={d.trains === 'yes'} onPress={() => set({ trains: 'yes', level: d.trains === 'yes' ? d.level : 'mid' })} />
+        <Choice title={L(`لأ، ${g('ساعدني', 'ساعديني')} أختار`, 'No, help me choose')} sub={L('هسألك ٣ أسئلة صغيرة ونختارلك أنسب نظام.', "I'll ask three quick questions and pick the plan that fits.")}
+          on={d.trains === 'no'} onPress={() => set({ trains: 'no' })} />
+      </>}
+
+      {st === 'plan' && d.trains === 'no' && <>
+        <T kind="h1">{L('٣ أسئلة وخلصنا', 'Three questions')}</T>
+        <T kind="label">{L(`١. ${g('تقدر', 'تقدري')} ${g('تتمرن', 'تتمرني')} كام يوم في الأسبوع؟`, '1. How many days a week can you train?')}</T>
+        <Segmented<'3' | '4' | '5' | '6'> items={[['3', L('٣ أيام', '3 days')], ['4', L('٤', '4')], ['5', L('٥', '5')], ['6', L('٦', '6')]]} value={d.quiz?.days ? String(d.quiz.days) as '3' : undefined} onChange={(v) => answer({ days: Number(v) as Quiz['days'] })} />
+        <T kind="label">{L(`٢. ${g('هتتمرن', 'هتتمرني')} فين؟`, '2. Where will you train?')}</T>
+        <Segmented<Quiz['where']> items={[['gym', L('جيم', 'Gym')], ['home', L('بيت', 'Home')], ['both', L('الاتنين', 'Both')]]} value={d.quiz?.where} onChange={(where) => answer({ where })} />
+        <T kind="label">{L(`٣. ${g('عايز', 'عايزة')} ${g('تركز', 'تركزي')} على إيه؟`, '3. What do you want to focus on?')}</T>
+        <View style={styles.wrap}>
+          {([['full', L('الجسم كله', 'Whole body')], ['glutes', L('أرداف ورجل', 'Glutes and legs')], ['upper', L('عضل الجزء العلوي', 'Upper-body muscle')], ['any', L('مش فارقة', "Doesn't matter")]] as [Quiz['focus'], string][]).map(([k, l]) => (
+            <Chip key={k} label={l} on={d.quiz?.focus === k} onPress={() => answer({ focus: k })} />
+          ))}
+        </View>
+        <T kind="label">{L(g('مستواك', 'مستواكي'), 'Your level')}</T>
+        <Segmented<'beg' | 'mid'> items={[['beg', L(g('مبتدئ', 'مبتدئة'), 'Beginner')], ['mid', L('بتمرن بانتظام', 'I train regularly')]]} value={d.level}
+          onChange={(level) => { set({ level }); if (d.quiz?.days && d.quiz.where && d.quiz.focus) { const r = recommendPlan(d.quiz, level); set({ level, schedule: r.schedule, places: r.places, splits: undefined }); } }} />
+        {rec && d.schedule ? (
+          <Card tone="accent" style={{ marginTop: 6 }}>
+            <T kind="label" color={c.onPetrol} style={{ fontFamily: fonts.displaySemi }}>{d.schedule === rec.schedule ? L(`النظام المناسب ${g('ليك', 'ليكي')}`, 'The plan that fits you') : L(`النظام اللي ${g('اخترته', 'اخترتيه')}`, 'Your pick')}</T>
+            <T kind="h2" color={c.onPetrol}>{tx(SCHEDULES[d.schedule].n)}</T>
+            <T kind="small" color={c.onPetrol}>{tx(SCHEDULES[d.schedule].d)}</T>
+            {d.schedule === rec.schedule ? <T kind="small" color={c.onPetrol} style={{ fontFamily: fonts.bodyMedium }}>{rec.why}</T> : null}
+          </Card>
+        ) : null}
+        {rec ? <Btn kind="text" title={more ? L('اقفل', 'Close') : L(`${g('عايز', 'عايزة')} نظام تاني؟`, 'Want a different plan?')} onPress={() => setMore(!more)} /> : null}
+        {rec && more ? SCHEDULE_ORDER.map((k) => <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={d.schedule === k} onPress={() => pickSchedule(k)} />) : null}
+      </>}
+
+      {st === 'plan' && d.trains !== 'no' && <>
+        <T kind="h1">{L('نظامك إيه؟', 'What is your plan?')}</T>
+        <T kind="body" color={c.muted}>{L(`${g('اختار', 'اختاري')} الأقرب لنظامك، وفي الخطوة الجاية ${g('ترتب', 'ترتبي')} أيامك بالظبط. لو نظامك مختلف ${g('اختار', 'اختاري')} «هختار بنفسي».`, 'Pick the closest to yours; next you set your exact days. If yours is different, pick “I’ll choose myself”.')}</T>
         {SCHEDULE_ORDER.map((k) => (
-          <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={d.schedule === k} onPress={() => set({ schedule: k })} />
+          <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={d.schedule === k} onPress={() => pickSchedule(k)} />
         ))}
         <T kind="label">{L(g('مستواك', 'مستواكي'), 'Your level')}</T>
-        <View style={[styles.row, { gap: 8 }]}>
-          <Choice title={L(g('مبتدئ', 'مبتدئة'), 'Beginner')} sub={L('أقل من ٦ شهور', 'Less than 6 months')} on={d.level === 'beg'} onPress={() => set({ level: 'beg' })} style={{ flex: 1 }} />
-          <Choice title={L(g('متوسط', 'متوسطة'), 'Intermediate')} sub={L(g('بتتمرن بانتظام', 'بتتمرني بانتظام'), 'You train regularly')} on={d.level === 'mid'} onPress={() => set({ level: 'mid' })} style={{ flex: 1 }} />
+        <Segmented<'beg' | 'mid'> items={[['beg', L(g('مبتدئ', 'مبتدئة'), 'Beginner')], ['mid', L('بتمرن بانتظام', 'I train regularly')]]} value={d.level} onChange={(level) => set({ level })} />
+      </>}
+
+      {st === 'week' && <>
+        <T kind="h1">{L('ده أسبوعك', 'Your week')}</T>
+        <T kind="body" color={c.muted}>{L(`${g('غيّر', 'غيّري')} أي يوم زي ما ${g('انت بتتمرن', 'انتي بتتمرني')}: جيم ولا بيت ولا راحة، ونوع التمرين. ${g('تقدر', 'تقدري')} ${g('تغيّره', 'تغيّريه')} بعدين من صفحة التمرين.`, 'Set each day the way you train: gym, home or rest, and the workout. You can change it later on the Train page.')}</T>
+        <WeekStrip profile={draft} today={-1} />
+        <View style={{ borderTopWidth: 1, borderColor: c.line }}>
+          {WEEK.map((w, i) => {
+            const pl = weekPlaces(draft)[i];
+            const sid = weekSessions(draft)[i];
+            return (
+              <View key={w} style={{ paddingVertical: 10, gap: 8, borderBottomWidth: 1, borderColor: c.line }}>
+                <View style={[styles.row, { gap: 10 }]}>
+                  <T kind="h2" style={{ width: 74, fontSize: 18 }}>{tx(w)}</T>
+                  <View style={{ flex: 1 }}>
+                    <Segmented<DayPlace> items={[['gym', L('جيم', 'Gym')], ['home', L('بيت', 'Home')], ['rest', L('راحة', 'Rest')]]} value={pl} onChange={(v) => setDay(i, v)} />
+                  </View>
+                </View>
+                {pl === 'gym' ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                    {allGymChoices(draft.schedule).map((k) => {
+                      const on = sid === k;
+                      return (
+                        <Pressable key={k} onPress={() => setSplit(i, k)} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                          style={{ borderWidth: 1, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : 'transparent', borderRadius: RADIUS, paddingVertical: 6, paddingHorizontal: 11 }}>
+                          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12.5, lineHeight: 18, color: on ? c.onPetrol : c.ink }}>{splitLabel(k)}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                ) : null}
+              </View>
+            );
+          })}
         </View>
       </>}
 
@@ -226,7 +332,7 @@ export default function Onboarding() {
         {step > first
           ? <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => { setErr(''); setStep(skipTo(step - 1, -1)); }} />
           : profile ? <Btn kind="outline" title={L('إلغاء', 'Cancel')} onPress={() => router.back()} /> : null}
-        <Btn title={st === 'done' ? L('يلا نبدأ', "Let's go") : L('التالي', 'Next')} onPress={next} style={{ flex: 1 }} />
+        <Btn title={st === 'done' ? L('يلا نبدأ', "Let's go") : flow !== STEPS && step === flow.length - 1 ? L('حفظ', 'Save') : L('التالي', 'Next')} onPress={next} sound={st === 'done' ? 'whistle' : 'swoosh'} style={{ flex: 1 }} />
       </View>
     </ScrollView></Bg>
   );

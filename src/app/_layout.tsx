@@ -1,5 +1,6 @@
-import { Almarai_400Regular, Almarai_700Bold } from '@expo-google-fonts/almarai';
-import { BalooBhaijaan2_600SemiBold, BalooBhaijaan2_700Bold, BalooBhaijaan2_800ExtraBold } from '@expo-google-fonts/baloo-bhaijaan-2';
+import { Almarai_400Regular, Almarai_700Bold, Almarai_800ExtraBold } from '@expo-google-fonts/almarai';
+import { BigShoulders_800ExtraBold, BigShoulders_900Black } from '@expo-google-fonts/big-shoulders';
+import { Lalezar_400Regular } from '@expo-google-fonts/lalezar';
 import { Rakkas_400Regular } from '@expo-google-fonts/rakkas';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -62,7 +63,7 @@ function Gate() {
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    BalooBhaijaan2_600SemiBold, BalooBhaijaan2_700Bold, BalooBhaijaan2_800ExtraBold, Almarai_400Regular, Almarai_700Bold, Rakkas_400Regular,
+    Lalezar_400Regular, BigShoulders_800ExtraBold, BigShoulders_900Black, Almarai_400Regular, Almarai_700Bold, Almarai_800ExtraBold, Rakkas_400Regular,
   });
   if (!loaded) return null;
   return (

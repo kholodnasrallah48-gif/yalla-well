@@ -1,6 +1,6 @@
 // Calorie targets, medical adjustments and weekly training sessions, derived from the profile.
 import type { LabEntry, MedPlan } from './health.ts';
-import { CONDITIONS, EXERCISES, GEAR, PAINS, SCHEDULES, SESSIONS, variantsOf, type Equip, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
+import { CONDITIONS, EXERCISES, GEAR, PAINS, SCHEDULES, SESSIONS, gymChoices, variantsOf, type Equip, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
 import { L, num, tx } from './i18n.ts';
 import { quoteUx } from './translate.ts';
 import { phaseFor, variantFor, type Phase } from './progress.ts';
@@ -48,7 +48,21 @@ export type Profile = {
   medPlan?: Record<string, MedPlan>;
   /** Lab results, oldest first. */
   labs?: LabEntry[];
+  /** Whether the person already followed a training system when they joined, and their quiz answers if not. */
+  trains?: 'yes' | 'no';
+  quiz?: Quiz;
+  /** Exercises the person added to a workout (by workout id: push, pull, homeA...); they show every time that workout comes up. */
+  own?: Record<string, OwnExercise[]>;
+  /** Plan exercises the person took out of a workout: workout id -> exercise ids. */
+  drop?: Record<string, string[]>;
 };
+/**
+ * An exercise the person added: one of the app's exercises (ref), or their own in their words with the machine or
+ * equipment they use (n, gear).
+ */
+export type OwnExercise = { id: string; ref?: string; n?: string; gear?: string };
+/** Answers to "help me pick a plan". */
+export type Quiz = { days: 3 | 4 | 5 | 6; where: 'gym' | 'home' | 'both'; focus: 'full' | 'glutes' | 'upper' | 'any' };
 export type DayPlace = Place | 'rest';
 /** How a condition is right now, and condition-specific answers (all optional). */
 export type CondInfo = {
@@ -221,13 +235,22 @@ export const CUP_ML = 250;
 export type Targets = { kcal: number; protein: number; fat: number; carbs: number; waterCups: number; tdee: number };
 
 const ACTIVITY_FACTOR: Record<Activity, number> = { low: 1.2, mid: 1.3, high: 1.45 };
-const TRAINING_FACTOR: Record<ScheduleId, number> = { '3': 0.1, fb3: 0.1, custom: 0.1, ul4: 0.14, glute4: 0.14, '5mix': 0.17, '5gym': 0.2, bro5: 0.2, ppl6: 0.24 };
+/** Extra burn from training, by the days the person actually trains (their own week, not just the plan's). */
+function trainingFactor(p: Profile): number {
+  const pl = weekPlaces(p);
+  const gym = pl.filter((x) => x === 'gym').length, home = pl.filter((x) => x === 'home').length;
+  const days = gym + home;
+  if (days <= 3) return 0.1;
+  if (days === 4) return 0.14;
+  if (days === 5) return home ? 0.17 : 0.2;
+  return 0.24;
+}
 
 /** Mifflin-St Jeor BMR × activity, adjusted for the goal and medical caps. */
 export function targets(p: Profile): Targets {
   const { mod } = medical(p);
   const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161);
-  const tdee = bmr * (ACTIVITY_FACTOR[p.activity] + TRAINING_FACTOR[p.schedule]);
+  const tdee = bmr * (ACTIVITY_FACTOR[p.activity] + trainingFactor(p));
   let kcal = tdee;
   if (p.goal === 'lose') kcal = tdee * (1 - mod.deficit);
   if (p.goal === 'gain') kcal = tdee * 1.1;
@@ -242,6 +265,10 @@ export function targets(p: Profile): Targets {
 
 export type PlannedExercise = {
   id: string; ex: Exercise; why: string | null; rx: string;
+  /** The machine or equipment the person named for an exercise they added themselves. */
+  gear?: string;
+  /** Added by the person (shown with a remove button in the edit list). */
+  own?: boolean;
   /** The plan's exercise this one stands for (differs from id when the person picked other equipment or it was swapped). */
   base: string;
   /** Strength work only: sets, rep range and rest; 0 sets for timed work. */
@@ -335,14 +362,27 @@ export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 
   const variant = variantFor(week);
   const phase = phaseFor(week);
   const seen = new Set<string>();
-  let list: { id: string; ex: Exercise; why: string | null; base: string }[] = [];
-  for (const base of variant === 'B' && s.exB ? s.exB : s.ex) {
+  // Exercises the person took out stay out in both weeks: the alternate week drops the one in the same place.
+  const dropped = new Set(flare ? [] : p.drop?.[sid] ?? []);
+  const bases = (variant === 'B' && s.exB ? s.exB : s.ex).filter((b, i) => !dropped.has(b) && !dropped.has(s.ex[i]) && !(s.exB && dropped.has(s.exB[i])));
+  const own = flare ? [] : p.own?.[sid] ?? [];
+  let list: { id: string; ex: Exercise; why: string | null; base: string; gear?: string; own?: boolean }[] = [];
+  const add = (base: string, mine?: boolean) => {
     // The version the person picked for this exercise (free weights, machine...), when it still fits them.
     const id = p.gear?.[base] ?? base;
     const r = resolveExercise(id, p, m) ?? (id !== base ? resolveExercise(base, p, m) : null);
-    if (r && !seen.has(r.id)) { seen.add(r.id); list.push({ ...r, base }); }
-  }
+    if (r && !seen.has(r.id)) { seen.add(r.id); list.push({ ...r, base, own: mine }); }
+  };
+  bases.forEach((b) => add(b));
   if (m.shortSessions && !flare && list.length > 5) list = list.slice(0, 5);
+  // The person's own additions always stay, after the plan's exercises.
+  for (const o of own) {
+    if (o.ref && EXERCISES[o.ref]) add(o.ref, true);
+    else if (o.n?.trim() && !seen.has(o.id)) {
+      seen.add(o.id);
+      list.push({ id: o.id, ex: { n: o.n.trim(), k: 'str', stress: [] }, why: null, base: o.id, gear: o.gear?.trim() || undefined, own: true });
+    }
+  }
   if (!flare && s.pl === 'gym' && !list.some((x) => x.ex.k === 'cardio') && (p.goal === 'lose' || p.schedule === '3')) {
     const c = m.lowImpact ? 'g_bike' : 'g_incline';
     list.push({ id: c, ex: EXERCISES[c], why: null, base: c });
@@ -353,4 +393,43 @@ export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 
     items: list.map((x) => ({ ...x, ...prescription(p, x.ex, m, phase) })),
     week, variant, phase,
   };
+}
+
+/** Short name of a workout for day tiles and headings: Push, Pull, Legs, Home... */
+export function splitLabel(id: string | null | undefined): string {
+  if (!id) return L('راحة', 'Rest');
+  const m: Record<string, [string, string]> = {
+    fullA: ['جسم كله أ', 'Full A'], fullB: ['جسم كله ب', 'Full B'], push: ['دفع', 'Push'], pull: ['سحب', 'Pull'], legs: ['رجل', 'Legs'],
+    upper: ['علوي', 'Upper'], lower: ['سفلي', 'Lower'], chest: ['صدر', 'Chest'], back: ['ضهر', 'Back'], shoulders: ['كتف', 'Shoulders'],
+    arms: ['دراع', 'Arms'], glutes: ['أرداف', 'Glutes'], homeA: ['بيت: قوة', 'Home: strength'], homeB: ['بيت: كارديو', 'Home: cardio'], gentle: ['تعافي', 'Recovery'],
+  };
+  const v = m[id];
+  return v ? L(v[0], v[1]) : id;
+}
+
+/** Every gym workout a day can be: the plan's own first, then the rest. */
+export function allGymChoices(id: ScheduleId): string[] {
+  const own = gymChoices(id);
+  return [...own, ...gymChoices('custom').filter((x) => !own.includes(x))];
+}
+
+/**
+ * The plan that fits someone who doesn't follow one yet, from three questions: how many days, where, and what
+ * they want to focus on. Home-only plans use the same days with home workouts.
+ */
+export function recommendPlan(q: Quiz, level: Level): { schedule: ScheduleId; places?: Partial<Record<number, DayPlace>>; why: string } {
+  let schedule: ScheduleId;
+  if (q.where === 'home') schedule = q.days === 3 ? 'fb3' : q.days === 4 ? 'ul4' : q.days === 5 ? '5mix' : 'ppl6';
+  else if (q.days === 3) schedule = level === 'beg' || q.focus === 'full' ? 'fb3' : '3';
+  else if (q.days === 4) schedule = q.focus === 'glutes' ? 'glute4' : 'ul4';
+  else if (q.days === 5) schedule = q.where === 'both' ? '5mix' : q.focus === 'upper' ? 'bro5' : '5gym';
+  else schedule = 'ppl6';
+  const places = q.where === 'home'
+    ? Object.fromEntries(Object.keys(SCHEDULES[schedule].map).map((d) => [Number(d), 'home' as DayPlace]))
+    : undefined;
+  const days = { 3: L('٣ أيام', '3 days'), 4: L('٤ أيام', '4 days'), 5: L('٥ أيام', '5 days'), 6: L('٦ أيام', '6 days') }[q.days];
+  const where = { gym: L('في الجيم', 'at the gym'), home: L('في البيت', 'at home'), both: L('بين الجيم والبيت', 'between the gym and home') }[q.where];
+  const focus = { full: L('وبيشغّل الجسم كله بالتساوي', 'and works the whole body evenly'), glutes: L('وفيه تركيز على الأرداف والرجل', 'with extra glutes and legs'),
+    upper: L('وفيه تركيز على عضل الجزء العلوي', 'with extra upper-body work'), any: '' }[q.focus];
+  return { schedule, places, why: L(`مناسب لـ${days} ${where}${focus ? ' ' + focus : ''}.`, `Fits ${days} ${where}${focus ? ' ' + focus : ''}.`) };
 }

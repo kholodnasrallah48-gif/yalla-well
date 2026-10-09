@@ -22,7 +22,7 @@ export function MealIdea({ recipe: r, meal, budget, factor, why, g, onAnother }:
   const c = useColors();
   const open = () => { play('tap'); openRecipe(r.id, meal, budget); };
   return (
-    <View style={{ backgroundColor: c.soft, borderRadius: 14, padding: 12, gap: 8, borderWidth: 1, borderColor: c.line }}>
+    <View style={{ backgroundColor: c.soft, borderRadius: 4, padding: 12, gap: 8, borderWidth: 1, borderColor: c.line }}>
       <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={L(`${tx(r.n)}، ${g('شوف', 'شوفي')} الطريقة`, `${tx(r.n)}, see the recipe`)} style={[styles.row, { gap: 12, alignItems: 'flex-start' }]}>
         <FoodPhoto item={{ id: r.id, n: r.n }} size={72} radius={14} />
         <View style={{ flex: 1, gap: 2 }}>
@@ -36,11 +36,11 @@ export function MealIdea({ recipe: r, meal, budget, factor, why, g, onAnother }:
       ) : null}
       <View style={[styles.row, { gap: 8 }]}>
         <Pressable onPress={open} accessibilityRole="button"
-          style={{ flex: 1, alignItems: 'center', borderRadius: 99, paddingVertical: 8, backgroundColor: c.petrol }}>
+          style={{ flex: 1, alignItems: 'center', borderRadius: 4, paddingVertical: 8, backgroundColor: c.petrol }}>
           <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.onPetrol }}>{L(`${g('شوف', 'شوفي')} المكونات والطريقة`, 'Ingredients and steps')}</Text>
         </Pressable>
         <Pressable onPress={() => { play('tap'); onAnother(); }} accessibilityRole="button" accessibilityLabel={L('اقترح أكلة تانية', 'Suggest another dish')}
-          style={{ alignItems: 'center', borderWidth: 1.5, borderColor: c.petrol, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.surface }}>
+          style={{ alignItems: 'center', borderWidth: 1.5, borderColor: c.petrol, borderRadius: 4, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: c.surface }}>
           <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.petrol }}>{L('اقترح تاني', 'Another one')}</Text>
         </Pressable>
       </View>

@@ -53,14 +53,14 @@ export function RecipeFinder({ budgets, start, g }: {
     searchMealDB(text).then((h) => setNet((w) => (w && w.q === text ? { ...w, loading: false, hits: h } : w)))
       .catch(() => setNet((w) => (w && w.q === text ? { ...w, loading: false } : w)));
   };
-  const arrow = <Text style={{ fontFamily: fonts.display, fontSize: 18, color: c.petrol }}>{L('‹', '›')}</Text>;
+  const arrow = <Text style={{ fontFamily: fonts.displaySemi, fontSize: 18, color: c.petrol }}>{L('‹', '›')}</Text>;
 
   return (
     <Card>
       <T kind="h2">{L('دوّر على وصفة', 'Find a recipe')}</T>
       <T kind="small">{L(`${g('اكتب', 'اكتبي')} اسم الأكلة، وهنطلعلك المكونات والطريقة بالكمية اللي تناسب سعراتك.`, "Type a dish and we'll show the ingredients and steps in the amount that fits your calories.")}</T>
 
-      <View style={[styles.row, { gap: 8, borderWidth: 1.5, borderColor: text ? c.petrol : c.line, backgroundColor: c.soft, borderRadius: 14, paddingHorizontal: 12 }]}>
+      <View style={[styles.row, { gap: 8, borderWidth: 1.5, borderColor: text ? c.petrol : c.line, backgroundColor: c.soft, borderRadius: 4, paddingHorizontal: 12 }]}>
         <SearchIcon color={c.muted} />
         <TextInput value={q} onChangeText={type} placeholder={L('مثلًا: كشري، مكرونة بالفراخ…', 'e.g. koshary, chicken pasta…')} placeholderTextColor={c.muted}
           returnKeyType="search" onSubmitEditing={() => { if (text.length > 1 && !hits.length) online(); }}
@@ -76,7 +76,7 @@ export function RecipeFinder({ budgets, start, g }: {
         <View style={styles.wrap}>
           {POPULAR.map(([ar, en]) => (
             <Pressable key={ar} onPress={() => { play('tap'); type(isEn() ? en : ar); }} accessibilityRole="button"
-              style={({ pressed }) => [{ borderRadius: 99, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, paddingHorizontal: 12, paddingVertical: 6 }, pressed && styles.pressed]}>
+              style={({ pressed }) => [{ borderRadius: 4, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, paddingHorizontal: 12, paddingVertical: 6 }, pressed && styles.pressed]}>
               <Text style={{ fontFamily: fonts.body, fontSize: 13, color: c.ink }}>{L(ar, en)}</Text>
             </Pressable>
           ))}
@@ -88,7 +88,7 @@ export function RecipeFinder({ budgets, start, g }: {
             <View style={[styles.row, { gap: 6 }]}>
               {MEALS.map((m) => (
                 <Pressable key={m} onPress={() => { play('tap'); setMeal(m); }} accessibilityRole="radio" accessibilityState={{ selected: m === meal }}
-                  style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: m === meal ? c.petrol : c.line, backgroundColor: m === meal ? c.petrol : c.surface, borderRadius: 99, paddingVertical: 6 }}>
+                  style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: m === meal ? c.petrol : c.line, backgroundColor: m === meal ? c.petrol : c.surface, borderRadius: 4, paddingVertical: 6 }}>
                   <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: m === meal ? c.onPetrol : c.ink }}>{tx(MEAL_NAME[m])}</Text>
                 </Pressable>
               ))}
@@ -119,7 +119,7 @@ export function RecipeFinder({ budgets, start, g }: {
 
           {!hits.length && text.length > 1 && !net ? (
             <Pressable onPress={online} accessibilityRole="button"
-              style={({ pressed }) => [{ alignItems: 'center', borderRadius: 99, paddingVertical: 10, borderWidth: 1.5, borderColor: c.petrol }, pressed && styles.pressed]}>
+              style={({ pressed }) => [{ alignItems: 'center', borderRadius: 4, paddingVertical: 10, borderWidth: 1.5, borderColor: c.petrol }, pressed && styles.pressed]}>
               <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: c.petrol }}>{L(`دوّر على "${text}" في وصفات النت`, `Search online recipes for "${text}"`)}</Text>
             </Pressable>
           ) : null}

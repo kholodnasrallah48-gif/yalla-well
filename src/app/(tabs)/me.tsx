@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { PhotoPicker } from '../../components/Photo.tsx';
-import { Btn, Card, Chip, Choice, NoteView, Screen, T, styles } from '../../components/ui.tsx';
+import { TourTarget, startTour } from '../../components/TourTarget.tsx';
+import { Btn, Card, Chip, NoteView, Screen, T, WeekStrip, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
 import { notifyOn, onNotifyChange, setNotifyOn, testReminder } from '../../lib/notify.ts';
-import { CONDITIONS, MEDS, PAINS, SCHEDULES, SCHEDULE_ORDER } from '../../lib/data.ts';
+import { CONDITIONS, MEDS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { fmt } from '../../lib/day.ts';
-import { L, getLang, setLang, tx } from '../../lib/i18n.ts';
+import { L, getLang, num, setLang, tx } from '../../lib/i18n.ts';
 import { genderFor, medical, targets } from '../../lib/plan.ts';
 import { ux } from '../../lib/translate.ts';
 import { logWeight, weightChange } from '../../lib/weight.ts';
@@ -23,7 +24,6 @@ export default function Me() {
   const c = useColors();
   const [kg, setKg] = useState('');
   const [testMsg, setTestMsg] = useState('');
-  const [plans, setPlans] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [sound, setSound] = useState(soundOn());
   useEffect(() => onSoundChange(setSound), []);
@@ -38,10 +38,12 @@ export default function Me() {
   const okKg = Number(kg) >= 30 && Number(kg) <= 300;
   const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherCond)].filter(Boolean);
   const meds = [...p.meds.map((id) => tx(MEDS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherMeds)].filter(Boolean);
+  const ownCount = Object.values(p.own ?? {}).reduce((a, x) => a + x.length, 0);
+  const dropCount = Object.values(p.drop ?? {}).reduce((a, x) => a + x.length, 0);
   const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherPain)].filter(Boolean);
 
   return (
-    <Screen title={L('ملفي', 'Me')}>
+    <Screen title={L('ملفي', 'Me')} name="me">
       <Card>
         <PhotoPicker photo={p.photo} name={p.name} onChange={(photo) => saveProfile({ ...p, photo })} />
         <T kind="h2" style={{ textAlign: 'center' }}>{p.name || L('بياناتي', 'My details')}</T>
@@ -50,24 +52,16 @@ export default function Me() {
         <Btn kind="outline" title={L(g('عدّل بياناتي', 'عدّلي بياناتي'), 'Edit my details')} onPress={() => router.push('/onboarding')} />
       </Card>
 
-      <Card>
-        <View style={styles.rowBetween}>
-          <View style={{ flex: 1 }}>
-            <T kind="h3">{L('نظام التمرين', 'Workout plan')}</T>
-            <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(SCHEDULES[p.schedule].n)}</T>
-            <T kind="small">{tx(SCHEDULES[p.schedule].d)}</T>
-          </View>
-          <Chip label={plans ? L('اقفل', 'Close') : L(g('غيّر', 'غيّري'), 'Change')} on={plans} onPress={() => setPlans(!plans)} />
-        </View>
-        {plans ? SCHEDULE_ORDER.map((k) => (
-          <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={p.schedule === k}
-            onPress={() => {
-              // A new plan brings its own week: drop the old gym/home/rest days and per-day workouts.
-              if (k !== p.schedule) saveProfile({ ...p, schedule: k, places: undefined, splits: undefined });
-              setPlans(false);
-            }} />
-        )) : null}
-      </Card>
+      <TourTarget id="me.plan">
+        <Card>
+          <T kind="label">{L('نظام التمرين', 'Workout plan')}</T>
+          <T kind="h2">{tx(SCHEDULES[p.schedule].n)}</T>
+          <WeekStrip profile={p} today={-1} />
+          {ownCount || dropCount ? <T kind="small">{L(`${g('ضفت', 'ضفتي')} ${num(ownCount)} تمرين بنفسك، و${g('شلت', 'شلتي')} ${num(dropCount)} من الخطة.`, `You added ${ownCount} exercises of your own and removed ${dropCount} from the plan.`)}</T> : null}
+          <Btn kind="outline" title={L(`${g('غيّر', 'غيّري')} النظام أو ${g('رتّب', 'رتّبي')} أيامك`, 'Change plan or arrange your days')} onPress={() => router.push({ pathname: '/onboarding', params: { part: 'plan' } })} />
+          <Btn kind="text" title={L(`${g('شوف', 'شوفي')} الجولة التعريفية تاني`, 'Replay the app tour')} sound="swoosh" onPress={startTour} />
+        </Card>
+      </TourTarget>
 
       <Card>
         <View style={styles.rowBetween}>
@@ -84,7 +78,7 @@ export default function Me() {
         {W.diff !== 0 ? <T kind="small" color={W.diff < 0 ? c.ok : c.muted}>{L(`بدأت ${W.start} كجم، دلوقتي ${W.now} كجم (${W.diff > 0 ? '+' : ''}${W.diff} كجم)`, `Started ${W.start} kg, now ${W.now} kg (${W.diff > 0 ? '+' : ''}${W.diff} kg)`)}</T> : null}
         <View style={[styles.row, { gap: 8 }]}>
           <TextInput value={kg} onChangeText={setKg} keyboardType="decimal-pad" placeholder={String(p.weight)} placeholderTextColor={c.muted}
-            style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, textAlign: 'center' }} />
+            style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, textAlign: 'center' }} />
           <Btn title={L('حفظ', 'Save')} disabled={!okKg} onPress={() => { saveProfile(logWeight(p, Number(kg))); setKg(''); }} />
         </View>
       </Card>
@@ -138,7 +132,7 @@ export default function Me() {
         </View>
         <Btn kind="outline" title={L(g('جرب تنبيه', 'جربي تنبيه'), 'Send a test reminder')} onPress={async () => {
           setTestMsg('');
-          const r = await testReminder(L('يلا ويل', 'Yalla Well'), L(`ده تنبيه تجربة. التنبيهات شغالة ${g('معاك', 'معاكي')} 💪`, 'This is a test reminder. Your reminders are working 💪'));
+          const r = await testReminder(L('يلا ويل', 'Yalla Well'), L(`ده تنبيه تجربة. التنبيهات شغالة ${g('معاك', 'معاكي')}.`, 'This is a test reminder. Your reminders are working.'));
           setTestMsg(r === 'sent' ? L(`هيوصلك تنبيه كمان ٥ ثواني. ${g('اقفل', 'اقفلي')} الشاشة أو ${g('اطلع', 'اطلعي')} من التطبيق عشان ${g('تشوفه', 'تشوفيه')}.`, "A reminder is coming in 5 seconds. Lock your screen or leave the app to see it.")
             : r === 'denied' ? L(`التنبيهات مقفولة للتطبيق. ${g('افتح', 'افتحي')} الإعدادات ← التنبيهات ← Expo Go (أو يلا ويل) و${g('شغلها', 'شغليها')}.`, 'Notifications are off for this app. Open Settings → Notifications → Expo Go (or Yalla Well) and turn them on.')
             : L('التنبيهات بتشتغل على الموبايل بس.', 'Reminders only work on the phone.'));

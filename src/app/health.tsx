@@ -43,7 +43,7 @@ export default function Health() {
   if (!profile) return null;
   const p = profile;
   const g = genderFor(p.sex);
-  const input = { borderWidth: 1.5, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
 
   const setPlan = (id: string, patch: Partial<MedPlan>) => {
     const cur = medPlan(p, id);
@@ -130,7 +130,7 @@ export default function Health() {
                 {pl.times.map((t) => (
                   <Pressable key={t} onPress={() => pl.times.length > 1 && setPlan(id, { times: pl.times.filter((x) => x !== t) })} accessibilityRole="button"
                     accessibilityLabel={L(`الميعاد ${timeText(t)}${pl.times.length > 1 ? `، ${g('دوس', 'دوسي')} عشان ${g('تشيله', 'تشيليه')}` : ''}`, `Time ${timeText(t)}${pl.times.length > 1 ? ', tap to remove' : ''}`)}
-                    style={{ flexDirection: 'row', gap: 6, alignItems: 'center', borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.soft, borderWidth: 1, borderColor: c.line }}>
+                    style={{ flexDirection: 'row', gap: 6, alignItems: 'center', borderRadius: 4, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.soft, borderWidth: 1, borderColor: c.line }}>
                     <Text style={{ fontFamily: fonts.displaySemi, fontSize: 14, color: c.ink }}>{timeText(t)}</Text>
                     {pl.times.length > 1 ? <Text style={{ color: c.muted, fontSize: 14 }}>×</Text> : null}
                   </Pressable>
@@ -189,7 +189,7 @@ export default function Health() {
           );
         })}
         {labKind ? (
-          <View style={{ gap: 8, backgroundColor: c.soft, borderRadius: 14, padding: 12 }}>
+          <View style={{ gap: 8, backgroundColor: c.soft, borderRadius: 4, padding: 12 }}>
             <T kind="h3">{labName(labKind)}</T>
             {!LABS[labKind].noValue ? (
               <TextInput value={labVal} onChangeText={setLabVal} keyboardType="decimal-pad" placeholder={L(`النتيجة (${LABS[labKind].unit})`, `Result (${LABS[labKind].unit})`)} placeholderTextColor={c.muted} style={input} />

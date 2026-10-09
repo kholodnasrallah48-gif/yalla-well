@@ -65,12 +65,12 @@ function Toggle({ on, onChange, a, b }: { on: boolean; onChange: (v: boolean) =>
   const c = useColors();
   const pill = (sel: boolean, label: string, v: boolean) => (
     <Pressable key={label} onPress={() => { play('tap'); onChange(v); }} accessibilityRole="radio" accessibilityState={{ selected: sel }}
-      style={{ flex: 1, alignItems: 'center', borderRadius: 99, paddingVertical: 6, backgroundColor: sel ? c.petrol : 'transparent' }}>
+      style={{ flex: 1, alignItems: 'center', borderRadius: 4, paddingVertical: 6, backgroundColor: sel ? c.petrol : 'transparent' }}>
       <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: sel ? c.onPetrol : c.ink }}>{label}</Text>
     </Pressable>
   );
   return (
-    <View style={[styles.row, { gap: 4, padding: 3, borderRadius: 99, borderWidth: 1, borderColor: c.line, backgroundColor: c.soft }]}>
+    <View style={[styles.row, { gap: 4, padding: 3, borderRadius: 4, borderWidth: 1, borderColor: c.line, backgroundColor: c.soft }]}>
       {pill(on, a, true)}{pill(!on, b, false)}
     </View>
   );

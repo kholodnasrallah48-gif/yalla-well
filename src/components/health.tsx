@@ -37,7 +37,7 @@ export function TodayDoses({ profile, day, update, g }: { profile: Profile; day:
           <View key={x.key} style={[styles.row, { gap: 10, alignItems: 'flex-start', paddingVertical: 6, borderTopWidth: i ? 1 : 0, borderColor: c.line }]}>
             <Pressable onPress={() => tick(x.key)} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
               accessibilityLabel={L(`${g('خدت', 'خدتي')} ${x.name}`, `Took ${x.name}`)}
-              style={{ width: 26, height: 26, borderRadius: 8, borderWidth: 2, borderColor: c.petrol, backgroundColor: on ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+              style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: c.petrol, backgroundColor: on ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
               {on ? <Text style={{ color: c.onPetrol, fontSize: 15, fontWeight: '700' }}>✓</Text> : null}
             </Pressable>
             <View style={{ flex: 1, gap: 2 }}>
@@ -76,7 +76,7 @@ export function CheckInCard({ day, update, g }: { day: DayLog; update: (f: (d: D
               const tone = v === 0 ? c.ok : v === 1 ? c.warn : c.bad;
               return (
                 <Pressable key={v} onPress={() => set(it.k, v as Level)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                  style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 99, borderWidth: 1.5, borderColor: on ? tone : c.line, backgroundColor: on ? tone : c.surface }}>
+                  style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 4, borderWidth: 1.5, borderColor: on ? tone : c.line, backgroundColor: on ? tone : c.surface }}>
                   <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: on ? (v === 0 ? c.onPetrol : '#0B0D0E') : c.ink }}>{L(ar, en)}</Text>
                 </Pressable>
               );
@@ -99,7 +99,7 @@ export function EasyBanner({ why, med, update, g }: { why: EasyWhy | null; med?:
   const c = useColors();
   if (why !== 'dose' && why !== 'check') return null;
   return (
-    <View style={{ backgroundColor: c.warnBg, borderRadius: 14, padding: 12, gap: 6 }}>
+    <View style={{ backgroundColor: c.warnBg, borderRadius: 4, padding: 12, gap: 6 }}>
       <T kind="small" color={c.warn} style={{ fontFamily: fonts.bodyMedium }}>
         {why === 'dose' ? L(`امبارح كان ميعاد ${med}، فخلينا النهارده يوم تعافي خفيف.`, `Yesterday was your ${med} dose, so today is an easy recovery day.`)
           : L(`من إجاباتك النهارده خلينا التمرين يوم تعافي خفيف.`, "From your check-in, today's workout is an easy recovery day.")}

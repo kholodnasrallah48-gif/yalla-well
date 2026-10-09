@@ -61,7 +61,7 @@ export function PhotoPicker({ photo, name, onChange, size = 96 }: { photo?: stri
   };
   const link = (label: string, onPress: () => void) => (
     <Pressable onPress={onPress} accessibilityRole="button" hitSlop={6}
-      style={({ pressed }) => [{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 99, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }, lift(c, 'sm'), pressed && styles.pressed]}>
+      style={({ pressed }) => [{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 4, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }, lift(c, 'sm'), pressed && styles.pressed]}>
       <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12.5, color: c.petrol }}>{label}</Text>
     </Pressable>
   );

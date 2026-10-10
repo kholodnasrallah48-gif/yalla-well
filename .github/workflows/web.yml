@@ -1,5 +1,6 @@
 # Web version of the app for friends to try in the browser: built on every push to main and published to the
-# gh-pages branch (GitHub Pages serves it at https://kholodnasrallah48-gif.github.io/yalla-well/).
+# gh-pages branch (GitHub Pages serves it at https://kholodnasrallah48-gif.github.io/yalla-well/). The website about
+# the app (website/) is built into the same branch under /site/.
 name: Web version
 on:
   push:
@@ -23,6 +24,7 @@ jobs:
       - run: npx expo export -p web
         env:
           EXPO_PUBLIC_USDA_KEY: ${{ secrets.USDA_KEY }}
+      - run: node website/build.mjs dist/site
       # Pages skips folders starting with "_" (like _expo) unless Jekyll is off; 404.html serves app routes.
       - run: touch dist/.nojekyll && cp dist/index.html dist/404.html
       - run: |

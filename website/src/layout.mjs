@@ -107,16 +107,16 @@ function footer(ctx) {
     <div class="ftr-top">
       <div class="ftr-brand">
         <a class="brand" href="./">${champ('logo', { size: 30 })}<span class="wordmark">${L('يلا ويل', 'Yalla Well')}</span></a>
-        <p class="muted">${L('خطة أكل وتمرين ومتابعة صحية على حسب كل شخص.', 'Food, training and health, planned around each person.')}</p>
+        <p class="muted">${L('خطة أكل وتمرين على حسب جسمك وصحتك.', 'Food, training and health, planned around each person.')}</p>
         ${social}
       </div>
       <nav class="ftr-cols" aria-label="${L('روابط آخر الصفحة', 'Footer links')}">
-        <div><h2>${L('التطبيق', 'The app')}</h2><a href="features.html">${L('المميزات', 'Features')}</a><a href="download.html">${L('التحميل', 'Download')}</a><a href="${WEB_APP}">${L('النسخة على الويب', 'Web version')}</a></div>
+        <div><h2>${L('التطبيق', 'The app')}</h2><a href="features.html">${L('المميزات', 'Features')}</a><a href="download.html">${L('التحميل', 'Download')}</a><a href="${WEB_APP}">${L('نسخة الويب', 'Web version')}</a></div>
         <div><h2>${L('مساعدة', 'Help')}</h2><a href="faq.html">${L('الأسئلة الشائعة', 'FAQ')}</a><a href="contact.html">${L('التواصل', 'Contact us')}</a></div>
         <div><h2>${L('يلا ويل', 'Yalla Well')}</h2><a href="about.html">${L('عن يلا ويل', 'About')}</a><a href="privacy.html">${L('الخصوصية', 'Privacy')}</a><a href="terms.html">${L('الشروط', 'Terms')}</a></div>
       </nav>
     </div>
-    <p class="ftr-note">${L('يلا ويل بيساعد في تنظيم الأكل والتمرين والأدوية، لكنه مش بديل عن الدكتور. أي تغيير في الدوا أو الأكل أو التمرين يكون بعد استشارة الدكتور.', "Yalla Well helps organise food, training and medicines, but it isn't a substitute for a doctor. Talk to your doctor before changing any medicine, diet or training.")}</p>
+    <p class="ftr-note">${L('يلا ويل بيساعد في تنظيم الأكل والتمرين والأدوية، لكنه مش بديل عن الدكتور. أي تغيير في الدوا أو الأكل أو التمرين لازم يكون بعد ما الدكتور يوافق.', "Yalla Well helps organise food, training and medicines, but it isn't a substitute for a doctor. Talk to your doctor before changing any medicine, diet or training.")}</p>
     <p class="ftr-copy">© 2026 ${L('يلا ويل', 'Yalla Well')}</p>
   </div>
 </footer>`;

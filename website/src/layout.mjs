@@ -154,8 +154,11 @@ export function layout(ctx, page) {
 <link rel="apple-touch-icon" href="${ctx.root}static/img/apple-touch-icon.png">
 <link rel="preload" href="${ctx.root}static/fonts/lalezar.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${ctx.root}static/fonts/almarai-400.woff2" as="font" type="font/woff2" crossorigin>
-<script>document.documentElement.classList.add('js')</script>
+<script>(function(d){d.classList.add('js');if(!matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('motion');setTimeout(function(){if(!d.classList.contains('ready'))d.classList.remove('js','motion')},6000)})(document.documentElement)</script>
 <link rel="stylesheet" href="${ctx.root}static/site.css">
+<script src="${ctx.root}static/vendor/gsap.min.js" defer></script>
+<script src="${ctx.root}static/vendor/ScrollTrigger.min.js" defer></script>
+<script src="${ctx.root}static/vendor/lenis.min.js" defer></script>
 <script src="${ctx.root}static/site.js" defer></script>
 </head>
 <body class="${ctx.en ? 'is-en' : 'is-ar'}${page.file === 'index.html' ? ' is-home' : ''}">

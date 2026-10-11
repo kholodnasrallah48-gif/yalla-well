@@ -13,7 +13,7 @@ const ticks = (items) => `<ul class="ticks">${items.map((t) => `<li>${icon('chec
 const kicker = (t) => `<p class="kicker">${t}</p>`;
 
 function pageHero(ctx, k, title, lead) {
-  return `<section class="page-hero"><div class="wrap narrow reveal">${kicker(k)}<h1 class="h1">${title}</h1>${lead ? `<p class="lead">${lead}</p>` : ''}</div></section>`;
+  return `<section class="page-hero"><div class="wrap narrow reveal">${kicker(k)}<h1 class="h1" data-split>${title}</h1>${lead ? `<p class="lead">${lead}</p>` : ''}</div></section>`;
 }
 
 const qa = ([q, a]) => `<details class="qa"><summary><span>${q}</span><span class="qa-mark" aria-hidden="true"></span></summary><div class="qa-a"><p>${a}</p></div></details>`;
@@ -102,6 +102,13 @@ const home = {
         p: L('هاشيموتو والروماتويد والسكر والضغط وغيرهم، وأي حالة تانية تتكتب بالكلام.', "Hashimoto's, rheumatoid arthritis, diabetes, blood pressure and more, plus anything you type in yourself."),
         li: [L('مواعيد الأدوية والفيتامينات بالجرعة والتكرار', 'Medicine and supplement times with dose and frequency'), L('علامات توقف التمرين على حسب الحالة', 'Warning signs to stop training, based on your condition'), L('التحاليل وتقرير PDF للدكتور', 'Lab tracking and a PDF report for your doctor')] },
     ];
+    const gallery = [
+      ['today', L('النهارده', 'Today'), L('السعرات الفاضلة والماكروز وأدوية اليوم', "Calories left, macros and today's medicines")],
+      ['food', L('الأكل', 'Food'), L('كل وجبة بالسعرات والبروتين', 'Every meal with calories and protein')],
+      ['train', L('التمرين', 'Training'), L('اليوم بتمارينه ومجموعاته', 'The day with its exercises and sets')],
+      ['today-meds', L('سؤال اليوم', 'Daily check-in'), L('الطاقة والألم والنوم، والتمرين بيتظبط عليهم', 'Energy, pain and sleep, and training adjusts to them')],
+      ['health', L('صحتي', 'My health'), L('الأدوية والفيتامينات بالجرعة والميعاد', 'Medicines and supplements with dose and time')],
+    ];
     const more = [
       ['globe', L('عربي وإنجليزي', 'Arabic and English'), L('والكلام العربي بيتظبط لو ولد أو بنت.', 'Arabic text adapts to you as a man or a woman.')],
       ['bell', L('تنبيهات في وقتها', 'Timely reminders'), L('للوجبات والمية والتمرين والأدوية، بكلام متغير، ومش بتيجي لو الحاجة اتعملت.', "For meals, water, workouts and medicines, worded differently each day, and skipped once it's done.")],
@@ -116,13 +123,13 @@ const home = {
 <section class="hero">
   <div class="wrap hero-text">
     <p class="pill reveal"><span class="dot" aria-hidden="true"></span>${L('قريبا على آيفون وأندرويد', 'Coming soon to iPhone and Android')}</p>
-    <h1 class="display reveal">${L('كابتن صحتك في جيبك.', 'Your health captain, in your pocket.')}</h1>
+    <h1 class="display reveal" data-split>${L('كابتن صحتك في جيبك.', 'Your health captain, in your pocket.')}</h1>
     <p class="lead reveal">${L('أكل مصري بالسعرات، تمرين في الجيم أو البيت، ومواعيد أدويتك. كله في تطبيق واحد بالعربي.', 'Egyptian food with calories, training at the gym or at home, and your medicine times. All in one app, in Arabic and English.')}</p>
     <div class="reveal">${storeButtons(ctx)}</div>
   </div>
   <div class="hero-stage">
     <div class="glow" aria-hidden="true"></div>
-    ${phone(ctx, 'today', L('شاشة النهارده في يلا ويل: السعرات الفاضلة والبروتين والكارب والدهون', 'The Today screen in Yalla Well: calories left, protein, carbs and fat'), 'phone-hero', true)}
+    <div class="hero-phone">${phone(ctx, 'today', L('شاشة النهارده في يلا ويل: السعرات الفاضلة والبروتين والكارب والدهون', 'The Today screen in Yalla Well: calories left, protein, carbs and fat'), 'phone-hero', true)}</div>
     <div class="float float-a glass" aria-hidden="true">
       <svg width="52" height="52" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" stroke="#2A2E33" stroke-width="6" fill="none"/><path d="M27 5A22 22 0 1 1 8 38" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" fill="none"/></svg>
       <span><b class="num">1,179</b><small>${L('سعرة فاضلة النهارده', 'kcal left today')}</small></span>
@@ -140,8 +147,16 @@ const home = {
   </div>
 </section>
 
+<section class="statement" aria-label="${L('يلا ويل في جملة', 'Yalla Well in a sentence')}">
+  <div class="wrap">
+    <p class="say" data-say>${L('أكل مصري حقيقي بالسعرات. تمرين على مقاسك في الجيم أو البيت. أدوية وفيتامينات في ميعادها. <em>وحالتك الصحية في حساب كل حاجة.</em>', 'Real Egyptian food, honestly counted. Training that fits your week, at the gym or at home. Medicines and supplements right on time. <em>And your health, part of every decision.</em>')}</p>
+  </div>
+</section>
+
 <section class="story" id="features">
   <div class="wrap story-in">
+    <div class="story-text">
+    <div class="story-nav" aria-hidden="true">${steps.map((s, i) => `<span class="sn${i === 0 ? ' is-on' : ''}"><b>${s.k}</b><i><u></u></i></span>`).join('')}</div>
     <div class="story-steps">
       ${steps.map((s, i) => `<article class="step${i === 0 ? ' is-on' : ''}" data-img="${ctx.img(s.img)}" data-alt="${s.alt}">
         ${kicker(s.k)}
@@ -151,8 +166,18 @@ const home = {
         ${phone(ctx, s.img, s.alt, 'phone-inline')}
       </article>`).join('')}
     </div>
+    </div>
     <div class="story-phone" aria-hidden="true">
-      <figure class="phone phone-sticky"><img id="story-img" src="${ctx.img(steps[0].img)}" alt="" width="390" height="844" loading="lazy" decoding="async"></figure>
+      <figure class="phone phone-sticky"><div class="screens">${steps.map((s, i) => `<img class="screen${i === 0 ? ' is-on' : ''}" src="${ctx.img(s.img)}" alt="" width="390" height="844" loading="lazy" decoding="async">`).join('')}</div></figure>
+    </div>
+  </div>
+</section>
+
+<section class="gallery" aria-labelledby="gal-title">
+  <div class="wrap gal-head reveal">${kicker(L('جوه التطبيق', 'Inside the app'))}<h2 class="h2" id="gal-title">${L('شاشة شاشة.', 'Screen by screen.')}</h2></div>
+  <div class="gal-viewport">
+    <div class="gal-track">
+      ${gallery.map(([img, t, d]) => `<figure class="gal-item">${phone(ctx, img, `${t}: ${d}`, 'gal-phone')}<figcaption><b>${t}</b><span>${d}</span></figcaption></figure>`).join('')}
     </div>
   </div>
 </section>
@@ -170,6 +195,7 @@ const home = {
 <section class="section" id="how">
   <div class="wrap">
     <div class="sec-head reveal">${kicker(L('إزاي بيشتغل', 'How it works'))}<h2 class="h2">${L('3 خطوات، والكابتن يكمل الباقي.', 'Three steps, and the captain does the rest.')}</h2></div>
+    <div class="how-line" aria-hidden="true"><span></span></div>
     <ol class="how">
       <li class="reveal"><span class="how-n">01</span><h3>${L('نتعرف', 'Get to know you')}</h3><p>${L('السن والطول والوزن والهدف، والحالات الصحية والأدوية لو فيه.', 'Age, height, weight and goal, plus any health conditions and medicines.')}</p></li>
       <li class="reveal"><span class="how-n">02</span><h3>${L('نختار النظام', 'Pick a plan')}</h3><p>${L('نظام تمرين جاهز، أو 3 أسئلة ونرشح واحد، وبعدها كل يوم جيم أو بيت أو راحة.', 'Choose a training plan or answer three questions for a suggestion, then set each day to gym, home or rest.')}</p></li>

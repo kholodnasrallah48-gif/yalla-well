@@ -169,6 +169,7 @@ const home = {
     </div>
     <div class="story-phone" aria-hidden="true">
       <figure class="phone phone-sticky"><div class="screens">${steps.map((s, i) => `<img class="screen${i === 0 ? ' is-on' : ''}" src="${ctx.img(s.img)}" alt="" width="390" height="844" loading="lazy" decoding="async">`).join('')}</div></figure>
+      <div class="story-dots">${steps.map((_, i) => `<i${i === 0 ? ' class="is-on"' : ''}></i>`).join('')}</div>
     </div>
   </div>
 </section>

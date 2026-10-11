@@ -316,6 +316,10 @@ a.store-web:hover { border-color: var(--accent); box-shadow: 0 16px 44px -12px r
 .phone .screen { position: absolute; inset: 0; border-radius: 0; opacity: 0; transition: opacity 0.5s var(--ease); }
 .phone .screen.is-on { opacity: 1; }
 .story-nav { display: none; }
+.story-phone { align-content: center; }
+.story-dots { display: none; justify-content: center; gap: 8px; margin-top: 22px; }
+.story-dots i { width: 8px; height: 8px; border-radius: 99px; background: var(--line); transition: width 0.35s var(--ease), background-color 0.35s; }
+.story-dots i.is-on { width: 26px; background: var(--accent); }
 @media (min-width: 921px) {
   .motion .story { padding-block: 0; }
   .motion .story-in { height: 100vh; align-items: center; }
@@ -324,8 +328,11 @@ a.store-web:hover { border-color: var(--accent); box-shadow: 0 16px 44px -12px r
   .motion .step { grid-area: 1 / 1; min-height: 0; padding: 0; opacity: 0; visibility: hidden; transition: none; }
   .motion .step:first-child { opacity: 1; visibility: visible; }
   .motion .story-phone { position: relative; top: auto; height: 100vh; padding-top: var(--hdr); perspective: 1600px; }
-  .motion .phone .screen { opacity: 1; transition: none; clip-path: inset(100% 0 0 0); }
-  .motion .phone .screen:first-child { clip-path: inset(0 0 0 0); }
+  .motion .phone-sticky { height: min(680px, calc(100vh - var(--hdr) - 110px)); }
+  .motion .phone .screen { opacity: 1; transition: none; transform: translateX(100%); }
+  [dir='rtl'] .motion .phone .screen { transform: translateX(-100%); }
+  .motion .phone .screen:first-child { transform: none; }
+  .motion .story-dots { display: flex; }
   .motion .story-nav { display: flex; gap: 12px; margin-bottom: clamp(28px, 4vh, 48px); }
 }
 .sn { flex: 1; max-width: 170px; display: grid; gap: 10px; font-size: 14px; font-weight: 800; color: var(--muted); transition: color 0.3s; }

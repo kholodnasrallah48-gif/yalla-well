@@ -298,6 +298,8 @@
         const dots = [...story.querySelectorAll('.story-dots i')];
         const ph = story.querySelector('.phone-sticky');
         const n = steps.length;
+        // Start positions in percent only, so the CSS offset (there to avoid a flash before this runs) doesn't add up.
+        gsap.set(screens, { x: 0, xPercent: (i) => (i ? 100 * s : 0) });
         gsap.fromTo(ph, { y: 140, rotateX: 22, scale: 0.88 }, { y: 0, rotateX: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: story, start: 'top bottom', end: 'top top', scrub: 0.7 } });
         const tl = gsap.timeline({
           defaults: { ease: 'none' },

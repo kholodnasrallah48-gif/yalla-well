@@ -107,7 +107,7 @@ function footer(ctx) {
     <div class="ftr-top">
       <div class="ftr-brand">
         <a class="brand" href="./">${champ('logo', { size: 30 })}<span class="wordmark">${L('يلا ويل', 'Yalla Well')}</span></a>
-        <p class="muted">${L('تطبيق مصري للأكل والتمرين والصحة.', 'An Egyptian app for food, training and health.')}</p>
+        <p class="muted">${L('خطة أكل وتمرين ومتابعة صحية على حسب كل شخص.', 'Food, training and health, planned around each person.')}</p>
         ${social}
       </div>
       <nav class="ftr-cols" aria-label="${L('روابط آخر الصفحة', 'Footer links')}">

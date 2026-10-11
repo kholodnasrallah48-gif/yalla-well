@@ -80,7 +80,7 @@ main { overflow-x: clip; }
 .h2 { font-size: clamp(32px, 4.6vw, 58px); line-height: 1.2; margin-bottom: 16px; text-wrap: balance; }
 .h3 { font-size: clamp(22px, 2.2vw, 26px); line-height: 1.35; }
 .is-en .h1, .is-en .h2 { line-height: 1.05; }
-.lead { font-size: clamp(17px, 1.9vw, 21px); color: var(--soft); line-height: 1.75; margin: 0; }
+.lead { font-size: clamp(17px, 1.9vw, 21px); color: var(--soft); line-height: 1.75; margin: 0; text-wrap: pretty; }
 .is-en .lead { line-height: 1.55; }
 .kicker { color: var(--accent); font-weight: 800; font-size: 15px; margin: 0 0 10px; }
 .is-en .kicker { text-transform: uppercase; letter-spacing: 0.12em; font-size: 13px; }
@@ -330,7 +330,7 @@ a.store-web:hover { border-color: var(--accent); box-shadow: 0 16px 44px -12px r
   .motion .story-phone { position: relative; top: auto; height: 100vh; padding-top: var(--hdr); perspective: 1600px; }
   .motion .phone-sticky { height: min(680px, calc(100vh - var(--hdr) - 110px)); }
   .motion .phone .screen { opacity: 1; transition: none; transform: translateX(100%); }
-  [dir='rtl'] .motion .phone .screen { transform: translateX(-100%); }
+  .motion[dir='rtl'] .phone .screen { transform: translateX(-100%); }
   .motion .phone .screen:first-child { transform: none; }
   .motion .story-dots { display: flex; }
   .motion .story-nav { display: flex; gap: 12px; margin-bottom: clamp(28px, 4vh, 48px); }

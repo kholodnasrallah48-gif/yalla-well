@@ -25,14 +25,15 @@ function faqGroups(ctx) {
   const { L } = ctx;
   return [
     { id: 'general', title: L('عام', 'General'), items: [
-      [L('إيه هو يلا ويل؟', 'What is Yalla Well?'), L('تطبيق بيحسب السعرات من الأكل المصري، وبيرتب أسبوع التمرين في الجيم أو البيت، وبينظم مواعيد الأدوية والفيتامينات، وبيراعي أي حالة صحية في كل ده.', 'An app that counts calories from Egyptian food, plans your training week at the gym or at home, organises medicine and supplement times, and takes any health condition into account in all of it.')],
+      [L('إيه هو يلا ويل؟', 'What is Yalla Well?'), L('تطبيق بيعمل خطة أكل وتمرين على حسب جسمك وهدفك وحالتك الصحية، وبينظم مواعيد أدويتك وتحاليلك. ولو حالتك أو أدويتك اتغيرت، الخطة بتتغير معاها.', 'An app that builds a food and training plan around your body, your goal and your health, and keeps track of your medicines and lab tests. When your health or medicines change, the plan changes too.')],
       [L('التطبيق بفلوس؟', 'Does it cost anything?'), L('النسخة الحالية للتجربة ومن غير أي اشتراك.', 'The current version is a trial and has no subscription.')],
       [L('محتاج أعمل حساب؟', 'Do I need an account?'), L('لأ. مفيش تسجيل دخول، وكل البيانات بتتحفظ على الموبايل نفسه.', "No. There's no sign-in, and everything is saved on your phone.")],
       [L('بيشتغل على أنهي موبايلات؟', 'Which phones does it work on?'), L('النسخة على الويب شغالة دلوقتي على أي موبايل أو كمبيوتر. تطبيق آيفون وأندرويد قريبا.', 'The web version works now on any phone or computer. iPhone and Android apps are coming soon.')],
       [L('فيه إنجليزي؟', 'Is it available in English?'), L('أيوه، عربي وإنجليزي، واللغة بتتغير من الصفحة الرئيسية في أي وقت.', 'Yes, Arabic and English. Switch any time from the home screen.')],
     ] },
     { id: 'food', title: L('الأكل', 'Food'), items: [
-      [L('السعرات بتتحسب إزاي؟', 'How are my calories worked out?'), L('من السن والطول والوزن والنشاط والهدف، ومعاها هدف البروتين والكارب والدهون.', 'From your age, height, weight, activity and goal, together with protein, carb and fat targets.')],
+      [L('السعرات بتتحسب إزاي؟', 'How are my calories worked out?'), L('من السن والطول والوزن والنشاط والهدف. ولو فيه حالة زي الغدة أو حمل، التطبيق بيقلل العجز في السعرات أو بيلغيه خالص.', 'From your age, height, weight, activity and goal. With a condition like thyroid disease, or during pregnancy, the app makes the calorie deficit smaller or drops it altogether.')],
+      [L('فيه وصفات؟', 'Are there recipes?'), L('56 وصفة لفطار وغدا وعشا وسناكس. الكمية بتتظبط على اللي فاضل من سعراتك في الوجبة، والمقادير بتتغير معاها.', '56 recipes for breakfast, lunch, dinner and snacks. Each one is sized to the calories you have left for that meal, and the ingredients change with it.')],
       [L('ليه الوجبة مش بتتحسب لوحدها؟', "Why doesn't a meal count by itself?"), L('الوجبة بتدخل في الحساب لما يتعلم عليها إنها اتاكلت، مش على حسب الساعة، عشان الحساب يبقى على اللي حصل فعلا.', 'A meal counts once you tick it as eaten, not by the clock, so your totals reflect what actually happened.')],
       [L('الأكلة مش موجودة في القايمة؟', "What if a food isn't on the list?"), L('التطبيق بيدور عليها أونلاين في قواعد بيانات أكل عامة، واللي يتلاقي بيتحفظ في "أكلاتي". وفي تطبيق الموبايل فيه كمان قراية باركود.', 'The app searches public food databases online, and anything it finds is saved to "My foods". The phone app can also scan barcodes.')],
       [L('إيه اللي بيحصل نص الليل؟', 'What happens at midnight?'), L('اليوم بيتقفل ويتحفظ زي ما هو، ويدخل في التقرير الأسبوعي.', 'The day locks, is saved as it is, and goes into the weekly report.')],
@@ -77,45 +78,45 @@ function downloadPanel(ctx) {
 
 const home = {
   file: 'index.html',
-  title: (ctx) => ctx.L('كابتن صحتك في جيبك', 'Your health captain, in your pocket'),
-  desc: (ctx) => ctx.L('يلا ويل: تطبيق مصري بيحسب سعرات الأكل المصري، وبيرتب تمرينك في الجيم أو البيت، وبينظم مواعيد أدويتك وبيراعي حالتك الصحية.', 'Yalla Well is an Egyptian app that counts calories in Egyptian food, plans your training at the gym or at home, and organises your medicines around your health.'),
+  title: (ctx) => ctx.L('خطة على مقاسك', 'A plan that fits you'),
+  desc: (ctx) => ctx.L('يلا ويل بيعمل خطة أكل وتمرين على حسب جسمك وهدفك وحالتك الصحية، وبينظم مواعيد أدويتك وتحاليلك.', 'Yalla Well builds a food and training plan around your body, your goal and your health, and keeps track of your medicines and lab tests.'),
   body(ctx) {
     const { L } = ctx;
     const stats = [
-      [314, L('أكلة مصرية وعربية بالسعرات', 'Egyptian and Arab foods with calories')],
-      [90, L('تمرين بصور وشرح', 'exercises with pictures and cues')],
+      [314, L('أكلة متسجلة بسعراتها', 'foods with their calories')],
+      [56, L('وصفة بتتظبط على سعراتك', 'recipes sized to your calories')],
       [9, L('أنظمة تمرين', 'training plans')],
-      [56, L('وصفة على قد سعراتك', 'recipes scaled to your calories')],
-      [85, L('حالة صحية ودوا وفيتامين بيفهمهم', 'conditions, medicines and supplements it understands')],
+      [90, L('تمرين بالصور والشرح', 'exercises with pictures and cues')],
+      [85, L('حالة ودوا وفيتامين التطبيق بيعرفهم', 'conditions, medicines and supplements it knows')],
     ];
     const steps = [
       { img: 'food', alt: L('شاشة الأكل: السعرات والبروتين والكارب والدهون والوجبات', 'Food screen: calories, protein, carbs, fat and meals'), k: L('الأكل', 'Food'),
-        h: L('الأكلة اللي اتاكلت بس هي اللي بتتحسب.', 'Only what you actually ate counts.'),
-        p: L('السعرات والبروتين محسوبين على الجسم والهدف، والأكل مصري حقيقي: فول وكشري وملوخية ومحشي.', 'Calories and protein are set for your body and goal, and the food is real Egyptian food: ful, koshari, molokhia and mahshi.'),
-        li: [L('الوجبة بتتحسب لما يتعلم عليها، مش بالساعة', 'Meals count when you tick them, not by the clock'), L('بروتين وكارب ودهون لكل أكلة، وتنبيه لو فيها ملح كتير أو مش مناسبة للحالة الصحية', "Protein, carbs and fat for every food, with a warning for high salt or anything that doesn't suit your condition"), L('أي أكلة مش في القايمة بتتدور أونلاين', 'Anything not on the list is looked up online')] },
+        h: L('وصفات أكل عادي، بالكمية اللي تناسب سعراتك.', 'Everyday recipes, in the amount your calories allow.'),
+        p: L('مفيش أكل دايت مخصوص. الوصفة بتتظبط كميتها على اللي فاضل من سعراتك في الوجبة دي، ربع أو نص أو أكتر، والمقادير بتتغير معاها.', 'No special diet food. Each recipe is resized to the calories you have left for that meal, a quarter, a half or more, and the ingredients change with it.'),
+        li: [L('الوجبة بتتحسب لما يتعلم عليها إنها اتاكلت، مش بالساعة', 'A meal counts when you tick it as eaten, not by the clock'), L('لو وجبة زادت، الباقي بيتقسم على بقية اليوم', 'Go over at one meal and the rest of the day is rebalanced'), L('تنبيه لو أكلة مش مناسبة لحالتك أو لدوا من أدويتك', "A warning when a food doesn't suit your condition or one of your medicines")] },
       { img: 'train', alt: L('شاشة التمرين: يوم أرداف وتمارينه بالمجموعات والعدات', 'Training screen: a glutes day with sets and reps'), k: L('التمرين', 'Training'),
-        h: L('جيم، بيت، أو راحة. كل يوم ليه اختياره.', 'Gym, home or rest. Every day, your call.'),
-        p: L('نظام من 9، وكل يوم جاهز بالتمارين والمجموعات والعدات.', 'Pick one of nine plans, and every day comes ready with exercises, sets and reps.'),
-        li: [L('بديل بالجهاز وبديل بالأوزان الحرة لكل تمرين', 'A machine and a free-weight version of every exercise'), L('الوزن بالأرقام والعدات بزرار، وتايمر راحة', 'Log weight and reps, with a rest timer'), L('برنامج بيزود الحمل أسبوع ورا أسبوع', 'A program that steps up the load week by week')] },
+        h: L('تمرين على حسب أيامك ومكانك.', 'Training around your days and where you train.'),
+        p: L('كل يوم في الأسبوع يتحدد جيم أو بيت أو راحة. ولو فيه تمرين مش مناسب لحالتك أو لمفصل بيوجع، بيتبدل بتمرين أنسب ومكتوب جنبه السبب.', "Each day of the week is gym, home or rest. If an exercise doesn't suit your condition or a sore joint, it's swapped for a better one, with the reason next to it."),
+        li: [L('كل تمرين ليه نسخة بالجهاز ونسخة بالأوزان الحرة', 'Every exercise has a machine and a free-weight version'), L('في أيام التعب، التمرين بيخف', 'On rough days, the workout gets lighter'), L('الوزن المقترح بيزيد لما العدات كلها تكمل', 'The suggested weight goes up once you hit all your reps')] },
       { img: 'health', alt: L('شاشة صحتي: الأدوية والفيتامينات بالجرعة والميعاد', 'My health screen: medicines and supplements with dose and time'), k: L('الصحة والأدوية', 'Health and medicines'),
-        h: L('بيفهم حالتك الصحية، وبيظبط كل حاجة عليها.', 'It understands your health, and adjusts everything to it.'),
-        p: L('هاشيموتو والروماتويد والسكر والضغط وغيرهم، وأي حالة تانية تتكتب بالكلام.', "Hashimoto's, rheumatoid arthritis, diabetes, blood pressure and more, plus anything you type in yourself."),
-        li: [L('مواعيد الأدوية والفيتامينات بالجرعة والتكرار', 'Medicine and supplement times with dose and frequency'), L('علامات توقف التمرين على حسب الحالة', 'Warning signs to stop training, based on your condition'), L('التحاليل وتقرير PDF للدكتور', 'Lab tracking and a PDF report for your doctor')] },
+        h: L('متابعة لحالتك وأدويتك وتحاليلك.', 'Your condition, medicines and tests, followed for you.'),
+        p: L('أي حالة صحية أو دوا يتكتب بالكلام، والتطبيق بيحسب حسابه في الأكل والتمرين والسعرات. ولو مش عارفه، بيسأل 3 أسئلة.', "Type any condition or medicine in your own words and it's factored into your food, training and calories. If the app doesn't know it, it asks three questions."),
+        li: [L('ميعاد كل دوا بجرعته، وإزاي يتاخد', 'Each medicine at its time, with its dose and how to take it'), L('التحاليل اللي تهم حالتك، وتنبيه لما ييجي ميعادها', 'The lab tests that matter for your condition, with a reminder when one is due'), L('تقرير PDF عن آخر 4 أسابيع للدكتور', 'A PDF of the last 4 weeks for your doctor')] },
     ];
     const gallery = [
-      ['today', L('النهارده', 'Today'), L('السعرات الفاضلة والماكروز وأدوية اليوم', "Calories left, macros and today's medicines")],
-      ['food', L('الأكل', 'Food'), L('كل وجبة بالسعرات والبروتين', 'Every meal with calories and protein')],
-      ['train', L('التمرين', 'Training'), L('اليوم بتمارينه ومجموعاته', 'The day with its exercises and sets')],
-      ['today-meds', L('سؤال اليوم', 'Daily check-in'), L('الطاقة والألم والنوم، والتمرين بيتظبط عليهم', 'Energy, pain and sleep, and training adjusts to them')],
-      ['health', L('صحتي', 'My health'), L('الأدوية والفيتامينات بالجرعة والميعاد', 'Medicines and supplements with dose and time')],
+      ['today', L('النهارده', 'Today'), L('السعرات الفاضلة وأدوية النهارده', "Calories left and today's medicines")],
+      ['food', L('الأكل', 'Food'), L('كل وجبة بالسعرات والبروتين', 'Each meal with its calories and protein')],
+      ['train', L('التمرين', 'Training'), L('تمارين اليوم بالمجموعات والعدات', "The day's exercises with sets and reps")],
+      ['today-meds', L('سؤال اليوم', 'Daily check-in'), L('الطاقة والألم والنوم، ولو اليوم تقيل التمرين بيخف', 'Energy, pain and sleep. On a rough day, training eases off')],
+      ['health', L('صحتي', 'My health'), L('الأدوية والفيتامينات بجرعتها وميعادها', 'Medicines and supplements with dose and time')],
     ];
     const more = [
-      ['globe', L('عربي وإنجليزي', 'Arabic and English'), L('والكلام العربي بيتظبط لو ولد أو بنت.', 'Arabic text adapts to you as a man or a woman.')],
-      ['bell', L('تنبيهات في وقتها', 'Timely reminders'), L('للوجبات والمية والتمرين والأدوية، بكلام متغير، ومش بتيجي لو الحاجة اتعملت.', "For meals, water, workouts and medicines, worded differently each day, and skipped once it's done.")],
-      ['chart', L('تقرير أسبوعي', 'Weekly report'), L('كل يوم أخضر أو أحمر، ويتطبع أو يتبعت PDF.', 'Every day green or red, ready to print or share as a PDF.')],
-      ['flame', L('نقط وأيام متواصلة', 'Points and streaks'), L('لما السعرات تبقى في الحدود، ولما التمرين يخلص.', 'For staying within your calories and finishing workouts.')],
-      ['book', L('وصفات على قد سعراتك', 'Recipes that fit'), L('56 وصفة، والكمية بتتظبط على اللي فاضل في اليوم.', "56 recipes, scaled to what's left in your day.")],
-      ['moon', L('فاتح وغامق', 'Light and dark'), L('والأصوات ممكن تتقفل.', 'And sounds can be turned off.')],
+      ['heart', L('حالتك داخلة في الحساب', 'Your health is in the numbers'), L('الغدة والسكر والروماتويد وغيرهم بيغيروا السعرات والبروتين والأكل، وحتى التمارين.', 'Thyroid disease, diabetes, rheumatoid arthritis and others change your calories, protein and food, and even the exercises.')],
+      ['pill', L('الدوا والأكل مع بعض', 'Medicines and food together'), L('لو دوا الغدة لازم يبعد عن الكالسيوم أو الحديد، التطبيق بينبه. وأي أكلة بتتعارض مع دوا، زي الجريب فروت مع دوا الكوليسترول، بتظهر بالأحمر.', 'If thyroid medicine has to be kept apart from calcium or iron, the app tells you. A food that clashes with a medicine, like grapefruit with cholesterol pills, shows in red.')],
+      ['lab', L('تحاليل على حسب حالتك', 'Tests for your condition'), L('مع السكر، التراكمي كل 3 شهور. مع الغدة، تحليل الغدة كل 6 شهور. وكل تحليل ليه تنبيه في ميعاده، ونتيجة التراكمي والغدة بتغير الخطة.', 'With diabetes, HbA1c every 3 months. With thyroid disease, TSH every 6 months. Each test is reminded when due, and HbA1c and TSH results change your plan.')],
+      ['dumbbell', L('تمارين بتتبدل لوحدها', 'Exercises that swap themselves'), L('مع وجع الركبة أو الضهر أو الكتف، أو حالة محتاجة حرص، التمرين بيتبدل بتمرين أنسب ومكتوب جنبه السبب.', 'With knee, back or shoulder pain, or a condition that needs care, an exercise is swapped for a safer one, with the reason next to it.')],
+      ['moon', L('أيام التعب', 'Rough days'), L('لو الطاقة أو النوم وحشين في سؤال اليوم، أو المرض نشط، أو تاني يوم جرعة الميثوتركسات الأسبوعية، التمرين بيبقى خفيف.', 'If energy or sleep is low in the daily check-in, during a flare, or the day after a weekly methotrexate dose, the workout turns light.')],
+      ['chat', L('تسجيل الأكل بالكلام', 'Log food in words'), L('الوجبة بتتكتب زي ما بنقولها، "2 بيض وعيش بلدي"، والتطبيق بيحسب كل حاجة فيها.', 'Type a meal in Arabic the way you would say it, and the app counts everything in it.')],
     ];
     const g = faqGroups(ctx);
     const top = [g[0].items[0], g[3].items[0], g[4].items[0], g[0].items[3], g[0].items[1]];
@@ -123,8 +124,8 @@ const home = {
 <section class="hero">
   <div class="wrap hero-text">
     <p class="pill reveal"><span class="dot" aria-hidden="true"></span>${L('قريبا على آيفون وأندرويد', 'Coming soon to iPhone and Android')}</p>
-    <h1 class="display reveal" data-split>${L('كابتن صحتك في جيبك.', 'Your health captain, in your pocket.')}</h1>
-    <p class="lead reveal">${L('أكل مصري بالسعرات، تمرين في الجيم أو البيت، ومواعيد أدويتك. كله في تطبيق واحد بالعربي.', 'Egyptian food with calories, training at the gym or at home, and your medicine times. All in one app, in Arabic and English.')}</p>
+    <h1 class="display reveal" data-split>${L('خطة على مقاسك، مش على مقاس الكل.', 'A plan that fits you, not everyone.')}</h1>
+    <p class="lead reveal">${L('يلا ويل بيحسب أكلك وتمرينك ومواعيد أدويتك على حسب جسمك وهدفك وحالتك الصحية. يعني اتنين بنفس الوزن ممكن يطلعلهم خطتين مختلفين خالص.', 'Yalla Well works out your food, your training and your medicine times from your body, your goal and your health. Two people with the same weight can end up with two very different plans.')}</p>
     <div class="reveal">${storeButtons(ctx)}</div>
   </div>
   <div class="hero-stage">
@@ -149,7 +150,7 @@ const home = {
 
 <section class="statement" aria-label="${L('يلا ويل في جملة', 'Yalla Well in a sentence')}">
   <div class="wrap">
-    <p class="say" data-say>${L('أكل مصري حقيقي بالسعرات. تمرين على مقاسك في الجيم أو البيت. أدوية وفيتامينات في ميعادها. <em>وحالتك الصحية في حساب كل حاجة.</em>', 'Real Egyptian food, honestly counted. Training that fits your week, at the gym or at home. Medicines and supplements right on time. <em>And your health, part of every decision.</em>')}</p>
+    <p class="say" data-say>${L('اللي عنده سكر احتياجه غير اللي عنده روماتويد، واللي بيتمرن في البيت غير اللي بيروح الجيم. <em>عشان كده كل خطة في يلا ويل بتتعمل لصاحبها.</em>', "Someone with diabetes needs something different from someone with rheumatoid arthritis, and training at home isn't training at the gym. <em>So every plan in Yalla Well is made for one person.</em>")}</p>
   </div>
 </section>
 
@@ -175,7 +176,7 @@ const home = {
 </section>
 
 <section class="gallery" aria-labelledby="gal-title">
-  <div class="wrap gal-head reveal">${kicker(L('جوه التطبيق', 'Inside the app'))}<h2 class="h2" id="gal-title">${L('شاشة شاشة.', 'Screen by screen.')}</h2></div>
+  <div class="wrap gal-head reveal">${kicker(L('الشاشات', 'Screens'))}<h2 class="h2" id="gal-title">${L('التطبيق من جوه.', 'A look inside.')}</h2></div>
   <div class="gal-viewport">
     <div class="gal-track">
       ${gallery.map(([img, t, d]) => `<figure class="gal-item">${phone(ctx, img, `${t}: ${d}`, 'gal-phone')}<figcaption><b>${t}</b><span>${d}</span></figcaption></figure>`).join('')}
@@ -185,7 +186,7 @@ const home = {
 
 <section class="section">
   <div class="wrap">
-    <div class="sec-head reveal">${kicker(L('وكمان', 'And also'))}<h2 class="h2">${L('حاجات صغيرة بتفرق كل يوم.', 'Small things that help every day.')}</h2></div>
+    <div class="sec-head reveal">${kicker(L('الفرق', 'The difference'))}<h2 class="h2">${L('الحاجات اللي عملنا التطبيق عشانها.', 'What we built it for.')}</h2></div>
     <div class="tiles">
       ${more.map(([ic, t, d]) => `<div class="tile reveal"><span class="tile-ic">${icon(ic, 24)}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}
     </div>
@@ -195,12 +196,12 @@ const home = {
 
 <section class="section" id="how">
   <div class="wrap">
-    <div class="sec-head reveal">${kicker(L('إزاي بيشتغل', 'How it works'))}<h2 class="h2">${L('3 خطوات، والكابتن يكمل الباقي.', 'Three steps, and the captain does the rest.')}</h2></div>
+    <div class="sec-head reveal">${kicker(L('البداية', 'Getting started'))}<h2 class="h2">${L('أول ما التطبيق يتفتح.', 'The first time you open it.')}</h2></div>
     <div class="how-line" aria-hidden="true"><span></span></div>
     <ol class="how">
-      <li class="reveal"><span class="how-n">01</span><h3>${L('نتعرف', 'Get to know you')}</h3><p>${L('السن والطول والوزن والهدف، والحالات الصحية والأدوية لو فيه.', 'Age, height, weight and goal, plus any health conditions and medicines.')}</p></li>
-      <li class="reveal"><span class="how-n">02</span><h3>${L('نختار النظام', 'Pick a plan')}</h3><p>${L('نظام تمرين جاهز، أو 3 أسئلة ونرشح واحد، وبعدها كل يوم جيم أو بيت أو راحة.', 'Choose a training plan or answer three questions for a suggestion, then set each day to gym, home or rest.')}</p></li>
-      <li class="reveal"><span class="how-n">03</span><h3>${L('يلا نبدأ', "Let's go")}</h3><p>${L('الكابتن بياخدك جولة سريعة في التطبيق، وبعدها هو معاك كل يوم.', "The captain gives you a quick tour of the app, then he's with you every day.")}</p></li>
+      <li class="reveal"><span class="how-n">01</span><h3>${L('نتعرف', 'Getting to know you')}</h3><p>${L('السن والطول والوزن والهدف، وأي حالة صحية أو أدوية.', 'Age, height, weight and goal, plus any health conditions or medicines.')}</p></li>
+      <li class="reveal"><span class="how-n">02</span><h3>${L('نختار نظام التمرين', 'Choosing a plan')}</h3><p>${L('من 9 أنظمة، أو 3 أسئلة ونرشح واحد. وبعدها كل يوم في الأسبوع يتحدد جيم أو بيت أو راحة.', 'One of nine plans, or three questions and we suggest one. Then each day of the week is set to gym, home or rest.')}</p></li>
+      <li class="reveal"><span class="how-n">03</span><h3>${L('الخطة جاهزة', 'Your plan is ready')}</h3><p>${L('السعرات والبروتين والمية وأسبوع التمرين، ومعاهم ملاحظة بكل حاجة اتظبطت عشان حالتك.', 'Calories, protein, water and your training week, with a note on everything adjusted for your health.')}</p></li>
     </ol>
   </div>
 </section>
@@ -220,7 +221,7 @@ ${downloadPanel(ctx)}`;
 const features = {
   file: 'features.html',
   title: (ctx) => ctx.L('المميزات', 'Features'),
-  desc: (ctx) => ctx.L('كل اللي جوه يلا ويل: حساب سعرات الأكل المصري، أنظمة تمرين للجيم والبيت، ومتابعة الأدوية والتحاليل على حسب حالتك الصحية.', "Everything inside Yalla Well: calorie counting for Egyptian food, training plans for gym and home, and medicine and lab tracking around your health."),
+  desc: (ctx) => ctx.L('تفاصيل يلا ويل: أكل ووصفات على قد سعراتك، تمرين في الجيم أو البيت، ومتابعة الأدوية والتحاليل على حسب حالتك.', 'Yalla Well in detail: food and recipes sized to your calories, training at the gym or at home, and medicines and lab tests followed around your health.'),
   body(ctx) {
     const { L } = ctx;
     const block = (id, img, alt, k, h, lead, groups, flip) => `<section class="feature${flip ? ' is-flip' : ''}" id="${id}">
@@ -232,32 +233,33 @@ const features = {
         <div class="feature-media reveal">${phone(ctx, img, alt)}</div>
       </div>
     </section>`;
-    return `${pageHero(ctx, L('المميزات', 'Features'), L('كل اللي جوه يلا ويل.', 'Everything inside Yalla Well.'), L('الأكل والتمرين والصحة في مكان واحد، وكل جزء بيكلم التاني: الحالة الصحية بتغير الأكل والتمرين، والدوا بيغير اليوم.', 'Food, training and health in one place, and each part talks to the others: your condition shapes your food and training, and your medicines shape your day.'))}
+    return `${pageHero(ctx, L('المميزات', 'Features'), L('اللي التطبيق بيعمله، بالتفصيل.', 'What the app does, in detail.'), L('أي حالة صحية أو دوا بيتسجل في الأول بيأثر على الأكل والتمرين والمواعيد. وده اللي بيخلي خطة كل واحد مختلفة عن التاني.', "Every condition or medicine you add changes your food, your training and your timings. That's why no two plans look the same."))}
 <nav class="jump wrap" aria-label="${L('أقسام الصفحة', 'On this page')}">
   <a href="#food">${icon('plate', 18)}${L('الأكل', 'Food')}</a><a href="#training">${icon('dumbbell', 18)}${L('التمرين', 'Training')}</a><a href="#health">${icon('pill', 18)}${L('الصحة والأدوية', 'Health and medicines')}</a><a href="#more">${icon('flame', 18)}${L('وكمان', 'And also')}</a>
 </nav>
-${block('food', 'food', L('شاشة الأكل', 'Food screen'), L('الأكل', 'Food'), L('أكل مصري حقيقي، بحساب حقيقي.', 'Real Egyptian food, honestly counted.'), L('هدف السعرات والبروتين والكارب والدهون محسوب من السن والطول والوزن والنشاط والهدف.', 'Your calorie, protein, carb and fat targets come from your age, height, weight, activity and goal.'), [
-      [L('التسجيل', 'Logging'), [L('314 أكلة مصرية وعربية، كل واحدة بالكمية والسعرات والماكروز', '314 Egyptian and Arab foods, each with portion, calories and macros'), L('فطار وغدا وعشا وسناك، والوجبة بتتحسب لما يتعلم عليها إنها اتاكلت', "Breakfast, lunch, dinner and snacks; a meal counts once it's ticked as eaten"), L('الوجبة تتكتب بالكلام، زي "2 بيض وعيش بلدي"، والتطبيق يفهمها', 'Type a meal in words, like "2 eggs and baladi bread", and the app understands it'), L('الأكثر استخدام بيظهر الأول', 'Your most used foods come first')]],
+${block('food', 'food', L('شاشة الأكل', 'Food screen'), L('الأكل', 'Food'), L('أكلك العادي، بسعراته.', 'Your everyday food, counted.'), L('هدف السعرات والبروتين والكارب والدهون محسوب من السن والطول والوزن والنشاط والهدف، وبيتظبط لو فيه حالة صحية.', 'Your calorie, protein, carb and fat targets come from your age, height, weight, activity and goal, and shift with any health condition.'), [
+      [L('التسجيل', 'Logging'), [L('314 أكلة، كل واحدة بالكمية والسعرات والماكروز', '314 foods, each with portion, calories and macros'), L('فطار وغدا وعشا وسناك، والوجبة بتتحسب لما يتعلم عليها إنها اتاكلت', "Breakfast, lunch, dinner and snacks; a meal counts once it's ticked as eaten"), L('الوجبة تتكتب بالكلام، زي "2 بيض وعيش بلدي"، والتطبيق يحسبها', 'Type a meal in Arabic the way you would say it, and the app works it out'), L('الأكلات اللي بتتكرر بتظهر الأول', 'The foods you log most come first')]],
       [L('لو الأكلة مش في القايمة', "If a food isn't listed"), [L('بحث أونلاين في قواعد بيانات أكل عامة، واللي يتلاقي يتحفظ في "أكلاتي"', 'Online search in public food databases, saved to "My foods"'), L('قراية باركود للمنتجات في تطبيق الموبايل', 'Barcode scanning for packaged food in the phone app')]],
-      [L('تنبيهات واقتراحات', 'Warnings and ideas'), [L('تنبيه أحمر لو الأكلة فيها ملح كتير، أو فوق المسموح من الدهون أو الكارب، أو مش مناسبة للحالة الصحية', 'A red warning for high salt, going over your fat or carb limit, or food that does not suit your condition'), L('اقتراح وجبة على قد اللي فاضل، وأخف لو السعرات قربت تخلص', "Meal ideas sized to what's left, lighter when you're close to your limit"), L('56 وصفة بالاسم، والكمية بتتظبط على السعرات الفاضلة', "56 recipes by name, scaled to the calories you've got left"), L('اليوم بيتقفل بعد نص الليل ويتحفظ للتقرير', 'The day locks after midnight and is saved for your report')]],
+      [L('الوصفات', 'Recipes'), [L('56 وصفة لفطار وغدا وعشا وسناكس', '56 recipes for breakfast, lunch, dinner and snacks'), L('الكمية بتتظبط على السعرات الفاضلة للوجبة، من ربع لواحدة ونص، والمقادير بتتغير معاها', 'Each is sized to the calories left for that meal, from a quarter to one and a half servings, with the ingredients rescaled'), L('الوصفات اللي مش مناسبة لحالتك مش بتظهر', "Recipes that don't suit your health are left out")]],
+      [L('تنبيهات واقتراحات', 'Warnings and ideas'), [L('تنبيه أحمر لو الأكلة فيها ملح كتير، أو فوق المسموح من الدهون أو الكارب، أو مش مناسبة لحالتك', "A red warning for high salt, going over your fat or carb limit, or food that doesn't suit your condition"), L('لو أكلة هتعدي السعرات، بيظهر لحد 3 بدايل أخف من نفس النوع: حلو بحلو، ومقرمش بمقرمش', 'If a food would take you over, up to 3 lighter swaps of the same kind: sweet for sweet, crunchy for crunchy'), L('لو وجبة زادت، الباقي بيتقسم على بقية اليوم، واقتراحات الوجبات بتصغر', 'Go over at one meal and the rest of the day is rebalanced, with smaller meal ideas'), L('اليوم بيتقفل بعد نص الليل ويتحفظ للتقرير', 'The day locks after midnight and is saved for your report')]],
     ], false)}
-${block('training', 'train', L('شاشة التمرين', 'Training screen'), L('التمرين', 'Training'), L('أسبوع تمرين على مقاسك.', 'A training week that fits you.'), L('9 أنظمة بأسامي مفهومة، من 3 لـ6 أيام، وكل يوم في الأسبوع ليه اختياره.', 'Nine plans with plain names, from 3 to 6 days, and every day of the week set your way.'), [
+${block('training', 'train', L('شاشة التمرين', 'Training screen'), L('التمرين', 'Training'), L('أسبوع التمرين على حسب أيامك.', 'A training week around your days.'), L('9 أنظمة بأسامي مفهومة، من 3 لـ6 أيام في الأسبوع.', 'Nine plans with plain names, from 3 to 6 days a week.'), [
       [L('الأنظمة', 'Plans'), [L('الجسم كله، فوق وتحت، دفع وسحب ورجل، أرداف ورجل، عضلة كل يوم، و5 أيام بين الجيم والبيت', 'Full body, upper and lower, push pull legs, glutes and legs, one muscle a day, and 5 days split between gym and home'), L('لو مفيش نظام في الدماغ، 3 أسئلة ونرشح واحد', 'Not sure? Three questions and we suggest one'), L('كل يوم يتحدد جيم أو بيت أو راحة، ويوم الجيم بتقسيمه', 'Set each day to gym, home or rest, and choose the split for gym days')]],
-      [L('التمارين', 'Exercises'), [L('90 تمرين بصور وشرح بالعربي', '90 exercises with pictures and cues'), L('بديل بالجهاز واسم الجهاز، وبديل بالأوزان الحرة', 'A machine version with the machine named, and a free-weight version'), L('تمرين مش مناسب يتشال، وتمرين جديد يتضاف لليوم', 'Remove an exercise, or add your own to the day'), L('فيديو للطريقة الصح من يوتيوب', 'A how-to video search on YouTube')]],
-      [L('في الجيم', 'At the gym'), [L('الوزن بالأرقام، والعدات بزرار زائد وناقص', 'Type the weight, set reps with plus and minus'), L('تايمر راحة بالوقت الحقيقي', 'A rest timer that runs in real time'), L('برنامج 4 أسابيع بيزود الحمل، والأسابيع بتبدل بين الأجهزة والأوزان الحرة', 'A 4-week program that steps up the load, alternating machine and free-weight weeks')]],
+      [L('التمارين', 'Exercises'), [L('90 تمرين بصور وشرح بالعربي', '90 exercises with pictures and cues'), L('بديل بالجهاز واسم الجهاز، وبديل بالأوزان الحرة', 'A machine version with the machine named, and a free-weight version'), L('لو تمرين مش مناسب لحالتك أو لمفصل بيوجع، بيتبدل بتمرين أنسب ومكتوب السبب', "An exercise that doesn't suit your condition or a sore joint is swapped for a better one, with the reason shown"), L('تمرين يتشال، أو تمرين جديد يتضاف لليوم', 'Remove an exercise, or add your own to the day')]],
+      [L('في الجيم', 'At the gym'), [L('الوزن بالأرقام، والعدات بزرار زائد وناقص', 'Type the weight, set reps with plus and minus'), L('تايمر راحة بالوقت الحقيقي', 'A rest timer that runs in real time'), L('برنامج 4 أسابيع، والوزن المقترح بيزيد لما العدات كلها تكمل', 'A 4-week program, with the suggested weight going up once you hit all your reps'), L('في أيام التعب، التمرين بيتحول لحركة خفيفة وتنفس', 'On rough days, the workout becomes light mobility and breathing')]],
     ], true)}
-${block('health', 'health', L('شاشة صحتي', 'My health screen'), L('الصحة والأدوية', 'Health and medicines'), L('بيفهم حالتك، وبيظبط كل حاجة عليها.', 'It understands your health, and adjusts to it.'), L('12 حالة في القايمة، ومعاها 85 حالة ودوا وفيتامين التطبيق بيعرفهم لما يتكتبوا بالكلام.', 'Twelve conditions to pick from, plus 85 conditions, medicines and supplements the app recognises when you type them.'), [
+${block('health', 'health', L('شاشة صحتي', 'My health screen'), L('الصحة والأدوية', 'Health and medicines'), L('متابعة شخصية لحالتك وأدويتك.', 'Personal follow-up for your health and medicines.'), L('12 حالة تتختار من القايمة، وأي حالة أو دوا أو فيتامين تاني يتكتب بالكلام. التطبيق بيعرف 85 منهم بأكتر من 700 طريقة كتابة، وبيسأل 3 أسئلة عن الباقي.', "Pick from twelve conditions, or type any other condition, medicine or supplement. The app knows 85 of them in more than 700 spellings, and asks three questions about anything else."), [
       [L('الحالات الصحية', 'Conditions'), [L('هاشيموتو، جريفز، روماتويد، صدفية، ذئبة حمرا، سكر نوع أول وتاني، مقاومة إنسولين، تكيس مبايض، سيلياك، تصلب متعدد، كرون والقولون التقرحي', "Hashimoto's, Graves', rheumatoid arthritis, psoriasis, lupus, type 1 and 2 diabetes, insulin resistance, PCOS, coeliac disease, MS, Crohn's and ulcerative colitis"), L('أي حالة تانية تتكتب؛ لو مش معروفة، 3 أسئلة سريعة عن الأكل والتمرين وعلامات التوقف', 'Type anything else; if the app does not know it, three quick questions about food, training and warning signs'), L('الأكل بيتظبط: تنبيهات، أكل ممنوع مع أدوية معينة، بروتين أقل لمشاكل الكلى', 'Food adjusts: warnings, foods to avoid with certain medicines, less protein for kidney problems'), L('التمرين بيتظبط: شدة أقل، تمارين ألطف للمفصل اللي بيوجع، وكارت بعلامات توقف التمرين', 'Training adjusts: lower intensity, gentler moves for painful joints, and a card of warning signs to stop')]],
-      [L('الأدوية والفيتامينات', 'Medicines and supplements'), [L('الجرعة والعدد والشكل: حباية، نقط، حقنة، فوار…', 'Dose, amount and form: pill, drops, injection, sachet and more'), L('كل يوم، كل كام يوم، أيام معينة، كل أسبوع، أو كل شهر، وأكتر من ميعاد في اليوم', 'Daily, every few days, set weekdays, weekly or monthly, with several times a day'), L('على معدة فاضية، مع الأكل، أو قبل النوم، وتنبيه في كل ميعاد', 'On an empty stomach, with food or at bedtime, with a reminder each time'), L('تنبيه لو فيه اتنين لازم يبعدوا عن بعض، واليوم اللي بعد الحقنة الأسبوعية تمرينه أخف', 'A warning when two must be taken apart, and a lighter workout the day after a weekly injection')]],
-      [L('المتابعة', 'Keeping track'), [L('سؤال كل يوم عن الطاقة والألم والنوم، ولو اليوم تقيل التمرين بيخف', 'A daily check-in on energy, pain and sleep, with an easier workout on rough days'), L('التحاليل المهمة للحالة، والنتيجة، وميعاد التحليل الجاي', 'The lab tests that matter for you, your results and when the next one is due'), L('تقرير PDF للدكتور عن آخر 4 أسابيع', 'A PDF report for your doctor covering the last 4 weeks')]],
+      [L('الأدوية والفيتامينات', 'Medicines and supplements'), [L('الجرعة والعدد والشكل: حباية، نقط، حقنة، فوار وغيرهم', 'Dose, amount and form: pill, drops, injection, sachet and more'), L('كل يوم، كل كام يوم، أيام معينة، كل أسبوع، أو كل شهر، وأكتر من ميعاد في اليوم', 'Daily, every few days, set weekdays, weekly or monthly, with several times a day'), L('على معدة فاضية، مع الأكل، أو قبل النوم، وتنبيه في كل ميعاد', 'On an empty stomach, with food or at bedtime, with a reminder each time'), L('تنبيه لو فيه اتنين لازم يبعدوا عن بعض، زي الكالسيوم ودوا الغدة', 'A warning when two must be taken apart, like calcium and thyroid medicine'), L('تاني يوم جرعة الميثوتركسات أو الدوا البيولوجي الأسبوعية، التمرين بيبقى أخف', 'The day after a weekly methotrexate or biologic dose, training is lighter')]],
+      [L('المتابعة', 'Keeping track'), [L('سؤال كل يوم عن الطاقة والألم والنوم، ولو اليوم تقيل التمرين بيخف', 'A daily check-in on energy, pain and sleep, with an easier workout on rough days'), L('التحاليل اللي تهم حالتك، زي التراكمي والغدة وفيتامين د، وتنبيه في ميعاد كل تحليل', 'The lab tests that matter for your condition, like HbA1c, TSH and vitamin D, with a reminder when each is due'), L('نتيجة التراكمي والغدة بتغير الخطة', 'HbA1c and TSH results change your plan'), L('تقرير PDF للدكتور عن آخر 4 أسابيع', 'A PDF report for your doctor covering the last 4 weeks')]],
     ], false)}
 <section class="section" id="more">
   <div class="wrap">
-    <div class="sec-head reveal">${kicker(L('وكمان', 'And also'))}<h2 class="h2">${L('اللي بيخلي كل يوم أسهل.', 'What makes every day easier.')}</h2></div>
+    <div class="sec-head reveal">${kicker(L('وكمان', 'And also'))}<h2 class="h2">${L('حاجات تانية في التطبيق.', 'A few more things.')}</h2></div>
     <div class="tiles">
       ${[
         ['globe', L('عربي وإنجليزي', 'Arabic and English'), L('اللغة بتتغير في أي وقت، والكلام العربي بيتظبط لو ولد أو بنت.', 'Switch any time; Arabic text adapts to you as a man or a woman.')],
-        ['bell', L('تنبيهات', 'Reminders'), L('للوجبات والمية والتمرين والأدوية والتحاليل، بكلام متغير كل يوم.', 'For meals, water, workouts, medicines and lab tests, worded differently each day.')],
+        ['bell', L('تنبيهات', 'Reminders'), L('للوجبات والمية والتمرين والأدوية والتحاليل، وفيها أرقام يومك زي السعرات الفاضلة. ومش بتيجي لو الحاجة اتعملت. في تطبيق الموبايل بس.', "For meals, water, workouts, medicines and lab tests, with your numbers for the day, like calories left. Skipped once it's done. Phone app only.")],
         ['chart', L('تقرير أسبوعي', 'Weekly report'), L('كل يوم أخضر أو أحمر، والأسابيع اللي فاتت، ويتطبع أو يتبعت PDF.', 'Each day green or red, past weeks included, ready to print or share as a PDF.')],
         ['flame', L('نقط وأيام متواصلة', 'Points and streaks'), L('لما السعرات تبقى بين 75% و110% من الهدف، ومع كل تمرين يخلص.', 'For staying between 75% and 110% of your calorie target, and for every finished workout.')],
         ['heart', L('الكابتن', 'The captain'), L('بطل اللوجو، بيقول جملة على حسب يومك، وبياخدك جولة أول مرة.', 'The champ from our logo comments on your day and gives you a tour the first time.')],
@@ -351,16 +353,16 @@ const faq = {
 const about = {
   file: 'about.html',
   title: (ctx) => ctx.L('عن يلا ويل', 'About'),
-  desc: (ctx) => ctx.L('يلا ويل تطبيق مصري للأكل والتمرين والصحة، اتعمل للأكل المصري وللناس اللي عندهم حالات صحية وأدوية.', 'Yalla Well is an Egyptian app for food, training and health, built around Egyptian food and for people living with health conditions and medicines.'),
+  desc: (ctx) => ctx.L('ليه عملنا يلا ويل: عشان كل شخص ياخد خطة أكل وتمرين على حسب جسمه وحالته الصحية وأدويته.', 'Why we made Yalla Well: so each person gets a food and training plan built around their body, their health and their medicines.'),
   body(ctx) {
     const { L } = ctx;
     const values = [
-      ['globe', L('بالمصري', 'In Egyptian'), L('الأكل اللي على السفرة فعلا، والكلام اللي بنقوله فعلا، وبالإنجليزي كمان.', 'The food actually on the table, the way people actually talk, and English too.')],
-      ['heart', L('بيفهم الحالة الصحية', 'Health-aware'), L('الأمراض المزمنة والمناعية والأدوية بتغير الأكل والتمرين والمواعيد، مش مجرد ملاحظة.', 'Chronic and autoimmune conditions and medicines change food, training and timing, not just a note.')],
-      ['lock', L('البيانات على الموبايل', 'Your data stays on your phone'), L('مفيش حساب ولا سيرفر بيتخزن عليه تاريخك الصحي.', 'No account, and no server of ours holding your health history.')],
+      ['chat', L('بكلامنا', 'In plain words'), L('التطبيق بيتكلم زي ما بنتكلم، والعربي بيتظبط لو ولد أو بنت. وفيه إنجليزي كمان.', 'The app talks the way people talk, and its Arabic adjusts for men and women. English too.')],
+      ['heart', L('الحالة الصحية بتغير الخطة', 'Health changes the plan'), L('الأمراض المزمنة والمناعية والأدوية بتغير الأكل والتمرين والمواعيد فعلا، مش بتتكتب في ملاحظة وخلاص.', 'Chronic and autoimmune conditions and medicines really change food, training and timing, instead of sitting in a note.')],
+      ['lock', L('البيانات على الموبايل', 'Your data stays on your phone'), L('مفيش حساب، وتاريخك الصحي مش متخزن على سيرفر عندنا.', 'No account, and no server of ours holding your health history.')],
       ['doc', L('مش بديل للدكتور', 'Not a doctor'), L('بنساعد في التنظيم والمتابعة، والقرار الطبي مع الدكتور. والتقرير بيسهل الكلام معاه.', 'We help you organise and keep track; medical decisions stay with your doctor. The report makes that conversation easier.')],
     ];
-    return `${pageHero(ctx, L('عن يلا ويل', 'About'), L('تطبيق اتعمل للأكل المصري والحياة الحقيقية.', 'An app built for Egyptian food and real life.'), L('أغلب تطبيقات الدايت والتمرين مش بتعرف الكشري، ومش بتسأل عن الغدة ولا الروماتويد ولا مواعيد الدوا. يلا ويل اتعمل عشان يسد الفرق ده.', "Most diet and fitness apps don't know koshari, and never ask about your thyroid, rheumatoid arthritis or medicine times. Yalla Well was built to close that gap."))}
+    return `${pageHero(ctx, L('عن يلا ويل', 'About'), L('ليه عملنا يلا ويل.', 'Why we made Yalla Well.'), L('أغلب تطبيقات الدايت بتدي نفس الحساب لكل الناس، ومش بتسأل عن الغدة ولا الروماتويد ولا مواعيد الدوا. واللي عنده حالة زي دي بيفضل يحسب كل حاجة في دماغه. يلا ويل اتعمل عشان يشيل الحساب ده.', 'Most diet apps give everyone the same numbers and never ask about thyroid problems, rheumatoid arthritis or medicine times. People living with those end up working it all out in their heads. We made Yalla Well to do that part for them.'))}
 <section class="section tight">
   <div class="wrap">
     <div class="tiles tiles-4">
@@ -373,9 +375,8 @@ const about = {
     <div class="split-media reveal">${champ('cheer', { size: 260, cls: 'about-champ' })}</div>
     <div class="split-text reveal">
       ${kicker(L('الكابتن', 'The captain'))}
-      <h2 class="h2">${L('بطل اللوجو هو اللي معاك.', 'The champ from our logo is on your side.')}</h2>
-      <p class="lead">${L('الكابتن بيظهر في كل شاشة بحركة على قد اللي بتعمله: بيشجع في الصفحة الرئيسية، بياكل في صفحة الأكل، وبيرفع حديد في التمرين. وكل يوم بيقول جملة على حسب يومك.', "The captain shows up on every screen doing what you're doing: cheering on Today, eating on Food and lifting on Training. Every day he has something to say about your day.")}</p>
-      <p class="lead">${L('ولما يوم يعدي على خير، بيفرح بجد.', 'And when a day goes well, he genuinely celebrates.')}</p>
+      <h2 class="h2">${L('بطل اللوجو جوه التطبيق.', 'The champ from our logo lives in the app.')}</h2>
+      <p class="lead">${L('الكابتن بيظهر في كل شاشة بحركة تناسبها: بيشجع في الرئيسية، بياكل في صفحة الأكل، وبيرفع حديد في التمرين. وكل يوم بيقول جملة على حسب يومك.', 'The captain shows up on every screen doing something that fits it: cheering on Today, eating on Food and lifting on Training. Each day he says something about how your day is going.')}</p>
     </div>
   </div>
 </section>
@@ -383,7 +384,7 @@ const about = {
   <div class="wrap narrow">
     <div class="sec-head reveal">${kicker(L('لمين', 'Who it is for'))}<h2 class="h2">${L('يلا ويل معمول لـ', 'Yalla Well is made for')}</h2></div>
     ${ticks([
-      L('أي حد عايز ينزل أو يثبت أو يزود وزنه بالأكل اللي بياكله كل يوم', 'Anyone who wants to lose, keep or gain weight eating their everyday food'),
+      L('أي حد هدفه ينزل أو يثبت أو يزود وزنه وهو بياكل أكله العادي', 'Anyone who wants to lose, keep or gain weight while eating their usual food'),
       L('اللي بيتمرن في الجيم، أو في البيت، أو بين الاتنين', 'People who train at the gym, at home, or a bit of both'),
       L('اللي عنده حالة مزمنة أو مناعية وبياخد أدوية وفيتامينات', 'People living with a chronic or autoimmune condition and taking medicines and supplements'),
     ])}
@@ -402,7 +403,7 @@ const contactPage = {
     const soon = `<span class="muted">${L('قريبا', 'Coming soon')}</span>`;
     const socials = Object.entries(SOCIAL).filter(([, u]) => u);
     const ready = !!contact.email;
-    return `${pageHero(ctx, L('التواصل', 'Contact us'), L('سؤال، اقتراح، أو مشكلة؟', 'A question, an idea or a problem?'), L('أي رسالة بتساعدنا نخلي يلا ويل أحسن.', 'Every message helps us make Yalla Well better.'))}
+    return `${pageHero(ctx, L('التواصل', 'Contact us'), L('سؤال، اقتراح، أو مشكلة؟', 'A question, an idea or a problem?'), L('سؤال صغير أو فكرة لحاجة جديدة في التطبيق، الرسالة بتوصلنا احنا مباشرة.', 'A small question or an idea for something new in the app, it comes straight to us.'))}
 <section class="section tight">
   <div class="wrap contact-in">
     <form class="form reveal" id="contact-form" data-email="${contact.email}" novalidate>

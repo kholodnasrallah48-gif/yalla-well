@@ -78,7 +78,7 @@ function downloadPanel(ctx) {
 
 const home = {
   file: 'index.html',
-  title: (ctx) => ctx.L('خطة على مقاسك', 'A plan that fits you'),
+  title: (ctx) => ctx.L('أكلك، تمرينك، وصحتك', 'Your food, your training, your health'),
   desc: (ctx) => ctx.L('يلا ويل بيعملك خطة أكل وتمرين على حسب جسمك وهدفك وحالتك الصحية، وبيفكرك بمواعيد أدويتك وتحاليلك.', 'Yalla Well builds a food and training plan around your body, your goal and your health, and keeps track of your medicines and lab tests.'),
   body(ctx) {
     const { L } = ctx;
@@ -124,7 +124,7 @@ const home = {
 <section class="hero">
   <div class="wrap hero-text">
     <p class="pill reveal"><span class="dot" aria-hidden="true"></span>${L('قريبا على آيفون وأندرويد', 'Coming soon to iPhone and Android')}</p>
-    <h1 class="display reveal" data-split>${L('خطة على مقاسك، مش على مقاس الكل.', 'A plan that fits you, not everyone.')}</h1>
+    <h1 class="display reveal" data-split>${L('أكلك، تمرينك، وصحتك<br>أساس خطتك الشخصية.', 'Your food, your training, your health.<br>The base of your personal plan.')}</h1>
     <p class="lead reveal">${L('بنسألك عن سنك ووزنك وهدفك، وعن حالتك الصحية وأدويتك، ومن الإجابات دي بنعملك خطة أكل وتمرين. فممكن اتنين بنفس الوزن تطلعلهم خطتين مختلفين خالص.', 'Yalla Well works out your food, your training and your medicine times from your body, your goal and your health. Two people with the same weight can end up with two very different plans.')}</p>
     <div class="reveal">${storeButtons(ctx)}</div>
   </div>

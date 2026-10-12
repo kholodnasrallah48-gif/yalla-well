@@ -37,6 +37,23 @@ export const RECIPE_TITLES: Record<string, string[]> = {
   s_sweet_potato_chips: ['Sweet potato fries', 'Sweet potato'], s_zucchini_chips: ['Zucchini'], s_yogurt_fruit: ['Strained yogurt'],
   s_banana_pb: ['Peanut butter'], s_banana_icecream: ['Banana'], s_veggie_hummus: ['Hummus'], s_nuts_mix: ['Mixed nuts', 'Nut (fruit)'],
   s_grilled_corn: ['Corn on the cob'],
+  b_chia_pudding: ['Chia seed', 'Pudding'], b_overnight_oats: ['Overnight oats', 'Porridge'], b_egg_white_spinach: ['Egg white', 'Scrambled eggs'],
+  b_eggah_parsley: ['Eggah', 'Frittata'], b_avocado_toast_egg: ['Avocado toast'], b_banana_oat_smoothie: ['Smoothie'],
+  b_musabaha: ['Msabbaha', 'Hummus'], b_egg_muffins: ['Frittata', 'Omelette'], b_french_toast_whole: ['French toast'],
+  b_tofu_scramble: ['Scrambled tofu', 'Tofu'], b_savory_oats: ['Porridge'], b_egg_avocado_rocket: ['Boiled egg', 'Avocado'],
+  l_stuffed_peppers: ['Stuffed peppers'], l_bouri_grilled: ['Flathead grey mullet', 'Grilled fish'],
+  l_chicken_veg_saute: ['Stir frying', 'Chicken as food'], l_spinach_mince: ['Spinach'], l_peas_chicken: ['Pea', 'Peas and carrots'],
+  l_green_beans_meat: ['Green bean'], l_chicken_curry: ['Chicken curry'], l_fish_sayadeya: ['Sayadieh', 'Fish as food'],
+  l_liver_alexandria: ['Liver (food)'], l_quinoa_chicken_salad: ['Quinoa'], l_zucchini_mince_tray: ['Zucchini'], l_steak_sweet_potato: ['Steak'],
+  l_mujaddara: ['Mujaddara'], l_oven_chicken_panee: ['Schnitzel', 'Chicken as food'], d_freekeh_soup: ['Freekeh'],
+  d_tuna_lettuce_wraps: ['Tuna salad', 'Lettuce'], d_foul_salad: ['Ful medames'], d_calamari_grilled: ['Squid as food'],
+  d_baba_ghanoush: ['Baba ghanoush'], d_lentil_feta_salad: ['Lentil'], d_chicken_mushroom: ['Chicken as food', 'Edible mushroom'],
+  d_cauliflower_chickpea: ['Cauliflower'], d_tofu_stir_fry: ['Tofu', 'Stir frying'], d_sole_oven: ['Common sole', 'Sole (fish)'],
+  d_chicken_fattoush: ['Fattoush'], d_fish_kofta: ['Fish ball', 'Kofta'], s_green_smoothie: ['Green smoothie', 'Smoothie'],
+  s_tzatziki_veg: ['Tzatziki'], s_boiled_eggs_cumin: ['Boiled egg'], s_hummus_elsham: ['Chickpea'],
+  s_apple_qareish: ['Areesh cheese', 'Cottage cheese'], s_date_oat_balls: ['Energy ball', 'Date palm'], s_rayeb_dates: ['Buttermilk', 'Date palm'],
+  s_apple_chips: ['Apple chips', 'Apple'], s_watermelon_feta: ['Watermelon'], s_tuna_cucumber_boats: ['Tuna salad', 'Cucumber'],
+  s_strawberry_dark_choc: ['Chocolate-covered fruit', 'Strawberry'], s_cocoa_milk: ['Chocolate milk'],
 };
 
 /** Wikipedia titles for foods in our list whose English names wouldn't find the right article, by Arabic name. */

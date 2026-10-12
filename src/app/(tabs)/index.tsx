@@ -191,9 +191,10 @@ export default function Home() {
 
       <View style={{ borderTopWidth: 1, borderColor: c.line }}>
         {([
+          ['/story', L('ستوري الأسبوع', 'Week story'), L(`صورة بإنجازات الأسبوع والستريك ${g('تنزلها', 'تنزليها')} ستوري.`, 'A picture of your week and streak to post as a story.')],
           ['/report', L('تقرير الأسبوع', 'Weekly report'), L(`${g('كسبت', 'كسبتي')} إيه وإيه محتاج يتظبط، للطباعة.`, 'What went well and what needs work, ready to print.')],
           ...(careful ? [['/health', L('صحتي', 'My health'), L('مواعيد الأدوية والتحاليل وتقرير للدكتور.', 'Medicine times, lab results and a doctor report.')]] : []),
-        ] as ['/report' | '/health', string, string][]).map(([href, title, sub]) => (
+        ] as ['/story' | '/report' | '/health', string, string][]).map(([href, title, sub]) => (
           <Pressable key={href} onPress={() => { play('tap'); router.push(href); }} accessibilityRole="button"
             style={({ pressed }) => [styles.row, { gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderColor: c.line }, pressed && { opacity: 0.7 }]}>
             <View style={{ flex: 1 }}>

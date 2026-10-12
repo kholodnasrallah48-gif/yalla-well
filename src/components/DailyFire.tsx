@@ -13,9 +13,9 @@ import { fonts, useColors } from '../theme.ts';
 const KEY = 'yallawell:lastOpen';
 const native = Platform.OS !== 'web';
 
-function BigFlame() {
+export function BigFlame({ width = 150 }: { width?: number }) {
   return (
-    <Svg width={150} height={170} viewBox="0 0 150 170">
+    <Svg width={width} height={(width * 170) / 150} viewBox="0 0 150 170">
       <Defs>
         <LinearGradient id="outer" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#FFD60A" />

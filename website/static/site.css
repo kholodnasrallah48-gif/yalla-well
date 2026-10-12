@@ -330,7 +330,9 @@ a.store-web:hover { border-color: var(--accent); box-shadow: 0 16px 44px -12px r
   .motion .step:first-child { opacity: 1; visibility: visible; }
   .motion .story-phone { position: relative; top: auto; height: 100vh; padding-top: var(--hdr); perspective: 1600px; }
   .motion .phone-sticky { height: min(680px, calc(100vh - var(--hdr) - 110px)); }
-  .motion .phone .screen { opacity: 1; transition: none; transform: translateX(100%); }
+  .motion .phone .screen { opacity: 1; transition: none; transform: translateX(100%); will-change: transform, opacity; backface-visibility: hidden; }
+  .motion .step { will-change: transform, opacity; }
+  .motion .phone-sticky { will-change: transform; }
   .motion[dir='rtl'] .phone .screen { transform: translateX(-100%); }
   .motion .phone .screen:first-child { transform: none; }
   .motion .story-dots { display: flex; }
@@ -592,7 +594,7 @@ a.store-web:hover { border-color: var(--accent); box-shadow: 0 16px 44px -12px r
 .gal-track { display: flex; gap: clamp(28px, 6vw, 110px); width: max-content; padding-inline: max(24px, calc((100vw - 1200px) / 2 + 24px)); }
 .gal-item { margin: 0; scroll-snap-align: center; display: grid; justify-items: center; gap: 22px; text-align: center; }
 .gal-item .phone { width: auto; height: min(560px, 58vh); }
-.motion .gal-item .phone { height: min(640px, calc(100vh - var(--hdr) - 250px)); }
+.motion .gal-item .phone { height: min(640px, calc(100vh - var(--hdr) - 250px)); will-change: transform; }
 .gal-item figcaption { max-width: 280px; line-height: 1.5; }
 .gal-item figcaption b { display: block; font-family: var(--head); font-weight: 400; font-size: 24px; margin-bottom: 2px; }
 .gal-item figcaption span { color: var(--muted); font-size: 15px; }
@@ -622,7 +624,8 @@ body::after {
   content: ''; position: fixed; inset: 0; z-index: 300; pointer-events: none; opacity: 0.05;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-.feature-media, .hero-stage, .story-phone { transform-style: preserve-3d; }
+.feature-media, .hero-stage { transform-style: preserve-3d; }
+.motion .phone-inline { will-change: transform; }
 .feature-media { perspective: 1300px; }
 
 /* ---------- motion ---------- */

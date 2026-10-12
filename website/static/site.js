@@ -299,12 +299,12 @@
         const ph = story.querySelector('.phone-sticky');
         const n = steps.length;
         // Start positions in percent only, so the CSS offset (there to avoid a flash before this runs) doesn't add up.
-        gsap.set(screens, { x: 0, xPercent: (i) => (i ? 100 * s : 0) });
-        gsap.fromTo(ph, { y: 140, rotateX: 22, scale: 0.88 }, { y: 0, rotateX: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: story, start: 'top bottom', end: 'top top', scrub: 0.7 } });
+        gsap.set(screens, { x: 0, xPercent: (i) => (i ? 100 * s : 0), force3D: true });
+        gsap.fromTo(ph, { y: 120, scale: 0.92 }, { y: 0, scale: 1, ease: 'none', force3D: true, scrollTrigger: { trigger: story, start: 'top bottom', end: 'top top', scrub: 1 } });
         const tl = gsap.timeline({
           defaults: { ease: 'none' },
           scrollTrigger: {
-            trigger: story, start: 'top top', end: () => `+=${window.innerHeight * (n - 0.3)}`, pin: true, scrub: 0.6,
+            trigger: story, start: 'top top', end: () => `+=${window.innerHeight * n}`, pin: true, scrub: 1,
             onUpdate: (self) => {
               const idx = Math.min(n - 1, Math.floor(self.progress * n));
               navs.forEach((el, i) => el.classList.toggle('is-on', i === idx));
@@ -315,14 +315,15 @@
         steps.forEach((step, i) => {
           tl.fromTo(navs[i].querySelector('u'), { scaleX: 0 }, { scaleX: 1, duration: 1 }, i);
           if (i === n - 1) return;
-          // The next screen swipes in from the side (from the left in Arabic), pushing the current one away.
-          const at = i + 0.72;
-          tl.to(step, { autoAlpha: 0, x: -70 * s, duration: 0.22, ease: 'power2.in' }, at)
-            .fromTo(steps[i + 1], { autoAlpha: 0, x: 70 * s }, { autoAlpha: 1, x: 0, duration: 0.26, ease: 'power2.out' }, at + 0.18)
-            .fromTo(screens[i + 1], { xPercent: 100 * s }, { xPercent: 0, duration: 0.42, ease: 'power3.inOut' }, at)
-            .to(screens[i], { xPercent: -35 * s, filter: 'brightness(0.35)', duration: 0.42, ease: 'power3.inOut' }, at)
-            .to(ph, { rotateY: -7 * s, duration: 0.21, ease: 'sine.inOut' }, at)
-            .to(ph, { rotateY: 0, duration: 0.21, ease: 'sine.inOut' }, at + 0.21);
+          // The next screen slides in from the side (from the left in Arabic) over half a step, so it follows the
+          // scroll gently instead of snapping across; only transform and opacity move, which stays on the GPU.
+          const at = i + 0.45;
+          const d = 0.5;
+          // The text hands over without overlapping: the old step is gone before the new one fades in.
+          tl.to(step, { autoAlpha: 0, x: -36 * s, duration: d * 0.42, ease: 'power1.in' }, at)
+            .fromTo(steps[i + 1], { autoAlpha: 0, x: 36 * s }, { autoAlpha: 1, x: 0, duration: d * 0.5, ease: 'power1.out' }, at + d * 0.5)
+            .fromTo(screens[i + 1], { xPercent: 100 * s }, { xPercent: 0, duration: d, ease: 'power1.inOut' }, at)
+            .to(screens[i], { xPercent: -30 * s, opacity: 0.3, duration: d, ease: 'power1.inOut' }, at);
         });
       }
 
@@ -351,8 +352,8 @@
         story.querySelectorAll('.phone-inline').forEach((p, i) => {
           const side = (i % 2 ? -1 : 1) * s;
           gsap.fromTo(p,
-            { xPercent: 115 * side, rotateY: -28 * side, scale: 0.9, transformPerspective: 1100 },
-            { xPercent: 0, rotateY: 0, scale: 1, ease: 'power1.out', scrollTrigger: { trigger: p, start: 'top bottom', end: 'top 40%', scrub: 0.6 } });
+            { xPercent: 110 * side, rotateY: -16 * side, scale: 0.94, transformPerspective: 1100, force3D: true },
+            { xPercent: 0, rotateY: 0, scale: 1, ease: 'power1.out', scrollTrigger: { trigger: p, start: 'top bottom', end: 'top 35%', scrub: 1 } });
         });
         story.querySelectorAll('.step').forEach((step) => gsap.from(step.querySelectorAll('.kicker, .h2, .lead, .ticks li'),
           { opacity: 0, y: 40, duration: 1.1, ease: 'expo.out', stagger: 0.07, scrollTrigger: { trigger: step, start: 'top 82%', once: true } }));

@@ -8,11 +8,11 @@ import { TourTarget } from '../../components/TourTarget.tsx';
 import { foodLine } from '../../lib/captain.ts';
 import { MealIdea } from '../../components/MealIdea.tsx';
 import { RecipeFinder } from '../../components/RecipeFinder.tsx';
-import { Card, CountUp, MacroBar, Num, RADIUS, RoundCheck, Rise, Screen, T, styles } from '../../components/ui.tsx';
+import { Card, CountUp, MacroBar, NoteView, Num, RADIUS, RoundCheck, Rise, Screen, T, styles } from '../../components/ui.tsx';
 import { changePortion, fmt, mealTotals, planned, totals, type LoggedFood } from '../../lib/day.ts';
 import { FOODS, MY_FOODS_CAT, itemAlerts, type Food } from '../../lib/foods.ts';
 import { L, isEn, tx } from '../../lib/i18n.ts';
-import { MEALS, MEAL_NAME, dayPlan, mealBudget, toMeal } from '../../lib/mealplan.ts';
+import { MEALS, MEAL_NAME, SHARE, dayPlan, mealBudget, toMeal } from '../../lib/mealplan.ts';
 import { portionFor } from '../../lib/recipe-search.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
 import type { Meal } from '../../lib/recipes-data.ts';
@@ -97,6 +97,15 @@ export default function FoodScreen() {
   const say = foodLine({ g, left, budget: empty ? budgets[empty] : 0, meal: empty ? L(toMeal(empty), tx(MEAL_NAME[empty]).toLowerCase()) : null, idea,
     pending: pending ? L(MEAL_NAME[pending], tx(MEAL_NAME[pending]).toLowerCase()) : null });
   const over = t.kcal > T0.kcal;
+  // A ticked meal that went well over its usual share: say so, and where the rest of the day's calories went.
+  const big = MEALS.filter((m) => ticked.includes(m)).map((m) => ({ m, extra: Math.round(mealTotals(day, m).kcal - T0.kcal * SHARE[m]) }))
+    .filter((x) => x.extra >= 100 && x.extra >= T0.kcal * SHARE[x.m] * 0.2).sort((a, b) => b.extra - a.extra)[0];
+  const openMeals = plan.filter((e) => e.budget > 0);
+  const spread = big ? (openMeals.length
+    ? L(`${MEAL_NAME[big.m]} زاد ${fmt(big.extra)} سعرة عن نصيبه، فقسمنا اللي فاضل على باقي اليوم: ${openMeals.map((e) => `${MEAL_NAME[e.meal]} ${fmt(e.budget)}`).join('، ')}. والاقتراحات بقت أخف.`,
+      `${tx(MEAL_NAME[big.m])} went ${fmt(big.extra)} kcal over its share, so the rest of the day is split again: ${openMeals.map((e) => `${tx(MEAL_NAME[e.meal]).toLowerCase()} ${fmt(e.budget)}`).join(', ')}. Suggestions are lighter now.`)
+    : left < 0 ? L(`${MEAL_NAME[big.m]} زاد ${fmt(big.extra)} سعرة عن نصيبه. مفيش مشكلة في يوم، بكره بيبدأ من جديد. ${g('اشرب', 'اشربي')} مياه و${g('امشي', 'امشي')} شوية لو ${g('تقدر', 'تقدري')}.`,
+      `${tx(MEAL_NAME[big.m])} went ${fmt(big.extra)} kcal over its share. One day is fine; tomorrow starts fresh. Drink water and take a short walk if you can.`) : null) : null;
 
   return (
     <Screen title={L('الأكل', 'Food')} name="food">
@@ -125,6 +134,7 @@ export default function FoodScreen() {
           <MacroBar label={L('بروتين', 'Protein')} value={t.p} target={T0.protein} />
           <MacroBar label={L('كارب', 'Carbs')} value={t.c} target={T0.carbs} />
           <MacroBar label={L('دهون', 'Fat')} value={t.f} target={T0.fat} />
+          {spread ? <View style={{ marginTop: 8 }}><NoteView note={{ tone: 'warn', title: L('اتعدلت باقي الوجبات', 'The rest of the day was adjusted'), text: spread }} /></View> : null}
           {waiting > 0 ? <T kind="small" color={c.warn} style={{ marginTop: 6 }}>{L(`+ ${fmt(waiting)} سعرة في وجبات لسه ${g('معلمتش', 'معلمتيش')} عليها. بتتحسب لما ${g('تعلم', 'تعلمي')} إنك ${g('خلصتها', 'خلصتيها')}.`, `+ ${fmt(waiting)} kcal in meals not ticked yet. They count once you tick the meal as done.`)}</T> : null}
         </Rise>
       </TourTarget>

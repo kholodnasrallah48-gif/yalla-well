@@ -3,6 +3,7 @@ import { Pressable, Switch, Text, View } from 'react-native';
 
 import { DailyFire } from '../../components/DailyFire.tsx';
 import { CheckInCard, TodayDoses } from '../../components/health.tsx';
+import { CalorieCheckCard } from '../../components/PlanSettings.tsx';
 import { CaptainCard, MealBar, ScoreRow, type Seg } from '../../components/match.tsx';
 import { Mascot } from '../../components/Mascot.tsx';
 import { TourTarget } from '../../components/TourTarget.tsx';
@@ -23,7 +24,7 @@ const RANK: Record<Note['tone'], number> = { bad: 0, warn: 1, info: 2 };
 
 export default function Home() {
   const c = useColors();
-  const { profile, day, updateDay, history, today } = useStore();
+  const { profile, day, updateDay, history, today, saveProfile } = useStore();
   if (!profile) return null;
   const g = genderFor(profile.sex);
   const T0 = targets(profile);
@@ -101,6 +102,7 @@ export default function Home() {
 
       <TodayDoses profile={profile} day={day} update={updateDay} g={g} />
       {careful ? <CheckInCard day={day} update={updateDay} g={g} /> : null}
+      <CalorieCheckCard p={profile} onChange={saveProfile} />
 
       <Rise i={3}>
         <TourTarget id="home.week">

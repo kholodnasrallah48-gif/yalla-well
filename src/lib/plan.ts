@@ -4,6 +4,7 @@ import { CONDITIONS, EXERCISES, GEAR, PAINS, SCHEDULES, SESSIONS, gymChoices, va
 import { L, num, toNum, tx } from './i18n.ts';
 import { FLAG_TAGS, LIST_WATCH, TRAIN_LABEL, WATCH_LABEL, effective, type Answers, type Watch } from './kb.ts';
 import { quoteUx } from './translate.ts';
+import type { BodyEntry } from './body.ts';
 import { phaseFor, variantFor, type Phase } from './progress.ts';
 
 export type Sex = 'f' | 'm';
@@ -58,7 +59,19 @@ export type Profile = {
   drop?: Record<string, string[]>;
   /** Answers about typed conditions and medicines the app doesn't know (by lib/kb itemKey), so they're still applied. */
   extra?: Record<string, Answers>;
+  /** Tape measurements over time (see lib/body). */
+  body?: BodyEntry[];
+  /** Equipment the person's gym has; missing = everything. Exercises use a version with this equipment. */
+  equip?: Equip[];
+  /** How the day's calories are split between protein, carbs and fat. */
+  macro?: MacroPref;
+  /** Calories added to (or taken off) the computed target after weekly weight checks (see lib/adapt). */
+  kcalAdj?: number;
+  /** Last weekly check the person answered (applied or kept as is), YYYY-MM-DD. */
+  adjAt?: string;
 };
+/** auto = the app's split; custom = the person's own percentages (protein, carbs, fat). */
+export type MacroPref = { mode: 'auto' | 'highp' | 'lowcarb' | 'keto' | 'custom'; p?: number; c?: number; f?: number };
 /**
  * An exercise the person added: one of the app's exercises (ref), or their own in their words with the machine or
  * equipment they use (n, gear).
@@ -294,7 +307,19 @@ function trainingFactor(p: Profile): number {
   return 0.24;
 }
 
-/** Mifflin-St Jeor BMR × activity, adjusted for the goal and medical caps. */
+/** Lowest daily calories the app will ever set. */
+export const kcalFloor = (p: Pick<Profile, 'sex'>) => (p.sex === 'm' ? 1500 : 1200);
+
+/** Conditions and medicines where keto isn't safe without close medical follow-up (ketoacidosis, kidneys, pregnancy...). */
+const KETO_NO = ['t1d', 'k_t1d', 'insulin', 'm_ins', 'm_sglt2', 'm_su', 'kidney', 'stones', 'gout', 'liver', 'preg', 'nursing'];
+/** Why keto is off for this person, or null when it can be picked (with the doctor's OK). */
+export function ketoBlocked(p: Profile): string | null {
+  const ids = effective(p).ids;
+  const hit = KETO_NO.find((x) => ids.has(x));
+  return hit ? L('الكيتو مش متاح مع حالتك أو أدويتك من غير متابعة دكتور قريبة، فقفلناه.', "Keto isn't available with your condition or medicines without close medical follow-up, so it's turned off.") : null;
+}
+
+/** Mifflin-St Jeor BMR × activity, adjusted for the goal, medical caps, weekly checks and the macro split. */
 export function targets(p: Profile): Targets {
   const { mod } = medical(p);
   const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161);
@@ -302,14 +327,44 @@ export function targets(p: Profile): Targets {
   let kcal = tdee;
   if (p.goal === 'lose') kcal = tdee * (1 - mod.deficit);
   if (p.goal === 'gain') kcal = tdee * 1.1;
-  kcal = Math.round(Math.max(kcal, p.sex === 'm' ? 1500 : 1200) / 10) * 10;
+  kcal += p.kcalAdj ?? 0;
+  kcal = Math.round(Math.max(kcal, kcalFloor(p)) / 10) * 10;
   let ppk = p.goal === 'maintain' ? 1.6 : 1.8;
   if (mod.proteinPerKg) ppk = Math.max(ppk, mod.proteinPerKg);
+  const mode = p.macro?.mode === 'keto' && ketoBlocked(p) ? 'auto' : p.macro?.mode ?? 'auto';
+  if (mode === 'highp') ppk = Math.max(ppk, 2.2);
+  if (mode === 'keto') ppk = Math.min(ppk, 1.6);
   if (mod.proteinCap) ppk = Math.min(ppk, mod.proteinCap);
-  const protein = Math.round(p.weight * ppk);
-  const fat = Math.round((kcal * 0.27) / 9);
-  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  let protein = Math.round(p.weight * ppk);
+  let fat: number, carbs: number;
+  if (mode === 'custom' && p.macro?.p && p.macro.c != null && p.macro.f) {
+    // The person's own percentages; protein still stays under a medical cap, the difference goes to carbs.
+    protein = Math.round((kcal * p.macro.p) / 100 / 4);
+    if (mod.proteinCap) protein = Math.min(protein, Math.round(p.weight * mod.proteinCap));
+    fat = Math.round((kcal * p.macro.f) / 100 / 9);
+    carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  } else if (mode === 'keto') {
+    carbs = 30;
+    fat = Math.max(0, Math.round((kcal - protein * 4 - carbs * 4) / 9));
+  } else if (mode === 'lowcarb') {
+    carbs = Math.round((kcal * 0.25) / 4);
+    fat = Math.max(0, Math.round((kcal - protein * 4 - carbs * 4) / 9));
+  } else {
+    fat = Math.round((kcal * (mode === 'highp' ? 0.25 : 0.27)) / 9);
+    carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  }
   return { kcal, protein, fat, carbs, waterCups: Math.ceil((p.weight * 35) / CUP_ML) + mod.extraCups, tdee: Math.round(tdee) };
+}
+
+/** The name of each macro split, for the picker and reports. */
+export function macroName(mode: MacroPref['mode']): string {
+  return {
+    auto: L('تلقائي (على حسب هدفك وحالتك)', 'Automatic (for your goal and health)'),
+    highp: L('بروتين عالي', 'High protein'),
+    lowcarb: L('كارب قليل', 'Low carb'),
+    keto: L('كيتو', 'Keto'),
+    custom: L('نسب بنفسي', 'My own split'),
+  }[mode];
 }
 
 export type PlannedExercise = {
@@ -370,12 +425,32 @@ export function resolveExercise(id: string, p: Profile, m: Modifiers): { id: str
  * Ways to do a planned exercise that suit this person (free weights, machine, cable...), each with the
  * equipment to use. Versions that don't fit their pain or medical needs are left out.
  */
-export function gearOptions(p: Profile, base: string): { id: string; ex: Exercise; eq: Equip; gear: string }[] {
+export function gearOptions(p: Profile, base: string): { id: string; ex: Exercise; eq: Equip; gear: string; have: boolean }[] {
   const m = medical(p).mod;
   return variantsOf(base)
     .map((id) => ({ id, r: resolveExercise(id, p, m) }))
     .filter((x) => x.r && x.r.id === x.id)
-    .map(({ id }) => ({ id, ex: EXERCISES[id], eq: GEAR[id]?.eq ?? 'none', gear: GEAR[id] ? L(GEAR[id].ar, GEAR[id].en) : '' }));
+    .map(({ id }) => ({ id, ex: EXERCISES[id], eq: GEAR[id]?.eq ?? 'none', gear: GEAR[id] ? L(GEAR[id].ar, GEAR[id].en) : '', have: hasEquip(p, id) }));
+}
+
+/** Equipment types a gym can have, for the "what's in my gym" picker. */
+export const EQUIP_KINDS: { id: Equip; n: () => string }[] = [
+  { id: 'dumbbell', n: () => L('دمبلز', 'Dumbbells') },
+  { id: 'barbell', n: () => L('بار وأوزان', 'Barbell and plates') },
+  { id: 'machine', n: () => L('أجهزة', 'Machines') },
+  { id: 'cable', n: () => L('كيبل', 'Cables') },
+  { id: 'smith', n: () => L('ماكينة سميث', 'Smith machine') },
+];
+/** Whether the person's gym has what an exercise needs (bodyweight and unlisted exercises always fit). */
+export function hasEquip(p: Profile, id: string): boolean {
+  const eq = GEAR[id]?.eq;
+  if (!p.equip || !eq || !EQUIP_KINDS.some((k) => k.id === eq)) return true;
+  return p.equip.includes(eq);
+}
+/** The plan's exercise, or the first version of it the person's gym has the equipment for. */
+export function withEquip(p: Profile, base: string): string {
+  if (hasEquip(p, base)) return base;
+  return variantsOf(base).find((v) => hasEquip(p, v)) ?? base;
 }
 
 /** The session for a Saturday-first day index in a program week, or null on rest days. */
@@ -419,7 +494,7 @@ export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 
   let list: { id: string; ex: Exercise; why: string | null; base: string; gear?: string; own?: boolean }[] = [];
   const add = (base: string, mine?: boolean) => {
     // The version the person picked for this exercise (free weights, machine...), when it still fits them.
-    const id = p.gear?.[base] ?? base;
+    const id = p.gear?.[base] ?? withEquip(p, base);
     const r = resolveExercise(id, p, m) ?? (id !== base ? resolveExercise(base, p, m) : null);
     if (r && !seen.has(r.id)) { seen.add(r.id); list.push({ ...r, base, own: mine }); }
   };

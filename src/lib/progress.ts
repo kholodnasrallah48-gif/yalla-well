@@ -42,3 +42,26 @@ export function suggestWeight(id: string, last: LiftLog | undefined, phase: Phas
   const base = hitTop ? last.w + stepFor(id) : last.w;
   return Math.round((base * phase.load) / 0.5) * 0.5;
 }
+
+/** Most sessions kept per exercise in the logbook. */
+export const HIST_MAX = 60;
+
+/** Adds a session to an exercise's logbook (oldest first); a second session on the same day replaces the first. */
+export function addToHistory(hist: LiftLog[] | undefined, log: LiftLog): LiftLog[] {
+  const rest = (hist ?? []).filter((x) => x.date !== log.date);
+  return [...rest, log].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).slice(-HIST_MAX);
+}
+
+/** Estimated one-rep max (Epley) from a weight and reps. */
+export const oneRepMax = (w: number, reps: number) => (reps <= 1 ? w : Math.round(w * (1 + reps / 30) * 2) / 2);
+
+/** Total weight moved in a session: weight × all reps. */
+export const volume = (x: LiftLog) => Math.round(x.w * x.reps.reduce((a, r) => a + r, 0));
+
+/** First and latest session and the change in top weight, for the logbook summary. */
+export function liftTrend(hist: LiftLog[] | undefined): { first: LiftLog; last: LiftLog; diff: number; best: number } | null {
+  if (!hist?.length) return null;
+  const first = hist[0], last = hist[hist.length - 1];
+  const best = Math.max(...hist.map((x) => oneRepMax(x.w, Math.max(...x.reps, 1))));
+  return { first, last, diff: Math.round((last.w - first.w) * 10) / 10, best };
+}

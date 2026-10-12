@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { PhotoPicker } from '../../components/Photo.tsx';
+import { CalorieCheckCard, EquipPicker, MacroPicker, usesGym } from '../../components/PlanSettings.tsx';
 import { TourTarget, startTour } from '../../components/TourTarget.tsx';
 import { Btn, Card, Chip, NoteView, Screen, T, WeekStrip, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
@@ -60,6 +61,7 @@ export default function Me() {
           <WeekStrip profile={p} today={-1} />
           {ownCount || dropCount ? <T kind="small">{L(`${g('ضفت', 'ضفتي')} ${num(ownCount)} تمرين بنفسك، و${g('شلت', 'شلتي')} ${num(dropCount)} من الخطة.`, `You added ${ownCount} exercises of your own and removed ${dropCount} from the plan.`)}</T> : null}
           <Btn kind="outline" title={L(`${g('غير', 'غيري')} النظام أو ${g('رتب', 'رتبي')} أيامك`, 'Change plan or arrange your days')} onPress={() => router.push({ pathname: '/onboarding', params: { part: 'plan' } })} />
+          {usesGym(p) ? <EquipPicker p={p} onChange={(equip) => saveProfile({ ...p, equip })} /> : null}
           <Btn kind="text" title={L(`${g('شوف', 'شوفي')} الجولة التعريفية تاني`, 'Replay the app tour')} sound="swoosh" onPress={startTour} />
         </Card>
       </TourTarget>
@@ -73,6 +75,13 @@ export default function Me() {
           </View>
         </View>
       </Card>
+
+      <CalorieCheckCard p={p} onChange={saveProfile} />
+
+      <View style={[styles.row, { gap: 8 }]}>
+        <Btn kind="primary" title={L('تقدمي', 'My progress')} onPress={() => router.push('/progress')} style={{ flex: 1 }} />
+        <Btn kind="outline" title={L('خطتي في ملف', 'Plan as a file')} onPress={() => router.push('/myplan')} style={{ flex: 1 }} />
+      </View>
 
       <Card>
         <T kind="h2">{L(g('سجل وزنك', 'سجلي وزنك'), 'Log your weight')}</T>
@@ -99,6 +108,13 @@ export default function Me() {
             </View>
           ))}
         </View>
+        {p.kcalAdj ? (
+          <View style={styles.rowBetween}>
+            <T kind="small" style={{ flex: 1 }}>{L(`فيها تعديل ${p.kcalAdj > 0 ? '+' : ''}${p.kcalAdj} سعرة من متابعة وزنك.`, `Includes ${p.kcalAdj > 0 ? '+' : ''}${p.kcalAdj} kcal from your weight check-ins.`)}</T>
+            <Btn kind="text" title={L(g('رجعه للأصلي', 'رجعيه للأصلي'), 'Reset')} onPress={() => saveProfile({ ...p, kcalAdj: undefined })} />
+          </View>
+        ) : null}
+        <MacroPicker p={p} onChange={(macro) => saveProfile({ ...p, macro })} />
       </Card>
 
       <Btn kind="outline" title={L('صحتي: الأدوية والتحاليل وتقرير الدكتور', 'My health: medicines, labs and doctor report')} onPress={() => router.push('/health')} />

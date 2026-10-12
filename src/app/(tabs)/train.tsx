@@ -188,7 +188,7 @@ export default function Train() {
                         </Pressable>
                       : <RoundCheck on={on} disabled={!canTick} onPress={() => toggle(x.id)} label={tx(x.ex.n)} />}
                     <Pressable style={({ pressed }) => [{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }, pressed && { opacity: 0.7 }]} accessibilityRole="button" disabled={editing}
-                      onPress={() => { play('swoosh'); router.push({ pathname: '/exercise/[id]', params: { id: x.id, day: String(sel) } }); }}>
+                      onPress={() => { play('swoosh'); router.push({ pathname: '/exercise/[id]', params: { id: x.id, day: String(sel), easy: ez.easy ? '1' : '0' } }); }}>
                       <View style={{ flex: 1 }}>
                         <T kind="h3" style={on ? { textDecorationLine: 'line-through', opacity: 0.55 } : undefined}>{tx(x.ex.n)}</T>
                         <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>{x.rx}{logged ? L(` · ${g('سجلت', 'سجلتي')} ${num(logged)} مجموعات`, ` · ${num(logged)} ${logged === 1 ? 'set' : 'sets'} logged`) : ''}</T>

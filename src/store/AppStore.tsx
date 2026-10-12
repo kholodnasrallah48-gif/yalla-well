@@ -7,9 +7,9 @@ import type { Food } from '../lib/foods.ts';
 import { blankDay, dayKey, type DayLog } from '../lib/day.ts';
 import type { Profile } from '../lib/plan.ts';
 import { translateMissing, withTr } from '../lib/translate.ts';
-import type { LiftLog } from '../lib/progress.ts';
+import { addToHistory, type LiftLog } from '../lib/progress.ts';
 
-const K = { profile: 'yallawell:profile', custom: 'yallawell:custom', lifts: 'yallawell:lifts', day: (k: string) => 'yallawell:day:' + k };
+const K = { profile: 'yallawell:profile', custom: 'yallawell:custom', lifts: 'yallawell:lifts', hist: 'yallawell:lifthist', day: (k: string) => 'yallawell:day:' + k };
 
 type Store = {
   ready: boolean;
@@ -17,6 +17,8 @@ type Store = {
   custom: Food[];
   /** Last logged session per exercise id, for weight suggestions. */
   lifts: Record<string, LiftLog>;
+  /** Every logged session per exercise id, oldest first (the logbook). */
+  liftHist: Record<string, LiftLog[]>;
   today: string;
   day: DayLog;
   saveProfile: (p: Profile) => void;
@@ -49,6 +51,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [custom, setCustom] = useState<Food[]>([]);
   const [lifts, setLifts] = useState<Record<string, LiftLog>>({});
+  const [liftHist, setLiftHist] = useState<Record<string, LiftLog[]>>({});
   const [today, setToday] = useState(() => dayKey(new Date()));
   const [day, setDay] = useState<DayLog>(blankDay);
   const todayRef = useRef(today);
@@ -66,9 +69,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [p, c, d, l] = await Promise.all([
+      const [p, c, d, l, h] = await Promise.all([
         readJSON<Profile>(K.profile), readJSON<Food[]>(K.custom), readJSON<DayLog>(K.day(today)), readJSON<Record<string, LiftLog>>(K.lifts),
+        readJSON<Record<string, LiftLog[]>>(K.hist),
       ]);
+      // Sessions logged before the logbook existed start it off.
+      const hist = h ?? {};
+      if (!h && l) { for (const [id, x] of Object.entries(l)) hist[id] = [x]; writeJSON(K.hist, hist); }
+      setLiftHist(hist);
       // Plans made before progression existed start counting from today.
       if (p && !p.start) { p.start = today; writeJSON(K.profile, p); }
       setProfile(p);
@@ -116,6 +124,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const saveLift = useCallback((id: string, log: LiftLog) => {
     setLifts((prev) => { const next = { ...prev, [id]: log }; writeJSON(K.lifts, next); return next; });
+    setLiftHist((prev) => { const next = { ...prev, [id]: addToHistory(prev[id], log) }; writeJSON(K.hist, next); return next; });
   }, []);
   const updateDay = useCallback((fn: (d: DayLog) => DayLog) => {
     setDay((prev) => { const next = fn(prev); writeJSON(K.day(todayRef.current), next); return next; });
@@ -123,7 +132,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const resetAll = useCallback(async () => {
     const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('yallawell:'));
     await AsyncStorage.multiRemove(keys);
-    setProfile(null); setCustom([]); setLifts({}); setDay(blankDay());
+    setProfile(null); setCustom([]); setLifts({}); setLiftHist({}); setDay(blankDay());
   }, []);
 
   const readDay = useCallback(async (key: string) => {
@@ -145,8 +154,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, [history, day]);
 
   const value = useMemo(
-    () => ({ ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage, history }),
-    [ready, profile, custom, lifts, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage, history],
+    () => ({ ready, profile, custom, lifts, liftHist, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage, history }),
+    [ready, profile, custom, lifts, liftHist, today, day, saveProfile, addCustomFood, saveLift, updateDay, resetAll, readDay, usage, history],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

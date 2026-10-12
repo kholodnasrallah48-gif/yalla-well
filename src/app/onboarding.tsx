@@ -15,6 +15,7 @@ import { fmt } from '../lib/day.ts';
 import { L, getLang, setLang, toNum, tx } from '../lib/i18n.ts';
 import { allGymChoices, genderFor, medical, recommendPlan, splitLabel, targets, weekPlaces, weekSessions, type CondInfo, type DayPlace, type Profile, type Quiz } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
+import { EquipPicker } from '../components/PlanSettings.tsx';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
 
@@ -244,6 +245,7 @@ export default function Onboarding() {
             );
           })}
         </View>
+        {weekPlaces(draft).includes('gym') ? <EquipPicker p={d} onChange={(equip) => set({ equip })} /> : null}
       </>}
 
       {st === 'cond' && <>

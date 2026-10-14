@@ -326,18 +326,31 @@ test('phone reminders skip what is done today, follow rest days and vary their w
   const day: DayLog = { ...blankDay(), meals: ['breakfast'] };
   const list = planReminders({ profile: p, day, now, lang: 'ar' });
   const on = (k: string) => list.filter((r) => dayKey(r.date) === k).map((r) => r.kind);
-  assert.deepEqual(on('2026-10-02'), ['water', 'lunch', 'water', 'dinner']); // a ticked meal counts as logging
+  assert.deepEqual(on('2026-10-02'), ['water', 'lunch', 'water', 'dinner', 'week']); // a ticked meal counts as logging; Friday ends the week
   assert.deepEqual(on('2026-10-03'), ['breakfast', 'water', 'lunch', 'water', 'workout', 'dinner', 'nothing']);
   assert.ok(!on('2026-10-06').includes('workout'), 'Tuesday is a rest day');
   assert.equal(new Set(list.map((r) => dayKey(r.date))).size, 7);
   assert.ok(list.every((r) => r.date > now));
   // Later in the day with food logged and enough water: only what's still ahead and not done.
   const late = planReminders({ profile: p, day: { ...day, water: 99, foods: [{ ref: 'x', n: 'x', u: 'x', kcal: 1, p: 0, c: 0, f: 0, q: 1 }] }, now: new Date(2026, 9, 2, 17, 0), lang: 'en', days: 1 });
-  assert.deepEqual(late.map((r) => r.kind), ['dinner']);
+  assert.deepEqual(late.map((r) => r.kind), ['dinner', 'week']);
   for (const k of ['breakfast', 'lunch', 'water', 'workout', 'dinner', 'nothing'] as const) {
     assert.notEqual(reminderText(k, '2026-10-02', 'ar', 'f').body, reminderText(k, '2026-10-03', 'ar', 'f').body, k);
   }
   assert.notEqual(reminderText('breakfast', '2026-10-02', 'ar', 'm').body, reminderText('breakfast', '2026-10-02', 'ar', 'f').body);
+  // A week of the same reminder never repeats a line.
+  for (const k of ['breakfast', 'lunch', 'workout', 'dinner', 'nothing'] as const) {
+    const week = Array.from({ length: 6 }, (_, i) => reminderText(k, `2026-10-${String(5 + i).padStart(2, '0')}`, 'ar', 'f').body);
+    assert.equal(new Set(week).size, 6, k);
+  }
+});
+
+test('lab reminders come 3 days before and on the day the person set', async () => {
+  const { planReminders } = await import('./reminders.ts');
+  const p: Profile = { ...base, labs: [{ kind: 'vitd', value: 18, date: '2026-04-01', next: '2026-10-08' }] };
+  const list = planReminders({ profile: p, day: blankDay(), now: new Date(2026, 9, 2, 8, 0), lang: 'ar' }).filter((r) => r.kind === 'lab');
+  assert.deepEqual(list.map((r) => dayKey(r.date)), ['2026-10-05', '2026-10-08']);
+  assert.match(list[0].body, /3 أيام/);
 });
 
 test('streaks count on-target calorie days and done workouts, skipping rest days', () => {

@@ -272,7 +272,9 @@ export const checkDone = (c: CheckIn | undefined) => !!c && c.energy !== undefin
 /* ---------- Lab results ---------- */
 
 export type LabKind = 'hba1c' | 'tsh' | 'vitd' | 'ferritin' | 'b12' | 'eye' | 'lipids' | 'cbc';
-export type LabEntry = { kind: LabKind; value?: number; date: string };
+/** One test: the result, the day it was done, the next date when the person set one, and the id of a photo of the
+ * lab paper kept on the phone (see ./labPhotos.ts). */
+export type LabEntry = { kind: LabKind; value?: number; date: string; next?: string; photo?: string };
 
 type LabInfo = { n: [string, string]; unit: string; months: number; when: (p: Profile) => boolean; hint?: (v: number) => 'ok' | 'warn' | 'bad'; noValue?: boolean };
 const has = (p: Profile, ...ids: string[]) => { const e = effective(p).ids; return ids.some((id) => e.has(id)); };
@@ -295,13 +297,26 @@ export function latestLab(p: Profile, kind: LabKind): LabEntry | undefined {
   return (p.labs ?? []).filter((x) => x.kind === kind).sort((a, b) => b.date.localeCompare(a.date))[0];
 }
 
-/** When a test is due next (YYYY-MM-DD), or null when it was never done (due now). */
+/** The usual repeat date of a test done on `date`. */
+export function defaultNext(kind: LabKind, date: string): string {
+  const d = fromKey(date);
+  d.setMonth(d.getMonth() + LABS[kind].months);
+  return dayKey(d);
+}
+
+/** When a test is due next (YYYY-MM-DD): the date the person set, else the usual repeat; null when it was never
+ * done (due now). */
 export function nextLab(p: Profile, kind: LabKind): string | null {
   const last = latestLab(p, kind);
   if (!last) return null;
-  const d = fromKey(last.date);
-  d.setMonth(d.getMonth() + LABS[kind].months);
-  return dayKey(d);
+  return last.next && last.next > last.date ? last.next : defaultNext(kind, last.date);
+}
+
+/** All results of a test, newest first. */
+export const labHistory = (p: Profile, kind: LabKind): LabEntry[] => (p.labs ?? []).filter((x) => x.kind === kind).sort((a, b) => b.date.localeCompare(a.date));
+
+export function removeLab(p: Profile, kind: LabKind, date: string): Profile {
+  return { ...p, labs: (p.labs ?? []).filter((x) => !(x.kind === kind && x.date === date)) };
 }
 
 export const labName = (k: LabKind) => L(LABS[k].n[0], LABS[k].n[1]);

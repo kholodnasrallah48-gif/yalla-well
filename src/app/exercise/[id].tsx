@@ -12,10 +12,9 @@ import { MEDIA } from '../../lib/exercise-media.ts';
 import { L, latin, num, tx } from '../../lib/i18n.ts';
 import { gearOptions, genderFor, sessionFor } from '../../lib/plan.ts';
 import { GEAR, isFreeWeight, variantsOf } from '../../lib/data.ts';
-import { liftTrend, programWeek, suggestWeight, volume, type LiftLog } from '../../lib/progress.ts';
+import { programWeek, suggestWeight } from '../../lib/progress.ts';
 import { easyDay } from '../../lib/health.ts';
-import { shortDate } from '../../lib/report.ts';
-import { LineChart } from '../../components/LineChart.tsx';
+import { LiftLogbook } from '../../components/LiftLogbook.tsx';
 import { cancelRestEnd, scheduleRestEnd } from '../../lib/notify.ts';
 import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
@@ -56,39 +55,6 @@ function WeightInput({ label, value, onChange }: { label: string; value: number;
         onChangeText={(t) => { const clean = latin(t).replace(/[^0-9.]/g, ''); setText(clean); const n = parseFloat(clean); if (!Number.isNaN(n)) onChange(Math.min(500, n)); else if (!clean) onChange(0); }}
         style={{ width: '100%', height: 48, borderRadius: RADIUS, borderWidth: 1, borderColor: c.dim, backgroundColor: c.panel, textAlign: 'center', fontFamily: fonts.numSemi, fontSize: 26, color: c.ink }} />
     </View>
-  );
-}
-
-const dateLabel = (k: string) => { const [y, m, d] = k.split('-').map(Number); return shortDate(new Date(y, m - 1, d)); };
-
-/** Every session of this exercise: the top weight over time, the best estimated max, and the last few sessions. */
-function Logbook({ hist }: { hist?: LiftLog[] }) {
-  const c = useColors();
-  const tr = liftTrend(hist);
-  return (
-    <Card>
-      <T kind="h2">{L('سجل التمرين', 'Logbook')}</T>
-      {!tr ? <T kind="small">{L('أول ما التمرين ده يخلص، الوزن والعدات هيتسجلوا هنا، والتقدم هيبان أسبوع بأسبوع.', 'Once you finish this exercise, the weight and reps are saved here so you can see your progress week by week.')}</T> : <>
-        <View style={[styles.row, { gap: 16 }]}>
-          <View style={{ flex: 1 }}>
-            <Num size={26} color={tr.diff > 0 ? c.ok : c.ink}>{`${tr.diff > 0 ? '+' : ''}${tr.diff}`}</Num>
-            <T kind="small">{L('كجم من أول مرة', 'kg since the first time')}</T>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Num size={26}>{String(tr.best)}</Num>
-            <T kind="small">{L('أقصى وزن متوقع لعدة واحدة', 'Estimated one-rep max')}</T>
-          </View>
-        </View>
-        <LineChart points={(hist ?? []).map((x) => ({ label: dateLabel(x.date), v: x.w }))} unit={L(' كجم', ' kg')} empty={L('محتاجين مرتين على الأقل عشان يظهر الرسم.', 'The chart shows after at least two sessions.')} />
-        {(hist ?? []).slice(-5).reverse().map((x) => (
-          <View key={x.date} style={[styles.rowBetween, { borderTopWidth: 1, borderColor: c.line, paddingTop: 6 }]}>
-            <T kind="small">{dateLabel(x.date)}</T>
-            <T kind="small" color={c.ink}>{L(`${x.w} كجم × ${x.reps.join('، ')}`, `${x.w} kg × ${x.reps.join(', ')}`)}</T>
-            <T kind="small">{L(`حجم ${volume(x)}`, `Vol ${volume(x)}`)}</T>
-          </View>
-        ))}
-      </>}
-    </Card>
   );
 }
 
@@ -228,7 +194,7 @@ export default function ExerciseScreen() {
         </Card>
       ) : null}
 
-      {strength ? <Logbook hist={liftHist[item.id]} /> : null}
+      {strength ? <Card><T kind="h2">{L('سجل التمرين', 'Logbook')}</T><LiftLogbook id={item.id} hist={liftHist[item.id]} profile={profile} /></Card> : null}
 
       {strength && isToday ? (
         <Card>

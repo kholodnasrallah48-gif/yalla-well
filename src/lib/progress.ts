@@ -65,3 +65,14 @@ export function liftTrend(hist: LiftLog[] | undefined): { first: LiftLog; last: 
   const best = Math.max(...hist.map((x) => oneRepMax(x.w, Math.max(...x.reps, 1))));
   return { first, last, diff: Math.round((last.w - first.w) * 10) / 10, best };
 }
+
+/** The logbook's headline: the heaviest session (most reps breaks a tie, then the latest), the next weight to aim
+ * for, and how the latest session compares with the one before it. */
+export function liftRecord(id: string, hist: LiftLog[] | undefined): { best: LiftLog; goal: number; last: LiftLog; change: number | null } | null {
+  if (!hist?.length) return null;
+  const top = (x: LiftLog) => Math.max(0, ...x.reps);
+  const best = hist.reduce((b, x) => (x.w > b.w || (x.w === b.w && top(x) >= top(b)) ? x : b));
+  const last = hist[hist.length - 1];
+  const prev = hist.length > 1 ? hist[hist.length - 2] : null;
+  return { best, goal: Math.round((best.w + stepFor(id)) * 10) / 10, last, change: prev ? Math.round((last.w - prev.w) * 10) / 10 : null };
+}

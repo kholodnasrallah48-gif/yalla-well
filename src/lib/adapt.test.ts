@@ -78,3 +78,19 @@ test('measurements and the tape body-fat estimate', () => {
   assert.ok(f > 30 && f < 45, String(f));
   assert.equal(bodyFat('m', 175, { waist: 30, neck: 40 }), null);
 });
+
+test('liftRecord picks the heaviest session and the next goal', async () => {
+  const { liftRecord } = await import('./progress.ts');
+  const h = [
+    { date: '2026-09-01', w: 30, reps: [12, 12, 10], top: 12 },
+    { date: '2026-09-08', w: 42.5, reps: [10, 9, 8], top: 12 },
+    { date: '2026-09-15', w: 42.5, reps: [12, 11, 10], top: 12 },
+    { date: '2026-09-22', w: 40, reps: [12, 12, 12], top: 12 },
+  ];
+  const r = liftRecord('g_squat', h)!;
+  assert.equal(r.best.date, '2026-09-15');
+  assert.ok(r.goal > 42.5);
+  assert.equal(r.change, -2.5);
+  assert.equal(liftRecord('g_squat', [h[0]])!.change, null);
+  assert.equal(liftRecord('g_squat', []), null);
+});

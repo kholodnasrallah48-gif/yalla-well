@@ -9,6 +9,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, TextInput, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LineChart } from '../components/LineChart.tsx';
+import { LiftLogbook } from '../components/LiftLogbook.tsx';
 import { Bg, Btn, Card, Chip, Num, RADIUS, T, styles } from '../components/ui.tsx';
 import { MEASURES, bodyChanges, bodyFat, fatTrend, logBody, type Measure } from '../lib/body.ts';
 import { EXERCISES } from '../lib/data.ts';
@@ -200,7 +201,7 @@ export default function Progress() {
                 </View>
                 <Num size={20} color={tr.diff > 0 ? c.ok : c.muted}>{`${tr.diff > 0 ? '+' : ''}${tr.diff}`}</Num>
               </Pressable>
-              {on ? <LineChart points={h.map((x) => ({ label: dateLabel(x.date), v: x.w }))} unit={L(' كجم', ' kg')} height={130} empty={L('محتاجين مرتين على الأقل.', 'Needs at least two sessions.')} /> : null}
+              {on ? <LiftLogbook id={id} hist={h} profile={p} compact /> : null}
             </View>
           );
         })}

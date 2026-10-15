@@ -46,8 +46,10 @@ jobs:
         if: env.SKIP != '1'
         env:
           EXPO_PUBLIC_USDA_KEY: ${{ secrets.USDA_KEY }}
+          # Passed through the environment so quotes or backticks in a commit message can't break the command.
+          COMMIT_MSG: ${{ github.event.head_commit.message || 'manual run' }}
         run: |
-          eas update --branch preview --message "${{ github.event.head_commit.message || 'manual run' }}" --non-interactive --json > update.json
+          eas update --branch preview --message "$(printf '%s' "$COMMIT_MSG" | head -n 1)" --non-interactive --json > update.json
           node -e '
             const u = require("./update.json").find((x) => x.platform === "ios") ?? require("./update.json")[0];
             const app = require("./app.json").expo;

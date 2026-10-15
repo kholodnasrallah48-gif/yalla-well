@@ -21,7 +21,7 @@ for (const lang of ['ar', 'en']) {
     const ctx = {
       lang, en, root, other: (en ? '../' : 'en/') + file,
       L: (ar, eng) => (en ? eng : ar),
-      img: (name) => `${root}static/img/${lang}/${name}.jpg`,
+      media: (name) => `${root}static/media/${name}-${lang}.webp`,
     };
     writeFileSync(join(out, en ? 'en' : '', page.file), layout(ctx, page));
   }

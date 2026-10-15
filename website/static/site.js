@@ -46,7 +46,7 @@
       const note = document.getElementById('form-note');
       if (bad) {
         bad.focus();
-        if (note) note.textContent = doc.lang === 'en' ? 'Please fill in your name, a valid email and your message.' : 'محتاجين الاسم وإيميل صح والرسالة.';
+        if (note) note.textContent = doc.lang === 'en' ? 'Please fill in your name, a valid email and your message.' : 'نحتاج إلى الاسم وبريد إلكتروني صحيح والرسالة.';
         return;
       }
       const v = (n) => form.elements[n].value.trim();
@@ -104,6 +104,147 @@
     return words;
   }
 
+  // ---------- trailer: loads when near the screen, plays muted on a loop; paused on its poster with reduced motion ----------
+  const tr = document.querySelector('[data-trailer]');
+  if (tr) {
+    const v = tr.querySelector('video');
+    const cap = tr.querySelector('.trailer-cap');
+    const caps = JSON.parse(cap.dataset.caps);
+    const btn = tr.querySelector('.trailer-btn');
+    const SHOT = 59 / 30; // seconds per shot; the end card follows the last one
+    let shown = 0;
+    let loaded = false;
+    const load = () => { if (loaded) return; loaded = true; v.querySelectorAll('source').forEach((s) => { s.src = s.dataset.src; }); v.load(); };
+    const setBtn = (playing) => {
+      btn.setAttribute('aria-pressed', String(playing));
+      btn.querySelector('.tb-t').textContent = playing ? btn.dataset.pause : btn.dataset.play;
+    };
+    const play = () => { load(); const p = v.play(); if (p && p.catch) p.catch(() => setBtn(false)); };
+    v.addEventListener('play', () => setBtn(true));
+    v.addEventListener('pause', () => setBtn(false));
+    v.addEventListener('timeupdate', () => {
+      const i = Math.floor(v.currentTime / SHOT);
+      if (i >= caps.length) { cap.classList.add('is-out'); return; }
+      if (i !== shown || cap.classList.contains('is-out')) {
+        shown = i; cap.classList.add('is-out');
+        setTimeout(() => { cap.innerHTML = caps[i]; cap.classList.remove('is-out'); }, still ? 0 : 160);
+      }
+    });
+    btn.addEventListener('click', () => (v.paused ? play() : v.pause()));
+    if (!still && 'IntersectionObserver' in window) {
+      let userPaused = false;
+      btn.addEventListener('click', () => { userPaused = !v.paused ? false : true; });
+      const vo = new IntersectionObserver(([e]) => {
+        if (e.isIntersecting) { if (!userPaused) play(); } else if (!v.paused) { v.pause(); }
+      }, { rootMargin: '200px 0px' });
+      vo.observe(v);
+    }
+  }
+
+  // ---------- one app instead of several: the separate apps gather into Yalla Well ----------
+  const stack = document.querySelector('[data-stack]');
+  if (stack) {
+    const cards = [...stack.querySelectorAll('.app-card')];
+    const one = stack.querySelector('.one-card');
+    const sb = stack.querySelector('.stack-btn');
+    const measure = () => {
+      const o = one.getBoundingClientRect();
+      cards.forEach((c, i) => {
+        const r = c.getBoundingClientRect();
+        c.style.setProperty('--dx', `${o.left + o.width / 2 - (r.left + r.width / 2)}px`);
+        c.style.setProperty('--dy', `${o.top + o.height / 2 - (r.top + r.height / 2)}px`);
+        c.style.setProperty('--i', String(i));
+      });
+    };
+    const set = (on) => {
+      if (on) measure();
+      stack.classList.toggle('is-merged', on);
+      sb.textContent = on ? sb.dataset.splitLabel : sb.dataset.merge;
+    };
+    sb.addEventListener('click', () => set(!stack.classList.contains('is-merged')));
+    if (still) set(true);
+    else if ('IntersectionObserver' in window) {
+      const so = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        so.disconnect();
+        setTimeout(() => set(true), 700);
+      }, { threshold: 0.6 });
+      so.observe(stack.querySelector('.apps'));
+    }
+    window.addEventListener('resize', () => { if (stack.classList.contains('is-merged')) measure(); });
+  }
+
+  // ---------- inside the app: one phone; scrolling (desktop) or tabs (phone) change its screen ----------
+  const tourEl = document.querySelector('.tour');
+  if (tourEl) {
+    const steps = [...tourEl.querySelectorAll('.tour-step')];
+    const screens = [...tourEl.querySelectorAll('.screen')];
+    const tabs = [...tourEl.querySelectorAll('.tour-tabs button')];
+    const dots = [...tourEl.querySelectorAll('.tour-dots i')];
+    const stage = tourEl.querySelector('.tour-phone');
+    let cur = 0;
+    const show = (i) => {
+      if (i === cur) return;
+      cur = i;
+      steps.forEach((s, j) => s.classList.toggle('is-on', j === i));
+      screens.forEach((s, j) => { s.classList.toggle('is-on', j === i); if (j === i) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true'); });
+      dots.forEach((d, j) => d.classList.toggle('is-on', j === i));
+      tabs.forEach((t, j) => { t.setAttribute('aria-selected', String(j === i)); t.tabIndex = j === i ? 0 : -1; });
+      stage.setAttribute('aria-labelledby', `tt-${i}`);
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => { show(i); t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+      t.addEventListener('keydown', (e) => {
+        const fwd = rtl ? 'ArrowLeft' : 'ArrowRight';
+        const back = rtl ? 'ArrowRight' : 'ArrowLeft';
+        if (e.key !== fwd && e.key !== back) return;
+        e.preventDefault();
+        const n = (i + (e.key === fwd ? 1 : -1) + tabs.length) % tabs.length;
+        tabs[n].focus(); tabs[n].click();
+      });
+    });
+    const wide = window.matchMedia('(min-width: 921px)');
+    if ('IntersectionObserver' in window) {
+      const to = new IntersectionObserver((entries) => {
+        if (!wide.matches) return;
+        for (const e of entries) if (e.isIntersecting) show(steps.indexOf(e.target));
+      }, { rootMargin: '-45% 0px -45% 0px' });
+      steps.forEach((s) => to.observe(s));
+    }
+  }
+
+  // ---------- try it: the chosen situations change the plan ----------
+  const tryBox = document.querySelector('.try-box');
+  if (tryBox) {
+    const data = JSON.parse(tryBox.querySelector('.try-data').textContent);
+    const list = tryBox.querySelector('.plan');
+    const on = new Set();
+    let before = new Set(data.base);
+    const render = () => {
+      const items = data.base.map((t) => [t, false]);
+      for (const k of on) for (const [i, t] of data.swap[k] || []) items[i] = [t, true];
+      for (const k of on) for (const t of data.add[k]) items.push([t, true]);
+      list.innerHTML = '';
+      const now = new Set();
+      for (const [t, w] of items) {
+        if (now.has(t)) continue;
+        now.add(t);
+        const li = document.createElement('li');
+        li.textContent = t;
+        if (w) li.classList.add('w');
+        if (!before.has(t)) li.classList.add('is-new');
+        list.appendChild(li);
+      }
+      before = now;
+    };
+    tryBox.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.k;
+      if (on.has(k)) on.delete(k); else on.add(k);
+      b.setAttribute('aria-pressed', String(on.has(k)));
+      render();
+    }));
+  }
+
   if (motion) runMotion(); else runBasic();
 
   // ---------- without the motion layer ----------
@@ -132,20 +273,6 @@
       reveals.forEach((el) => io.observe(el));
     } else {
       reveals.forEach((el) => el.classList.add('in'));
-    }
-    // Story: the sticky phone shows the screen of the step in the middle of the window.
-    const steps = [...document.querySelectorAll('.story-steps .step')];
-    const screens = [...document.querySelectorAll('.story .screen')];
-    if (steps.length && screens.length && 'IntersectionObserver' in window) {
-      const so = new IntersectionObserver((entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          const i = steps.indexOf(e.target);
-          steps.forEach((s, j) => s.classList.toggle('is-on', j === i));
-          screens.forEach((s, j) => s.classList.toggle('is-on', j === i));
-        }
-      }, { rootMargin: '-45% 0px -45% 0px' });
-      steps.forEach((s) => so.observe(s));
     }
   }
 
@@ -215,9 +342,6 @@
       if (jumps.length) tl.from(jumps, { y: 16, opacity: 0, duration: 0.9, stagger: 0.05 }, 0.55);
     }
 
-    const sayEl = document.querySelector('[data-say]');
-    const sayWords = sayEl ? splitWords(sayEl, false) : [];
-
     // FAQ answers open and close smoothly.
     document.querySelectorAll('details.qa').forEach((d) => {
       const body = d.querySelector('.qa-a');
@@ -280,83 +404,6 @@
           .to(hero.querySelector('.float-a'), { x: -70, rotate: -6 }, 0)
           .to(hero.querySelector('.float-b'), { x: 70, rotate: 6 }, 0)
           .fromTo(hero.querySelector('.glow'), { scale: 1, opacity: 1 }, { scale: 1.45, opacity: 0.75 }, 0);
-      }
-
-      // Statement: pinned while its words light up one after another.
-      if (sayEl) {
-        gsap.timeline({ scrollTrigger: { trigger: sayEl.closest('.statement'), start: 'top top', end: () => `+=${window.innerHeight * 1.3}`, pin: true, scrub: 0.6 } })
-          .fromTo(sayEl, { scale: 0.96 }, { scale: 1, duration: 1, ease: 'none' }, 0)
-          .to(sayWords, { opacity: 1, duration: 0.25, stagger: 0.75 / sayWords.length, ease: 'none' }, 0);
-      }
-
-      // Story (desktop): pinned; the text swaps step by step and the phone wipes to the next screen.
-      const story = document.querySelector('.story');
-      if (story && desk) {
-        const steps = [...story.querySelectorAll('.step')];
-        const screens = [...story.querySelectorAll('.screen')];
-        const navs = [...story.querySelectorAll('.sn')];
-        const dots = [...story.querySelectorAll('.story-dots i')];
-        const ph = story.querySelector('.phone-sticky');
-        const n = steps.length;
-        // Start positions in percent only, so the CSS offset (there to avoid a flash before this runs) doesn't add up.
-        gsap.set(screens, { x: 0, xPercent: (i) => (i ? 100 * s : 0), force3D: true });
-        gsap.fromTo(ph, { y: 120, scale: 0.92 }, { y: 0, scale: 1, ease: 'none', force3D: true, scrollTrigger: { trigger: story, start: 'top bottom', end: 'top top', scrub: 1 } });
-        const tl = gsap.timeline({
-          defaults: { ease: 'none' },
-          scrollTrigger: {
-            trigger: story, start: 'top top', end: () => `+=${window.innerHeight * n}`, pin: true, scrub: 1,
-            onUpdate: (self) => {
-              const idx = Math.min(n - 1, Math.floor(self.progress * n));
-              navs.forEach((el, i) => el.classList.toggle('is-on', i === idx));
-              dots.forEach((el, i) => el.classList.toggle('is-on', i === idx));
-            },
-          },
-        });
-        steps.forEach((step, i) => {
-          tl.fromTo(navs[i].querySelector('u'), { scaleX: 0 }, { scaleX: 1, duration: 1 }, i);
-          if (i === n - 1) return;
-          // The next screen slides in from the side (from the left in Arabic) over half a step, so it follows the
-          // scroll gently instead of snapping across; only transform and opacity move, which stays on the GPU.
-          const at = i + 0.45;
-          const d = 0.5;
-          // The text hands over without overlapping: the old step is gone before the new one fades in.
-          tl.to(step, { autoAlpha: 0, x: -36 * s, duration: d * 0.42, ease: 'power1.in' }, at)
-            .fromTo(steps[i + 1], { autoAlpha: 0, x: 36 * s }, { autoAlpha: 1, x: 0, duration: d * 0.5, ease: 'power1.out' }, at + d * 0.5)
-            .fromTo(screens[i + 1], { xPercent: 100 * s }, { xPercent: 0, duration: d, ease: 'power1.inOut' }, at)
-            .to(screens[i], { xPercent: -30 * s, opacity: 0.3, duration: d, ease: 'power1.inOut' }, at);
-        });
-      }
-
-      // Gallery: pinned while the row of screens travels sideways; each phone turns as it passes the middle.
-      const gal = document.querySelector('.gallery');
-      if (gal) {
-        const track = gal.querySelector('.gal-track');
-        const vp = gal.querySelector('.gal-viewport');
-        const dist = () => Math.max(0, track.scrollWidth - vp.clientWidth);
-        const move = gsap.to(track, {
-          x: () => -s * dist(), ease: 'none',
-          scrollTrigger: { trigger: gal, start: 'top top', end: () => `+=${dist() * 1.1}`, pin: true, scrub: 0.6, invalidateOnRefresh: true },
-        });
-        gal.querySelectorAll('.gal-item').forEach((item) => {
-          const ph = item.querySelector('.phone');
-          gsap.set(ph, { transformPerspective: 1200 });
-          gsap.timeline({ scrollTrigger: { trigger: item, containerAnimation: move, start: rtl ? 'right left' : 'left right', end: rtl ? 'left right' : 'right left', scrub: true } })
-            .fromTo(ph, { rotateY: -26 * s, scale: 0.86 }, { rotateY: 0, scale: 1, ease: 'power1.out', duration: 1 })
-            .to(ph, { rotateY: 26 * s, scale: 0.86, ease: 'power1.in', duration: 1 });
-        });
-      }
-
-      // Story (phone): each phone screen rises and straightens as it scrolls in.
-      if (story && !desk) {
-        // Each phone swipes in from the side, alternating sides, as it scrolls in.
-        story.querySelectorAll('.phone-inline').forEach((p, i) => {
-          const side = (i % 2 ? -1 : 1) * s;
-          gsap.fromTo(p,
-            { xPercent: 110 * side, rotateY: -16 * side, scale: 0.94, transformPerspective: 1100, force3D: true },
-            { xPercent: 0, rotateY: 0, scale: 1, ease: 'power1.out', scrollTrigger: { trigger: p, start: 'top bottom', end: 'top 35%', scrub: 1 } });
-        });
-        story.querySelectorAll('.step').forEach((step) => gsap.from(step.querySelectorAll('.kicker, .h2, .lead, .ticks li'),
-          { opacity: 0, y: 40, duration: 1.1, ease: 'expo.out', stagger: 0.07, scrollTrigger: { trigger: step, start: 'top 82%', once: true } }));
       }
 
       // Feature pages: each phone swings in from the side as its section arrives.

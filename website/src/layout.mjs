@@ -37,6 +37,7 @@ const ICON_PATHS = {
   mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6l8.5 7 8.5-7"/>',
   chat: '<path d="M4 19l1.5-4A7.5 7.5 0 1 1 9 18.5z"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  drop: '<path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/>',
   instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="0.6" fill="currentColor"/>',
   tiktok: '<path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.5 2.6 2.4 4.5 5 4.8"/>',
   facebook: '<path d="M14 21v-8h3l.5-3.5H14V7.5c0-1 .4-1.8 1.8-1.8h1.8V2.6c-.4 0-1.5-.1-2.7-.1-2.7 0-4.4 1.6-4.4 4.6v2.4H7.5V13h3v8"/>',
@@ -57,7 +58,7 @@ export function storeButtons(ctx, { web = true } = {}) {
   return `<div class="stores">
     ${store(APP_STORE, 'App Store', L('قريبا على آب ستور', 'Coming soon to the App Store'))}
     ${store(GOOGLE_PLAY, 'Google Play', L('قريبا على جوجل بلاي', 'Coming soon to Google Play'))}
-    ${web ? `<a class="store store-web" href="${WEB_APP}"><span class="store-small">${L('متاح دلوقتي', 'Available now')}</span><span class="store-big">${L('على الويب', 'On the web')}</span></a>` : ''}
+    ${web ? `<a class="store store-web" href="${WEB_APP}"><span class="store-small">${L('متاح الآن', 'Available now')}</span><span class="store-big">${L('على الويب', 'On the web')}</span></a>` : ''}
   </div>`;
 }
 
@@ -72,12 +73,15 @@ export const hasSocial = () => Object.values(SOCIAL).some(Boolean);
 export const contact = { email: EMAIL, whatsapp: WHATSAPP };
 export { SOCIAL_NAMES };
 
+/** The wordmark: Rakkas in Arabic, Almarai 800 caps in blue in English. */
+const wordmark = (ctx) => (ctx.en ? '<span class="wordmark wordmark-en">YALLA WELL</span>' : '<span class="wordmark">يلا ويل</span>');
+
 const NAV = [
   ['features.html', ['المميزات', 'Features']],
-  ['index.html#how', ['إزاي بيشتغل', 'How it works']],
+  ['index.html#how', ['كيف يعمل', 'How it works']],
   ['faq.html', ['الأسئلة', 'FAQ']],
   ['about.html', ['عن يلا ويل', 'About']],
-  ['contact.html', ['تواصل', 'Contact']],
+  ['contact.html', ['التواصل', 'Contact']],
 ];
 
 function header(ctx, page) {
@@ -86,14 +90,14 @@ function header(ctx, page) {
     `<a href="${href === 'index.html#how' ? './#how' : href}"${href === page.file ? ' aria-current="page"' : ''}>${L(ar, en)}</a>`).join('');
   return `<header class="hdr">
   <div class="wrap hdr-in">
-    <a class="brand" href="./" aria-label="${L('يلا ويل، الصفحة الرئيسية', 'Yalla Well home')}">${champ('logo', { size: 34 })}<span class="wordmark">${L('يلا ويل', 'Yalla Well')}</span></a>
-    <nav class="nav" id="nav" aria-label="${L('القايمة الرئيسية', 'Main menu')}">${links}
+    <a class="brand" href="./" aria-label="${L('يلا ويل، الصفحة الرئيسية', 'Yalla Well home')}">${champ('logo', { size: 34 })}${wordmark(ctx)}</a>
+    <nav class="nav" id="nav" aria-label="${L('القائمة الرئيسية', 'Main menu')}">${links}
       <a class="nav-only-m" href="${ctx.other}" hreflang="${ctx.en ? 'ar' : 'en'}" lang="${ctx.en ? 'ar' : 'en'}">${ctx.en ? 'عربي' : 'English'}</a>
     </nav>
     <div class="hdr-end">
       <a class="lang" href="${ctx.other}" hreflang="${ctx.en ? 'ar' : 'en'}" lang="${ctx.en ? 'ar' : 'en'}">${ctx.en ? 'عربي' : 'EN'}</a>
       <a class="btn btn-primary btn-sm" href="download.html">${L('التحميل', 'Download')}</a>
-      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav" aria-label="${L('فتح القايمة', 'Open menu')}" data-open="${L('فتح القايمة', 'Open menu')}" data-close="${L('قفل القايمة', 'Close menu')}">${icon('menu', 24)}</button>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav" aria-label="${L('فتح القائمة', 'Open menu')}" data-open="${L('فتح القائمة', 'Open menu')}" data-close="${L('إغلاق القائمة', 'Close menu')}">${icon('menu', 24)}</button>
     </div>
   </div>
 </header>`;
@@ -101,13 +105,13 @@ function header(ctx, page) {
 
 function footer(ctx) {
   const { L } = ctx;
-  const social = hasSocial() ? `<div class="socials">${socialLinks(ctx)}</div>` : `<p class="muted small">${L('حسابات السوشيال ميديا قريبا.', 'Social media accounts coming soon.')}</p>`;
+  const social = hasSocial() ? `<div class="socials">${socialLinks(ctx)}</div>` : `<p class="muted small">${L('حسابات وسائل التواصل الاجتماعي قريبا.', 'Social media accounts coming soon.')}</p>`;
   return `<footer class="ftr">
   <div class="wrap">
     <div class="ftr-top">
       <div class="ftr-brand">
-        <a class="brand" href="./">${champ('logo', { size: 30 })}<span class="wordmark">${L('يلا ويل', 'Yalla Well')}</span></a>
-        <p class="muted">${L('خطة أكل وتمرين على حسب جسمك وصحتك.', 'Food, training and health, planned around each person.')}</p>
+        <a class="brand" href="./">${champ('logo', { size: 30 })}${wordmark(ctx)}</a>
+        <p class="muted">${L('خطة أكل وتمرين حسب الجسم والصحة، تبقى معك لسنوات.', 'Food, training and health, planned around you and kept up for years.')}</p>
         ${social}
       </div>
       <nav class="ftr-cols" aria-label="${L('روابط آخر الصفحة', 'Footer links')}">
@@ -116,7 +120,7 @@ function footer(ctx) {
         <div><h2>${L('يلا ويل', 'Yalla Well')}</h2><a href="about.html">${L('عن يلا ويل', 'About')}</a><a href="privacy.html">${L('الخصوصية', 'Privacy')}</a><a href="terms.html">${L('الشروط', 'Terms')}</a></div>
       </nav>
     </div>
-    <p class="ftr-note">${L('يلا ويل بيساعد في تنظيم الأكل والتمرين والأدوية، لكنه مش بديل عن الدكتور. أي تغيير في الدوا أو الأكل أو التمرين لازم يكون بعد ما الدكتور يوافق.', "Yalla Well helps organise food, training and medicines, but it isn't a substitute for a doctor. Talk to your doctor before changing any medicine, diet or training.")}</p>
+    <p class="ftr-note">${L('يلا ويل يساعد في تنظيم الأكل والتمرين والأدوية، ولا يشخص ولا يغني عن الطبيب. أي تغيير في الدواء أو الأكل أو التمرين يكون بعد موافقة الطبيب.', "Yalla Well helps organise food, training and medicines, but it isn't a substitute for a doctor. Talk to your doctor before changing any medicine, diet or training.")}</p>
     <p class="ftr-copy">© 2026 ${L('يلا ويل', 'Yalla Well')}</p>
   </div>
 </footer>`;
@@ -148,7 +152,7 @@ export function layout(ctx, page) {
 <meta property="og:description" content="${desc}">
 <meta property="og:url" content="${SITE_URL}${path}">
 <meta property="og:image" content="${SITE_URL}static/img/og-${ctx.lang}.png">
-<meta property="og:locale" content="${ctx.en ? 'en_US' : 'ar_EG'}">
+<meta property="og:locale" content="${ctx.en ? 'en_US' : 'ar_AR'}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="${ctx.root}static/img/favicon.png">
 <link rel="apple-touch-icon" href="${ctx.root}static/img/apple-touch-icon.png">
@@ -162,7 +166,7 @@ export function layout(ctx, page) {
 <script src="${ctx.root}static/site.js" defer></script>
 </head>
 <body class="${ctx.en ? 'is-en' : 'is-ar'}${page.file === 'index.html' ? ' is-home' : ''}">
-<a class="skip" href="#main">${L('الانتقال للمحتوى', 'Skip to content')}</a>
+<a class="skip" href="#main">${L('الانتقال إلى المحتوى', 'Skip to content')}</a>
 ${header(ctx, page)}
 <main id="main">
 ${page.body(ctx)}

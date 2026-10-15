@@ -62,7 +62,7 @@ function faqGroups(ctx) {
       [L('إيه هو تقرير الدكتور؟', "What's the doctor report?"), L('ملف PDF لآخر 4 أسابيع: الأدوية والالتزام بيها، والطاقة والألم والنوم، والأيام الصعبة، والتمرين، والتحاليل. ينفع يتطبع أو يتبعت.', 'A PDF of the last 4 weeks: medicines and how regularly they were taken, energy, pain and sleep, rough days, workouts and lab results. Print it or send it.')],
       [L('التحاليل بتتسجل على أي شكل؟', 'How do lab results work?'), L('بتتكتب النتيجة والتاريخ، وينفع تتحفظ صورة ورقة التحليل في التطبيق، وبنفكرك لما ييجي ميعاد التحليل الجاي. ألوان النتائج دليل تقريبي بس، والدكتور هو اللي يقرر معناها.', 'You enter the result and the date, can keep a photo of the lab paper in the app, and get a reminder when the next test is due. The colours next to a result are only a rough guide; your doctor decides what it means.')],
       [L('وفي اليوم المتعب؟', 'What happens on a rough day?'), L('كل يوم بنسألك عن الطاقة والألم والنوم. ولو اليوم باين صعب من الإجابات، تمرين اليوم بيتحول لوحده ليوم راحة خفيف.', "Each day the app asks about your energy, pain and sleep. If the answers point to a rough day, that day's workout turns into an easy recovery day by itself.")],
-      [L('فيه متابعة للنوم وصحة المرأة؟', "Does it cover sleep and women's health?"), L('أيوه، الاتنين موجودين. النوم: ميعاد النوم والصحيان، وعدد الساعات مقارنة بالمعدل المناسب لسنك. وصحة المرأة: تقويم الدورة بميعادها المتوقع وأيام الخصوبة، وتمرين أخف في أول أيامها، ومتابعة الحمل أسبوع بأسبوع، والرضاعة.', "Yes, both are in the app. Sleep: bed and wake times, and your hours compared with the range for your age. Women's health: a period calendar with the expected period and fertile days, lighter training on the first days, pregnancy week by week, and breastfeeding.")],
+      [L('التطبيق بيراعي الظروف اللي بتتغير، زي الإصابة أو الحمل؟', 'Does it adjust when things change, like an injury or a pregnancy?'), L('أيوه. الإصابة اللي تحت العلاج بتشيل التمارين اللي بتضغط عليها لحد ما تخف، والحمل بيغير السعرات والتمارين على حسب الشهر، وأول أيام الدورة التمرين بيبقى أخف. وكمان فيه متابعة للنوم وعدد ساعاته.', "Yes. An injury being treated takes out the exercises that load it until it heals, a pregnancy changes calories and exercises month by month, and the first days of a period get a lighter workout. Sleep is tracked too.")],
     ] },
     { id: 'privacy', title: L('الخصوصية', 'Privacy'), items: [
       [L('بياناتي بتتحفظ فين؟', 'Where is my data stored?'), L('على موبايلك نفسه، مش على سيرفر عندنا. التفاصيل في <a href="privacy.html">صفحة الخصوصية</a>.', 'On your phone, not on a server of ours. Details are on the <a href="privacy.html">privacy page</a>.')],
@@ -224,14 +224,13 @@ function coverage(ctx) {
     ['pill', L('الأدوية والفيتامينات', 'Medicines and supplements'), L('كل دواء بجرعته وميعاده، وبنفكرك في كل ميعاد.', 'Each one with its dose and time, and a reminder at each time.'), false],
     ['lab', L('التحاليل', 'Lab results'), L('النتيجة والتاريخ وصورة الورقة، وتذكير بالتحليل الجاي.', 'Result, date and a photo of the paper, with a reminder for the next test.'), false],
     ['chart', L('المية', 'Water'), L('هدف كل يوم على حسب وزنك، وتسجيل بلمسة واحدة.', 'A daily goal from your weight, logged with one tap.'), false],
-    ['moon', L('النوم', 'Sleep'), L('ميعاد النوم والصحيان، وعدد الساعات مقارنة بالمعدل المناسب لسنك.', 'Bed and wake times, and your hours compared with the range for your age.'), true],
-    ['heart', L('الدورة', 'Period'), L('تقويم فيه الميعاد المتوقع وأيام الخصوبة، وتمرين أخف في أول الأيام.', 'A calendar with the expected period and fertile days, and lighter training on the first days.'), true],
-    ['heart', L('الحمل والرضاعة', 'Pregnancy and breastfeeding'), L('متابعة الحمل أسبوع بأسبوع، وأكل وتمرين مناسبين لكل مرحلة، وبعدها فترة الرضاعة.', 'Pregnancy week by week, food and training for each stage, then breastfeeding.'), true],
+    ['moon', L('النوم', 'Sleep'), L('ميعاد النوم والصحيان، وعدد الساعات مقارنة بالمعدل المناسب لسنك.', 'Bed and wake times, and your hours compared with the range for your age.'), false],
+    ['heart', L('ظروفك الصحية', 'Your circumstances'), L('إصابة تحت العلاج، أو حمل، أو أيام الدورة: التمرين والأكل بيتعدلوا على حسب الظرف، وبيرجعوا لطبيعتهم لما يخلص.', 'An injury being treated, a pregnancy, or the first days of a period: training and food adjust to it, and go back to normal once it passes.'), false],
   ];
   return `<section class="section cover" aria-labelledby="cover-title">
   <div class="wrap">
-    <div class="sec-head reveal">${kicker(L('التطبيق بيتابع إيه', 'What it covers'))}<h2 class="h2" id="cover-title">${L('الأكل والتمرين والصحة، وكمان النوم وصحة المرأة.', "Food, training and health, now with sleep and women's health.")}</h2>
-      <p class="lead">${L('بناخد حالتك الصحية وأدويتك في الحسبان في التمرين والأكل، وزودنا النوم وصحة المرأة.', "We take health conditions and medicines into account in training and food, and we've added sleep and women's health.")}</p></div>
+    <div class="sec-head reveal">${kicker(L('التطبيق بيتابع إيه', 'What it covers'))}<h2 class="h2" id="cover-title">${L('الأكل والتمرين والصحة، وكل ظروفك.', 'Food, training and health, and whatever life brings.')}</h2>
+      <p class="lead">${L('بنراعي حالتك الصحية وأدويتك، وكل ظرف ممكن يمر بيه أي حد، زي الإصابات والحمل وأيام الدورة. الخطة بتتعدل معاه.', 'We take your health and medicines into account, and the times life changes things, like an injury, a pregnancy or your period. The plan adjusts with them.')}</p></div>
     <ul class="cover-list" role="list">
       ${items.map(([ic, t, d, soon]) => `<li class="cover-item reveal"><span class="tile-ic">${icon(ic, 22)}</span><div><h3>${t}${soon ? ` <span class="badge badge-new">${L('جديد', 'New')}</span>` : ''}</h3><p>${d}</p></div></li>`).join('')}
     </ul>
@@ -363,19 +362,20 @@ ${coverage(ctx)}
   </div>
 </section>
 
+
+${tryIt(ctx)}
+
+${closing(ctx)}
+
+${downloadPanel(ctx)}
+
 <section class="section">
   <div class="wrap narrow">
     <div class="sec-head reveal">${kicker(L('الأسئلة', 'Questions'))}<h2 class="h2">${L('أسئلة بتتكرر كتير', 'Frequently asked')}</h2></div>
     <div class="qas reveal">${top.map(qa).join('')}</div>
     <p class="more-link"><a class="link-arrow" href="faq.html">${L('كل الأسئلة', 'All questions')} ${icon('arrow', 18)}</a></p>
   </div>
-</section>
-
-${tryIt(ctx)}
-
-${closing(ctx)}
-
-${downloadPanel(ctx)}`;
+</section>`;
   },
 };
 
@@ -437,7 +437,7 @@ ${block('health', 'labs', L('شاشة التحاليل', 'Lab results screen'), 
         ['instagram', L('صورة الأسبوع', 'Your weekly story'), L('كل أسبوع صورة فيها الأيام المتتالية، والأيام اللي جت في الهدف، وعدد التمارين، جاهزة للمشاركة.', 'A picture each week with your streak, days on target and workouts, ready to share.')],
         ['bell', L('تنبيهات بأرقام اليوم', "Reminders with the day's numbers"), L('للوجبات والمية والتمرين والأدوية والتحاليل. التنبيه بيقول فاضل كام كوباية مية وكام سعرة، وتمرين اليوم، والكلام بيتغير كل يوم. ولو الحاجة اتعملت، التنبيه مش بيوصل. في تطبيق الموبايل بس.', "For meals, water, workouts, medicines and lab tests. Each one mentions your real numbers, like cups of water left, calories left and today's workout, and the wording changes every day. Skipped once it's done. Phone app only.")],
         ['moon', L('النوم', 'Sleep'), L('ميعاد النوم والصحيان، وعدد الساعات مقارنة بالمعدل المناسب لسنك.', 'Bed and wake times, and your hours compared with the range for your age.')],
-        ['heart', L('صحة المرأة', "Women's health"), L('تقويم الدورة بالميعاد المتوقع وأيام الخصوبة، وتمرين أخف في أول الأيام، ومتابعة الحمل أسبوع بأسبوع، والرضاعة.', 'A period calendar with the expected period and fertile days, lighter training on the first days, pregnancy week by week, and breastfeeding.')],
+        ['heart', L('ظروفك الصحية', 'Your circumstances'), L('الإصابات والحمل والرضاعة وأيام الدورة، والخطة بتتعدل على حسب كل ظرف.', 'Injuries, pregnancy, breastfeeding and your period, with the plan adjusting to each.')],
         ['chart', L('تقرير أسبوعي', 'Weekly report'), L('كل يوم بالأخضر أو الأحمر، والأسابيع اللي فاتت موجودة، وينفع يتطبع أو يتبعت PDF.', 'Each day green or red, past weeks included, ready to print or share as a PDF.')],
         ['flame', L('نقاط وأيام متتالية', 'Points and streaks'), L('لما السعرات تفضل بين 75% و110% من الهدف، ومع كل تمرين يكمل.', 'For staying between 75% and 110% of your calorie target, and for every finished workout.')],
         ['globe', L('العربي والإنجليزي', 'Arabic and English'), L('اللغة بتتغير في أي وقت، والكلام بالعربي بيخاطب الرجل والمرأة كل واحد بصيغته.', 'Switch any time; the Arabic text addresses men and women each in their own form.')],

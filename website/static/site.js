@@ -46,7 +46,7 @@
       const note = document.getElementById('form-note');
       if (bad) {
         bad.focus();
-        if (note) note.textContent = doc.lang === 'en' ? 'Please fill in your name, a valid email and your message.' : 'نحتاج إلى الاسم وبريد إلكتروني صحيح والرسالة.';
+        if (note) note.textContent = doc.lang === 'en' ? 'Please fill in your name, a valid email and your message.' : 'محتاجين الاسم، وإيميل صحيح، والرسالة.';
         return;
       }
       const v = (n) => form.elements[n].value.trim();
@@ -285,7 +285,7 @@
 
     // Smooth scrolling, driven by GSAP's ticker so pinned scenes stay in sync.
     if (window.Lenis) {
-      lenis = new window.Lenis({ lerp: 0.1, smoothWheel: true });
+      lenis = new window.Lenis({ lerp: 0.18, smoothWheel: true, syncTouch: false });
       lenis.on('scroll', ScrollTrigger.update);
       gsap.ticker.add((t) => lenis.raf(t * 1000));
       gsap.ticker.lagSmoothing(0);
@@ -297,7 +297,7 @@
         const target = document.getElementById(decodeURIComponent(url.hash.slice(1)));
         if (!target) return;
         e.preventDefault();
-        lenis.scrollTo(target, { offset: -(target.closest('.page-hero') ? 0 : 110), duration: 1.4 });
+        lenis.scrollTo(target, { offset: -(target.closest('.page-hero') ? 0 : 110), duration: 0.9 });
         history.replaceState(null, '', url.hash);
       });
     }
@@ -317,13 +317,13 @@
       const floats = [...hero.querySelectorAll('.float')];
       gsap.set([pill, h1, lead, storesBox], { opacity: 1, y: 0 });
       gsap.timeline({ defaults: { ease: 'expo.out' }, delay: 0.05 })
-        .from(pill, { y: 24, opacity: 0, duration: 1.1 })
-        .from(heroWords, { yPercent: 120, rotate: 5 * s, duration: 1.4, stagger: 0.07 }, 0.08)
-        .from(lead, { y: 26, opacity: 0, duration: 1.3 }, 0.45)
-        .from(storesBox.querySelectorAll('.store'), { y: 26, opacity: 0, duration: 1.2, stagger: 0.08 }, 0.6)
-        .fromTo('.hero-stage', { opacity: 0, y: 160 }, { opacity: 1, y: 0, duration: 2 }, 0.35)
-        .fromTo(wrapPhone, { rotateX: 42, scale: 0.8 }, { rotateX: 16, scale: 0.92, duration: 2.2 }, 0.35)
-        .fromTo(floats, { opacity: 0, scale: 0.5, y: 50 }, { opacity: 1, scale: 1, y: 0, duration: 1.3, ease: 'back.out(1.7)', stagger: 0.16 }, 1.25)
+        .from(pill, { y: 20, opacity: 0, duration: 0.7 })
+        .from(heroWords, { yPercent: 110, rotate: 4 * s, duration: 0.9, stagger: 0.05 }, 0.05)
+        .from(lead, { y: 20, opacity: 0, duration: 0.8 }, 0.3)
+        .from(storesBox.querySelectorAll('.store'), { y: 20, opacity: 0, duration: 0.7, stagger: 0.06 }, 0.4)
+        .fromTo('.hero-stage', { opacity: 0, y: 120 }, { opacity: 1, y: 0, duration: 1.2 }, 0.25)
+        .fromTo(wrapPhone, { rotateX: 36, scale: 0.84 }, { rotateX: 16, scale: 0.92, duration: 1.3 }, 0.25)
+        .fromTo(floats, { opacity: 0, scale: 0.6, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'back.out(1.6)', stagger: 0.12 }, 0.8)
         .add(() => floats.forEach((f, i) => gsap.to(f, { yPercent: -16, duration: 3 + i * 0.8, ease: 'sine.inOut', yoyo: true, repeat: -1 })));
     }
 
@@ -334,12 +334,12 @@
       const words = splitWords(h, true);
       gsap.set(pageHero, { opacity: 1, y: 0 });
       const tl = gsap.timeline({ defaults: { ease: 'expo.out' } })
-        .from(pageHero.querySelector('.kicker'), { y: 20, opacity: 0, duration: 1 })
-        .from(words, { yPercent: 120, rotate: 4 * s, duration: 1.3, stagger: 0.06 }, 0.05);
+        .from(pageHero.querySelector('.kicker'), { y: 20, opacity: 0, duration: 0.7 })
+        .from(words, { yPercent: 110, rotate: 4 * s, duration: 0.9, stagger: 0.05 }, 0.05);
       const lead = pageHero.querySelector('.lead');
-      if (lead) tl.from(lead, { y: 24, opacity: 0, duration: 1.2 }, 0.4);
+      if (lead) tl.from(lead, { y: 20, opacity: 0, duration: 0.8 }, 0.3);
       const jumps = document.querySelectorAll('.jump a');
-      if (jumps.length) tl.from(jumps, { y: 16, opacity: 0, duration: 0.9, stagger: 0.05 }, 0.55);
+      if (jumps.length) tl.from(jumps, { y: 16, opacity: 0, duration: 0.6, stagger: 0.04 }, 0.4);
     }
 
     // FAQ answers open and close smoothly.
@@ -398,7 +398,7 @@
       if (hero) {
         const wrapPhone = hero.querySelector('.hero-phone');
         const toCenter = () => Math.max(240, wrapPhone.getBoundingClientRect().top + window.scrollY + wrapPhone.offsetHeight / 2 - window.innerHeight / 2);
-        gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: hero, start: 'top top', end: () => `+=${toCenter()}`, scrub: 0.7, invalidateOnRefresh: true } })
+        gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: hero, start: 'top top', end: () => `+=${toCenter()}`, scrub: true, invalidateOnRefresh: true } })
           .to(hero.querySelector('.hero-text'), { y: -120, opacity: 0.1 }, 0)
           .fromTo(hero.querySelector('.phone-hero'), { rotateX: 0, scale: 1 }, { rotateX: -16, scale: desk ? 1.14 : 1.06 }, 0)
           .to(hero.querySelector('.float-a'), { x: -70, rotate: -6 }, 0)
@@ -411,10 +411,10 @@
         const p = f.querySelector('.feature-media .phone');
         const dir = (f.classList.contains('is-flip') ? -1 : 1) * s;
         gsap.fromTo(p, { rotateY: 30 * dir, rotateX: 8, y: 120, scale: 0.84 },
-          { rotateY: 0, rotateX: 0, y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: f, start: 'top bottom', end: 'center 55%', scrub: 0.7 } });
+          { rotateY: 0, rotateX: 0, y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: f, start: 'top bottom', end: 'center 55%', scrub: 0.3 } });
         gsap.set(f.querySelectorAll('.reveal'), { opacity: 1, y: 0 });
         f.querySelectorAll('.feature-text').forEach((t) => {
-          gsap.from(t.querySelectorAll('.kicker, .h2, .lead, .h3, .ticks li'), { opacity: 0, y: 36, duration: 1.1, ease: 'expo.out', stagger: 0.05, scrollTrigger: { trigger: t, start: 'top 80%', once: true } });
+          gsap.from(t.querySelectorAll('.kicker, .h2, .lead, .h3, .ticks li'), { opacity: 0, y: 30, duration: 0.75, ease: 'power3.out', stagger: 0.04, scrollTrigger: { trigger: t, start: 'top 80%', once: true } });
         });
       });
 
@@ -424,7 +424,7 @@
         ScrollTrigger.create({
           trigger: '.stats', start: 'top 85%', once: true,
           onEnter: () => {
-            gsap.fromTo(stats, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: 'expo.out', stagger: 0.08 });
+            gsap.fromTo(stats, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', stagger: 0.06 });
             stats.forEach((st) => {
               const num = st.querySelector('[data-count]');
               const o = { v: 0 };
@@ -445,7 +445,7 @@
       // Download panel: grows into place, and the champ keeps cheering.
       const cta = document.querySelector('.cta');
       if (cta) {
-        gsap.fromTo(cta, { opacity: 0.2, scale: 0.9, y: 80 }, { opacity: 1, scale: 1, y: 0, ease: 'none', scrollTrigger: { trigger: cta, start: 'top bottom', end: 'top 45%', scrub: 0.7 } });
+        gsap.fromTo(cta, { opacity: 0.2, scale: 0.9, y: 80 }, { opacity: 1, scale: 1, y: 0, ease: 'none', scrollTrigger: { trigger: cta, start: 'top bottom', end: 'top 45%', scrub: 0.3 } });
         const champ = cta.querySelector('.cta-champ');
         if (champ) {
           gsap.timeline({ repeat: -1, repeatDelay: 1.4, scrollTrigger: { trigger: cta, start: 'top 80%', toggleActions: 'play pause resume pause' } })
@@ -470,11 +470,11 @@
       const skip = (el) => el.closest('.hero, .page-hero, .feature, .cta-band') || el.classList.contains('stat');
       const items = gsap.utils.toArray('.reveal').filter((el) => !skip(el));
       ScrollTrigger.batch(items, {
-        start: 'top 88%', once: true,
+        start: 'top 92%', once: true,
         onEnter: (els) => els.forEach((el, i) => {
           const card = el.matches('.tile, .dl-card, .how li, .c-card, .howto-col, .qa-group, .form');
-          gsap.fromTo(el, card ? { opacity: 0, y: 70, rotateX: -16, transformPerspective: 900, transformOrigin: '50% 100%' } : { opacity: 0, y: 50 },
-            { opacity: 1, y: 0, rotateX: 0, duration: 1.3, ease: 'expo.out', delay: i * 0.09, overwrite: 'auto' });
+          gsap.fromTo(el, card ? { opacity: 0, y: 48, rotateX: -12, transformPerspective: 900, transformOrigin: '50% 100%' } : { opacity: 0, y: 36 },
+            { opacity: 1, y: 0, rotateX: 0, duration: 0.8, ease: 'power3.out', delay: i * 0.06, overwrite: 'auto', clearProps: 'transform' });
         }),
       });
       ScrollTrigger.sort();

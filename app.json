@@ -64,7 +64,7 @@
     },
     "owner": "my-team-yalla-fit",
     "experiments": {
-      "baseUrl": "/yalla-well"
+      "baseUrl": "/app"
     }
   }
 }

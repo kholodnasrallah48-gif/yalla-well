@@ -42,7 +42,8 @@ export default function Me() {
   const meds = [...medIds(p).map((id) => { const pl = medPlan(p, id); const d = doseText(pl); return `${id.startsWith('x:') ? ux(p, medName(id, pl)) : medName(id, pl)}${d ? ` (${d})` : ''}`; }), ux(p, p.otherMeds)].filter(Boolean);
   const ownCount = Object.values(p.own ?? {}).reduce((a, x) => a + x.length, 0);
   const dropCount = Object.values(p.drop ?? {}).reduce((a, x) => a + x.length, 0);
-  const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '')), ux(p, p.otherPain)].filter(Boolean);
+  const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '') + (p.hurt?.[id] === 'injury' ? L(' (إصابة تحت العلاج)', ' (injury being treated)') : '')), ux(p, p.otherPain)].filter(Boolean);
+  const injured = p.pains.filter((id) => p.hurt?.[id] === 'injury');
 
   return (
     <Screen title={L('ملفي', 'Me')} name="me">
@@ -124,6 +125,10 @@ export default function Me() {
         <T kind="small">{L('الأمراض:', 'Conditions:')} {conds.length ? conds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
         <T kind="small">{L('الأدوية والفيتامينات:', 'Medicines and supplements:')} {meds.length ? meds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
         <T kind="small">{L('أماكن الألم:', 'Pain areas:')} {pains.length ? pains.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
+        {injured.length ? (
+          <Btn kind="outline" title={L(g('اتعالجت من الإصابة', 'اتعالجتي من الإصابة'), 'My injury has healed')}
+            onPress={() => saveProfile({ ...p, hurt: Object.fromEntries(Object.entries(p.hurt ?? {}).map(([k, v]) => [k, v === 'injury' ? 'pain' : v])) })} />
+        ) : null}
       </Card>
 
       {M.food.length ? <Card><T kind="h2">{L('ملاحظات الأكل', 'Food notes')}</T>{M.food.map((n, i) => <NoteView key={i} note={n} />)}</Card> : null}

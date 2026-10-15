@@ -7,6 +7,7 @@ import type { Joint } from './data.ts';
 import type { FoodTag } from './foods.ts';
 import type { MedRule } from './health.ts';
 import type { Gender, Profile } from './plan.ts';
+import { L } from './i18n.ts';
 
 /** Things to cut down on in food. */
 export type FoodFlag = 'salt' | 'sugar' | 'fat' | 'gluten' | 'dairy' | 'caffeine' | 'spicy' | 'redmeat' | 'fiber';
@@ -132,10 +133,21 @@ export const KB: KBItem[] = [
   { id: 'disc', kind: 'cond', n: ['انزلاق غضروفي', 'Slipped disc'], words: ['انزلاق غضروفي', 'غضروف في الضهر', 'غضروف الضهر', 'غضروف', 'ديسك', 'عرق النسا', 'انزلاق', 'herniated', 'slipped disc', 'sciatica', 'disc'],
     pain: 'back', watch: ['numb'],
     trainNote: (g) => [`بلاش الانحناء بوزن ولف الضهر. لو ${g('حسيت', 'حسيتي')} بتنميل نازل في الرجل ${g('وقف', 'وقفي')} التمرين.`, 'No loaded bending or twisting. Stop if you feel tingling down your leg.'] },
+  { id: 'neckdisc', kind: 'cond', n: ['ديسك الرقبة', 'Neck disc'], words: ['ديسك الرقبه', 'ديسك في الرقبه', 'ديسك رقبه', 'غضروف الرقبه', 'غضروف في الرقبه', 'فقرات الرقبه', 'رقبتي', 'الرقبه', 'رقبه', 'cervical', 'neck'],
+    pain: 'neck', watch: ['numb', 'headache'],
+    trainNote: (g) => [`بلاش ضغط فوق الراس، ورفع الكتف بوزن، والسحب التقيل، والسكوات بالبار على الرقبة. لو ${g('حسيت', 'حسيتي')} بتنميل نازل في الدراع ${g('وقف', 'وقفي')} التمرين.`, 'No overhead pressing, loaded shrugs, heavy pulls or barbell squats on your neck. Stop if you feel tingling down your arm.'] },
   { id: 'knee', kind: 'cond', n: ['خشونة الركبة', 'Knee problems'], words: ['خشونه الركبه', 'خشونه الركب', 'خشونه ركبه', 'خشونه في الركبه', 'خشونه', 'رباط صليبي', 'غضروف الركبه', 'الركبه', 'acl', 'meniscus', 'knee'],
     pain: 'knee' },
   { id: 'shoulder', kind: 'cond', n: ['الكتف', 'Shoulder problems'], words: ['كتف متجمد', 'التهاب الكتف', 'وتر الكتف', 'الكتف', 'rotator', 'frozen shoulder', 'shoulder'], pain: 'shoulder' },
   { id: 'wrist', kind: 'cond', n: ['الرسغ', 'Wrist problems'], words: ['نفق رسغي', 'تنميل الايد', 'تنميل في الايد', 'الرسغ', 'carpal', 'wrist'], pain: 'wrist' },
+  { id: 'obesity', kind: 'cond', n: ['سمنة', 'Obesity'], words: ['سمنه مفرطه', 'سمنه', 'وزن زايد', 'زياده وزن', 'زياده في الوزن', 'obesity', 'obese', 'overweight'],
+    train: ['noJump'], watch: ['breath', 'joint'],
+    foodNote: (g) => ['النزول الثابت بالراحة بيدوم أكتر من الرجيم القاسي: نص كيلو لكيلو في الأسبوع.', 'Steady loss lasts longer than a harsh diet: half a kilo to a kilo a week.'],
+    trainNote: (g) => [`البداية بالمشي والماكينات، ومن غير قفز عشان الركب. المجهود ${g('بيزيد', 'بيزيد')} كل أسبوع شوية.`, 'Start with walking and machines, and no jumping, to protect your knees. The effort goes up a little each week.'] },
+  { id: 'cancer', kind: 'cond', n: ['سرطان أو ورم', 'Cancer'], words: ['سرطان', 'ورم', 'اورام', 'كانسر', 'كيماوي', 'علاج كيماوي', 'اشعاع', 'علاج اشعاعي', 'cancer', 'tumor', 'tumour', 'chemo', 'chemotherapy', 'radiotherapy'],
+    train: ['easy', 'short'], watch: ['fever', 'dizzy', 'breath', 'bleed'], deficit: 0.1, proteinMin: 1.2,
+    foodNote: (g) => ['أثناء العلاج مفيش رجيم قاسي. البروتين مهم، والأكل يكون مطبوخ كويس والخضار والفاكهة مغسولة كويس.', 'No harsh dieting during treatment. Protein matters, food should be well cooked, and fruit and vegetables well washed.'],
+    trainNote: (g) => [`دكتور الأورام لازم يوافق على التمرين الأول. المجهود خفيف لمتوسط، وأيام العلاج أو لو فيه حرارة ${g('ارتاح', 'ارتاحي')}.`, 'Your oncologist should clear you for exercise first. Light to moderate effort, and rest on treatment days or if you have a fever.'] },
   { id: 'heart', kind: 'cond', n: ['القلب', 'Heart condition'], words: ['ضعف عضله القلب', 'عضله القلب', 'قصور في القلب', 'عدم انتظام ضربات', 'ذبحه', 'جلطه', 'دعامه', 'قسطره', 'شرايين', 'قلب', 'arrhythmia', 'heart', 'cardiac', 'angina', 'stent'],
     food: ['salt', 'fat'], train: ['easy', 'noHeavy'], watch: ['chest', 'breath', 'palp', 'dizzy'],
     trainNote: (g) => [`دكتور القلب لازم يوافق على التمرين الأول. المجهود خفيف لمتوسط (${g('تقدر تتكلم', 'تقدري تتكلمي')} وانت${g('', 'ي')} ${g('بتتمرن', 'بتتمرني')})، وبلاش أوزان تقيلة.`, 'Your cardiologist should clear you for exercise first. Light to moderate effort (you can talk while training), and no heavy weights.'] },
@@ -371,6 +383,14 @@ export function effective(p: Profile): Effective {
     const food = allergyFood(text);
     if (food) e.avoid.push({ re: new RegExp(esc(food)), level: 'bad', text: () => [`مكتوب في ملفك: ${text}.`, `Your profile says: ${text}.`] });
   };
+  // Picked conditions that are also in this list bring its rules, like typed ones.
+  for (const id of p.conditions) {
+    const it = KB_BY_ID[id];
+    if (it && !it.same) { e.ids.delete(id); add(it, L(it.n[0], it.n[1])); }
+  }
+  // Pregnancy and breastfeeding answered at the start count like the typed words.
+  if (p.women?.preg === 'yes' && KB_BY_ID.preg) add(KB_BY_ID.preg, L(KB_BY_ID.preg.n[0], KB_BY_ID.preg.n[1]));
+  if (p.women?.preg === 'nursing' && KB_BY_ID.nursing) add(KB_BY_ID.nursing, L(KB_BY_ID.nursing.n[0], KB_BY_ID.nursing.n[1]));
   splitItems(p.otherCond).forEach((t) => typed(t, 'cond'));
   splitItems(p.otherMeds).forEach((t) => typed(t, 'med'));
   for (const [id, m] of Object.entries(p.medPlan ?? {})) if (id.startsWith('x:')) typed(m?.name ?? id.slice(2), 'med', m?.kb);

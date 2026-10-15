@@ -25,6 +25,8 @@ export type DayLog = {
   /** When the workout started (first exercise or set ticked) and finished (last one ticked), in ms, for the match clock. */
   trainStart?: number;
   trainEnd?: number;
+  /** Last night's sleep: when the person went to bed and woke up ("HH:MM"). */
+  sleep?: { bed: string; wake: string };
 };
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });

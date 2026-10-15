@@ -10,16 +10,18 @@ import { MedList, migrateMeds } from '../components/MedList.tsx';
 import { itemKey, matchItems, splitItems } from '../lib/kb.ts';
 import { Mascot } from '../components/Mascot.tsx';
 import { Bg, Btn, Card, Chip, Choice, Kicker, NoteView, RADIUS, Ring, START, Segmented, T, WeekStrip, styles } from '../components/ui.tsx';
-import { CONDITIONS, PAINS, SCHEDULES, SCHEDULE_ORDER, WEEK, type ScheduleId } from '../lib/data.ts';
-import { fmt } from '../lib/day.ts';
-import { L, getLang, setLang, toNum, tx } from '../lib/i18n.ts';
+import { CONDITIONS, PAINS, SCHEDULES, SCHEDULE_ORDER, WEEK, type Hurt, type ScheduleId } from '../lib/data.ts';
+import { DateField } from '../components/pickers.tsx';
+import { startFromMonth, startPeriod } from '../lib/women.ts';
+import { dayKey as fmtKey, fmt } from '../lib/day.ts';
+import { L, getLang, num, setLang, toNum, tx } from '../lib/i18n.ts';
 import { allGymChoices, genderFor, medical, recommendPlan, splitLabel, targets, weekPlaces, weekSessions, type CondInfo, type DayPlace, type Profile, type Quiz } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
 import { EquipPicker } from '../components/PlanSettings.tsx';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
 
-const STEPS = ['lang', 'basics', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
+const STEPS = ['lang', 'basics', 'women', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
 type Step = (typeof STEPS)[number];
 /** Changing only the training plan (from Me): the three plan questions, then save. */
 const PLAN_STEPS: Step[] = ['has', 'plan', 'week'];
@@ -92,7 +94,8 @@ export default function Onboarding() {
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
   // The condition-details step only shows when a condition was picked.
-  const skipTo = (i: number, dir: 1 | -1) => (flow[i] === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length ? i + dir : i);
+  // The women's questions only show for women.
+  const skipTo = (i: number, dir: 1 | -1) => ((flow[i] === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length) || (flow[i] === 'women' && d.sex !== 'f') ? i + dir : i);
   // The draft as a profile, for the week preview.
   const draft = { name: '', ...d, schedule: d.schedule ?? 'fb3' } as Profile;
   const pickSchedule = (k: ScheduleId) => set({ schedule: k, places: undefined, splits: undefined });
@@ -146,6 +149,38 @@ export default function Onboarding() {
             </View>
           ))}
         </View>
+      </>}
+
+      {st === 'women' && <>
+        <T kind="h1">{L('أسئلة خاصة بيكي', 'A few questions for women')}</T>
+        <T kind="body" color={c.muted}>{L('الإجابات دي بتغير الأكل والتمرين، وكلها بتفضل على موبايلك. تقدري تغيريها في أي وقت من ملفي.', 'These answers change your food and training, and stay on your phone. You can change them any time from Me.')}</T>
+        <T kind="label">{L('الحالة الاجتماعية', 'Marital status')}</T>
+        <View style={[styles.row, { gap: 8 }]}>
+          <Choice title={L('آنسة', 'Single')} on={d.women?.married === false} onPress={() => set({ women: { married: false, preg: 'no' } })} style={{ flex: 1 }} />
+          <Choice title={L('متجوزة', 'Married')} on={d.women?.married === true} onPress={() => set({ women: { ...d.women, married: true } })} style={{ flex: 1 }} />
+        </View>
+        {d.women?.married ? <>
+          <T kind="label">{L('حامل؟', 'Are you pregnant?')}</T>
+          <View style={styles.wrap}>
+            {([['no', L('لا', 'No')], ['yes', L('أيوه، حامل', 'Yes, pregnant')], ['trying', L('بنحاول نحمل', 'Trying to conceive')], ['nursing', L('برضع', 'Breastfeeding')]] as const).map(([k, l]) => (
+              <Chip key={k} label={l} on={d.women?.preg === k} onPress={() => set({ women: { ...d.women, preg: k, pregStart: k === 'yes' ? d.women?.pregStart : undefined } })} />
+            ))}
+          </View>
+        </> : null}
+        {d.women?.preg === 'yes' ? <>
+          <T kind="label">{L('في الشهر الكام؟', 'Which month of pregnancy?')}</T>
+          <View style={styles.wrap}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((m) => {
+              const on = !!d.women?.pregStart && Math.min(9, Math.max(1, Math.round((Date.now() - Date.parse(d.women.pregStart) - 14 * 86400000) / (30.4 * 86400000) + 0.5))) === m;
+              return <Chip key={m} label={num(m)} on={on} onPress={() => set({ women: { ...d.women, pregStart: startFromMonth(m) } })} />;
+            })}
+          </View>
+          <T kind="small" color={c.muted}>{L('في الحمل مفيش رجيم لنزول الوزن. هنحسب السعرات المناسبة لكل شهر، والتمرين هيبقى آمن للحمل. لازم دكتورة النسا توافق على التمرين.', "There's no weight-loss diet in pregnancy. We'll set the right calories for each stage and keep training pregnancy-safe. Your doctor should approve exercise first.")}</T>
+        </> : d.women?.married !== undefined ? <>
+          <T kind="label">{L('أول يوم في آخر دورة (اختياري)', 'First day of your last period (optional)')}</T>
+          <DateField value={d.cycle?.periods.at(-1)?.start ?? fmtKey(new Date())} onChange={(k) => set({ cycle: startPeriod(d.cycle, k) })} label={L('أول يوم', 'First day')} />
+          <T kind="small" color={c.muted}>{L('بيه نقدر نتوقع الدورة الجاية وأيام التبويض ونخفف التمرين أول يومين.', 'It lets us estimate your next period and fertile days, and keep the first two days lighter.')}</T>
+        </> : null}
       </>}
 
       {st === 'life' && <>
@@ -249,12 +284,25 @@ export default function Onboarding() {
       </>}
 
       {st === 'cond' && <>
-        <T kind="h1">{L('عندك أي مرض مناعي أو مزمن؟', 'Any autoimmune or chronic condition?')}</T>
+        <T kind="h1">{L('عندك أي مرض مزمن؟', 'Any long-term health condition?')}</T>
         <T kind="body" color={c.muted}>{L(`${g('اختار', 'اختاري')} كل اللي ينطبق. لو مفيش، ${g('دوس', 'دوسي')} التالي على طول.`, 'Pick all that apply. If none, just tap Next.')}</T>
-        <View style={styles.wrap}>{CONDITIONS.map((x) => <Chip key={x.id} label={tx(x.n)} on={d.conditions.includes(x.id)} onPress={() => toggle('conditions', x.id)} />)}</View>
+        <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: RADIUS, overflow: 'hidden' }}>
+          {CONDITIONS.map((x, i) => {
+            const on = d.conditions.includes(x.id);
+            return (
+              <Pressable key={x.id} onPress={() => { play('tap'); toggle('conditions', x.id); }} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
+                style={[styles.row, { gap: 12, paddingHorizontal: 12, paddingVertical: 11, borderTopWidth: i ? 1 : 0, borderColor: c.line, backgroundColor: on ? c.okBg : c.surface }]}>
+                <View style={{ width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: on ? c.petrol : c.dim, backgroundColor: on ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                  {on ? <Text style={{ color: c.onPetrol, fontFamily: fonts.displaySemi, fontSize: 14, lineHeight: 18 }}>✓</Text> : null}
+                </View>
+                <T kind="body" style={{ flex: 1 }}>{tx(x.n)}</T>
+              </Pressable>
+            );
+          })}
+        </View>
         <View style={{ gap: 4 }}>
           <T kind="label">{L('حاجة تانية مش في القائمة', 'Something else not on the list')}</T>
-          <TextInput value={d.otherCond ?? ''} onChangeText={(otherCond) => set({ otherCond })} placeholder={L('مثلا: ضغط عالي، قولون عصبي، أنيميا', 'e.g. high blood pressure, IBS, anaemia')} placeholderTextColor={c.muted} style={input} />
+          <TextInput value={d.otherCond ?? ''} onChangeText={(otherCond) => set({ otherCond })} placeholder={L('مثلا: صداع نصفي، نقرس، ديسك', 'e.g. migraine, gout, slipped disc')} placeholderTextColor={c.muted} style={input} />
           <T kind="small" color={c.muted}>{L(`لو أكتر من حاجة ${g('افصل', 'افصلي')} بينهم بفاصلة.`, 'Separate several with commas.')}</T>
         </View>
         <TypedList text={d.otherCond} g={g} />
@@ -319,12 +367,19 @@ export default function Onboarding() {
 
       {st === 'pain' && <>
         <T kind="h1">{L('في مكان بيوجعك في التمرين؟', 'Does anything hurt when you work out?')}</T>
-        <T kind="body" color={c.muted}>{L('هنبدل التمارين اللي بتضغط عليه بتمارين ألطف.', "We'll swap exercises that strain it for gentler ones.")}</T>
+        <T kind="body" color={c.muted}>{L('لو ألم بسيط هنبدل التمارين اللي بتضغط عليه بتمارين ألطف، ولو إصابة تحت العلاج هنشيلها خالص.', "For mild pain we swap exercises that strain it for gentler ones; for an injury being treated we take them out.")}</T>
         <View style={styles.wrap}>
           <Chip label={L('مفيش، الحمد لله', 'Nothing, thankfully')} on={!d.pains.length && !otherPain} onPress={() => { setOtherPain(false); set({ pains: [], otherPain: '' }); }} />
           {PAINS.map((x) => <Chip key={x.id} label={tx(x.n)} on={d.pains.includes(x.id)} onPress={() => toggle('pains', x.id)} />)}
           <Chip label={L('أخرى', 'Other')} on={otherPain} onPress={() => { if (otherPain) set({ otherPain: '' }); setOtherPain(!otherPain); }} />
         </View>
+        {d.pains.map((j) => (
+          <View key={j} style={{ gap: 6 }}>
+            <T kind="label">{tx(PAINS.find((x) => x.id === j)?.n ?? j)}</T>
+            <Segmented<Hurt> items={[['pain', L('ألم بسيط', 'Mild pain')], ['injury', L('إصابة أو ديسك تحت العلاج', 'Injury or disc being treated')]]} value={d.hurt?.[j] ?? 'pain'} onChange={(k) => set({ hurt: { ...d.hurt, [j]: k } })} />
+          </View>
+        ))}
+        {d.pains.some((j) => d.hurt?.[j] === 'injury') ? <T kind="small" color={c.warn}>{L(`أي تمرين بيحرك المكان المصاب هيتشال لحد ما ${g('تتعالج', 'تتعالجي')}. لما ${g('تخف', 'تخفي')} ${g('غير', 'غيري')} ده من ملفي والخطة ترجع.`, "Anything that moves the injured area is left out until it's treated. Once you've recovered, change it in Me and the plan comes back.")}</T> : null}
         {otherPain ? <View style={{ gap: 4 }}><T kind="label">{L('فين بالظبط؟', 'Where exactly?')}</T><TextInput value={d.otherPain ?? ''} onChangeText={(v) => set({ otherPain: v })} style={input} /></View> : null}
       </>}
 

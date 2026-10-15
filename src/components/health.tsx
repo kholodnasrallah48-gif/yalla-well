@@ -95,11 +95,12 @@ export function CheckInCard({ day, update, g }: { day: DayLog; update: (f: (d: D
 /** Why today is an easy day, with a way back to the normal workout (not for a flare the person switched on). */
 export function EasyBanner({ why, med, update, g }: { why: EasyWhy | null; med?: string; update: (f: (d: DayLog) => DayLog) => void; g: G }) {
   const c = useColors();
-  if (why !== 'dose' && why !== 'check') return null;
+  if (why !== 'dose' && why !== 'check' && why !== 'period') return null;
   return (
     <View style={{ backgroundColor: c.warnBg, borderRadius: 4, padding: 12, gap: 6 }}>
       <T kind="small" color={c.warn} style={{ fontFamily: fonts.bodyMedium }}>
         {why === 'dose' ? L(`امبارح كان ميعاد ${med}، فخلينا النهارده يوم تعافي خفيف.`, `Yesterday was your ${med} dose, so today is an easy recovery day.`)
+          : why === 'period' ? L('أول يومين في الدورة، فخلينا التمرين النهارده خفيف.', "It's the first days of your period, so today's workout is lighter.")
           : L(`من إجاباتك النهارده خلينا التمرين يوم تعافي خفيف.`, "From your check-in, today's workout is an easy recovery day.")}
       </T>
       <Pressable onPress={() => { play('tap'); update((d) => ({ ...d, normalDay: true })); }} accessibilityRole="button" hitSlop={6}>

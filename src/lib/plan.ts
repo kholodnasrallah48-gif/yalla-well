@@ -1,6 +1,7 @@
 // Calorie targets, medical adjustments and weekly training sessions, derived from the profile.
 import type { LabEntry, MedPlan } from './health.ts';
-import { CONDITIONS, EXERCISES, GEAR, PAINS, SCHEDULES, SESSIONS, gymChoices, variantsOf, type Equip, type Exercise, type Joint, type Place, type ScheduleId } from './data.ts';
+import { CONDITIONS, EXERCISES, GEAR, LYING, PAINS, SCHEDULES, SESSIONS, UPPER, gymChoices, variantsOf, type Equip, type Exercise, type Hurt, type Joint, type Place, type ScheduleId } from './data.ts';
+import { NURSING_KCAL, PREG_KCAL, pregWeek, trimester, type Cycle, type Women } from './women.ts';
 import { L, num, toNum, tx } from './i18n.ts';
 import { FLAG_TAGS, LIST_WATCH, TRAIN_LABEL, WATCH_LABEL, effective, type Answers, type Watch } from './kb.ts';
 import { quoteUx } from './translate.ts';
@@ -69,6 +70,12 @@ export type Profile = {
   kcalAdj?: number;
   /** Last weekly check the person answered (applied or kept as is), YYYY-MM-DD. */
   adjAt?: string;
+  /** How bad each painful area is; missing = pain the plan trains around. */
+  hurt?: Partial<Record<Joint, Hurt>>;
+  /** Women: marital status and pregnancy (see lib/women). */
+  women?: Women;
+  /** Women: logged periods (see lib/women). */
+  cycle?: Cycle;
 };
 /** auto = the app's split; custom = the person's own percentages (protein, carbs, fat). */
 export type MacroPref = { mode: 'auto' | 'highp' | 'lowcarb' | 'keto' | 'custom'; p?: number; c?: number; f?: number };
@@ -196,7 +203,7 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
     mod.machines = true; mod.lowImpact = true;
     train.push({ tone: 'bad', title: L('مسيل الدم', 'Blood thinners'), text: L('بلاش أي تمرين فيه احتمال وقوع أو خبط. الماكينات أأمن من الأوزان الحرة.', 'Avoid any exercise with a risk of falling or bumps. Machines are safer than free weights.') });
   }
-  const allPains = [...new Set([...p.pains, ...eff.pains])];
+  const allPains = [...new Set([...p.pains, ...eff.pains])].filter((id) => p.hurt?.[id as Joint] !== 'injury');
   if (allPains.length) {
     const names = allPains.map((id) => PAINS.find((x) => x.id === id)?.n);
     train.push({ tone: 'warn', title: L('الألم', 'Pain'), text: L(`بدلنا التمارين اللي بتضغط على ${names.join(' و')} بتمارين ألطف. لو ${g('حسيت', 'حسيتي')} بألم حاد ${g('وقف', 'وقفي')} فورا.`, `We swapped exercises that load your ${names.map((n) => tx(n ?? '').toLowerCase()).join(' and ')} for gentler ones. Stop right away if you feel sharp pain.`) });
@@ -246,13 +253,39 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
   }
   const triggers = p.conditions.map((id) => info[id]?.trigger?.trim()).filter((s): s is string => !!s).map(q);
   if (triggers.length) food.push({ tone: 'warn', title: L(`أكلات بتتعب${g('ك', 'كي')}`, 'Foods that upset you'), text: L(`${g('كتبت', 'كتبتي')} إن (${triggers.join('، ')}) بتتعب${g('ك', 'كي')}. ${g('ابعد', 'ابعدي')} عنها حتى لو ظهرت في الاقتراحات.`, `You noted these foods upset you: ${triggers.join(', ')}. Skip them even if they show up in suggestions.`) });
+  // Age: from 50 the plan drops jumping and goes a little easier; from 65 it prefers machines and shorter sessions.
+  if (p.age >= 65) {
+    mod.lowImpact = true; mod.machines = true; mod.shortSessions = true; cap(6);
+    train.push({ tone: 'info', title: L('السن', 'Age'), text: L(`التمارين على الماكينات ومن غير قفز، والإحماء ١٠ دقايق. تمارين التوازن والمشي كل يوم بتحمي من الوقوع. ${g('اسأل', 'اسألي')} دكتورك قبل ما ${g('تبدأ', 'تبدأي')}.`, 'Machine-based and jump-free, with a 10-minute warm-up. Daily walking and balance work help prevent falls. Check with your doctor before you start.') });
+  } else if (p.age >= 50) {
+    mod.lowImpact = true; cap(6.5);
+    train.push({ tone: 'info', title: L('السن', 'Age'), text: L('من غير قفز، بأوزان معقولة وعدات أكتر، وإحماء أطول. تمارين المقاومة بتحافظ على العضل والعضم مع السن.', 'No jumping, sensible weights with more reps, and a longer warm-up. Strength training keeps muscle and bone strong as you age.') });
+  } else if (p.age < 18) {
+    cap(6.5);
+    train.push({ tone: 'info', title: L('السن', 'Age'), text: L('الأهم الحركة الصح قبل الوزن. بلاش أقصى وزن، والزيادة تبقى بالراحة.', 'Good form comes before weight. No max lifts, and build up slowly.') });
+  }
+  // Injuries still being treated: everything that loads the area leaves the plan.
+  const hurtNow = (Object.entries(p.hurt ?? {}) as [Joint, Hurt][]).filter(([j, h]) => h === 'injury' && p.pains.includes(j)).map(([j]) => j);
+  if (hurtNow.length) {
+    const names = hurtNow.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? id));
+    const upper = hurtNow.some((j) => j === 'shoulder' || j === 'neck' || j === 'wrist');
+    train.unshift({ tone: 'bad', title: L('إصابة تحت العلاج', 'Injury being treated'), text: L(`عشان إصابة ${names.join(' و')}، شلنا ${upper ? 'تمارين الجزء العلوي كلها (الدفع والسحب)' : 'كل تمرين بيضغط عليها'} لحد ما ${g('تتعالج', 'تتعالجي')}، وحطينا مكانها تمارين للرجل والبطن ومشي. لما الدكتور يقول${g('لك', 'لك')} إنك ${g('خفيت', 'خفيتي')}، ${g('غير', 'غيري')} الإصابة لألم أو ${g('شيلها', 'شيليها')} من ملفي والخطة ترجع.`, `Because of your ${names.join(' and ').toLowerCase()} injury, ${upper ? 'all upper-body work (pushing and pulling) is out' : 'everything that loads it is out'} until it's treated, replaced with legs, core and walking. Once your doctor says you've recovered, change it to pain or remove it in Me and the plan comes back.`) });
+  }
+  // Pregnancy: no deficit, gentler training, and nothing lying flat after the first trimester.
+  const pw = pregWeek(p.women, new Date());
+  if (pw) {
+    mod.lowImpact = true; mod.machines = true; cap(6); mod.deficit = 0;
+    const tri = trimester(pw);
+    train.unshift({ tone: 'warn', title: L(`الحمل · الأسبوع ${pw}`, `Pregnancy · week ${pw}`), text: L(`مجهود خفيف لمتوسط (تقدري تتكلمي وانتي بتتمرني)، من غير قفز ولا أوزان تقيلة.${tri > 1 ? ' بعد الشهر التالت مفيش تمارين على الضهر أو على البطن، فبدلناها.' : ''} لو حصل نزيف أو ألم أو دوخة وقفي وكلمي الدكتورة.`, `Light to moderate effort (you can talk while training), no jumping or heavy weights.${tri > 1 ? ' After the first trimester, nothing lying on your back or belly, so those are swapped.' : ''} If there's bleeding, pain or dizziness, stop and call your doctor.`) });
+    food.unshift({ tone: 'warn', title: L('الأكل في الحمل', 'Food in pregnancy'), text: L(`${tri === 1 ? 'في أول ٣ شهور مفيش سعرات زيادة.' : `زودنا ${PREG_KCAL[tri]} سعرة في اليوم للشهور دي.`} بلاش السمك النيء والسوشي، واللحمة والبيض غير المطبوخين كويس، والجبن غير المبستر، والكبدة كتير. القهوة كوباية في اليوم بالكتير.`, `${tri === 1 ? 'No extra calories in the first 3 months.' : `${PREG_KCAL[tri]} extra kcal a day for this stage.`} No raw fish or sushi, undercooked meat or eggs, unpasteurised cheese, or lots of liver. At most one coffee a day.`) });
+  }
   if (p.doctorSaid?.trim()) {
     const n: Note = { tone: 'bad', title: L('كلام الدكتور', 'Your doctor said'), text: L(`"${q(p.doctorSaid)}". كلام دكتورك أهم من أي حاجة في الخطة دي.`, `${q(p.doctorSaid)}. Your doctor's advice comes before anything in this plan.`) };
     train.unshift(n); food.unshift(n);
   }
   // Conditions and medicines the person typed: the ones the app knows bring their own notes and limits.
   for (const { item } of eff.known) {
-    if (item.same) continue;
+    if (item.same || (item.id === 'preg' && pw)) continue;
     const title = L(item.n[0], item.n[1]);
     if (item.foodNote) { const [a, e] = item.foodNote(g); food.push({ tone: 'warn', title, text: L(a, e) }); }
     if (item.trainNote) { const [a, e] = item.trainNote(g); train.push({ tone: item.train?.length || item.watch?.includes('chest') ? 'warn' : 'info', title, text: L(a, e) }); }
@@ -325,9 +358,15 @@ export function targets(p: Profile): Targets {
   const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161);
   const tdee = bmr * (ACTIVITY_FACTOR[p.activity] + trainingFactor(p));
   let kcal = tdee;
-  if (p.goal === 'lose') kcal = tdee * (1 - mod.deficit);
-  if (p.goal === 'gain') kcal = tdee * 1.1;
-  kcal += p.kcalAdj ?? 0;
+  const pw = pregWeek(p.women, new Date());
+  if (pw) kcal = tdee + PREG_KCAL[trimester(pw)];
+  else {
+    const base = p.women?.preg === 'nursing' ? tdee + NURSING_KCAL : tdee;
+    kcal = base;
+    if (p.goal === 'lose') kcal = base * (1 - mod.deficit);
+    if (p.goal === 'gain') kcal = base * 1.1;
+    kcal += p.kcalAdj ?? 0;
+  }
   kcal = Math.round(Math.max(kcal, kcalFloor(p)) / 10) * 10;
   let ppk = p.goal === 'maintain' ? 1.6 : 1.8;
   if (mod.proteinPerKg) ppk = Math.max(ppk, mod.proteinPerKg);
@@ -400,6 +439,15 @@ function prescription(p: Profile, e: Exercise, m: Modifiers, phase: Phase): Omit
   return { rx: L(`${ar(sets)} مجموعات × ${ar(reps[0])} لـ ${ar(reps[1])} عدة · راحة ${ar(rest)} ثانية`, `${ar(sets)} sets × ${ar(reps[0])}–${ar(reps[1])} reps · ${ar(rest)} sec rest`), sets, reps, rest };
 }
 
+/** An exercise that loads an injury still being treated (upper-body work for a shoulder, neck or wrist injury). */
+export function injured(p: Profile, id: string): boolean {
+  const ex = EXERCISES[id];
+  const hurt = (Object.entries(p.hurt ?? {}) as [Joint, Hurt][]).filter(([j, h]) => h === 'injury' && p.pains.includes(j)).map(([j]) => j);
+  if (!ex || !hurt.length) return false;
+  if (hurt.some((j) => ex.stress.includes(j))) return true;
+  return UPPER.has(id) && hurt.some((j) => j === 'shoulder' || j === 'neck' || j === 'wrist');
+}
+
 /** Follows the exercise's gentler alternatives until one fits the person, or drops it. */
 export function resolveExercise(id: string, p: Profile, m: Modifiers): { id: string; ex: Exercise; why: string | null } | null {
   let cur = id;
@@ -410,7 +458,9 @@ export function resolveExercise(id: string, p: Profile, m: Modifiers): { id: str
     let why: string | null = null;
     const pains = [...p.pains, ...effective(p).pains];
     const pain = PAINS.find((x) => pains.includes(x.id) && ex.stress.includes(x.id));
+    if (injured(p, cur)) return null;
     if (m.lowImpact && ex.impact === 'high') why = L('بدل تمرين فيه قفز', 'Instead of a jumping exercise');
+    else if (LYING.has(cur) && (pregWeek(p.women, new Date()) ?? 0) > 13) why = L('عشان الحمل', 'For your pregnancy');
     else if (pain) why = L('عشان ' + pain.n, 'Easier on your ' + tx(pain.n).toLowerCase());
     else if (m.machines && ex.free) why = L('الماكينة أأمن', 'The machine is safer');
     if (!why) return { id: cur, ex, why: firstWhy };
@@ -479,6 +529,10 @@ export function weekSessions(p: Profile): (string | null)[] {
   });
 }
 
+/** What fills a workout when exercises were taken out: lower body and core that spare the upper body and lying flat. */
+const FILL_GYM = ['g_hipthrust', 'g_seatedcurl', 'g_abduct', 'g_adduct', 'g_legpress', 'g_seatedcalf', 'g_glutekick', 'g_deadbug'];
+const FILL_HOME = ['h_chair', 'h_sidelying', 'h_bridge', 'h_calf', 'h_sumo', 'h_deadbug'];
+
 export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 0): DaySession | null {
   const sid = weekSessions(p)[dayIndex];
   if (!sid) return null;
@@ -499,6 +553,17 @@ export function sessionFor(p: Profile, dayIndex: number, flare: boolean, week = 
     if (r && !seen.has(r.id)) { seen.add(r.id); list.push({ ...r, base, own: mine }); }
   };
   bases.forEach((b) => add(b));
+  // When an injury or pregnancy took out most of a workout, it's filled with what still fits: legs, core and walking.
+  const strength = () => list.filter((x) => x.ex.k === 'str' || x.ex.k === 'core').length;
+  const want = Math.min(4, bases.filter((b) => EXERCISES[b] && EXERCISES[b].k !== 'cardio' && EXERCISES[b].k !== 'mob').length);
+  if (!flare && strength() < want) {
+    const why = L('مكان تمرين اتشال عشان حالتك', 'In place of an exercise taken out for your health');
+    for (const f of s.pl === 'gym' ? FILL_GYM : FILL_HOME) {
+      if (strength() >= want) break;
+      const r = resolveExercise(f, p, m);
+      if (r && !seen.has(r.id)) { seen.add(r.id); list.push({ ...r, why: r.why ?? why, base: f }); }
+    }
+  }
   if (m.shortSessions && !flare && list.length > 5) list = list.slice(0, 5);
   // The person's own additions always stay, after the plan's exercises.
   for (const o of own) {

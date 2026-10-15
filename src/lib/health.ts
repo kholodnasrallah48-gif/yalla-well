@@ -6,6 +6,7 @@ import { dayKey, fmt, weekIndex, type DayLog } from './day.ts';
 import { L, isEn, tx } from './i18n.ts';
 import { KB_BY_ID, effective, matchItems, type DoseForm, type DoseUnit, type KBItem } from './kb.ts';
 import { genderFor, type Profile } from './plan.ts';
+import { cycleInfo } from './women.ts';
 import { ux } from './translate.ts';
 
 /* ---------- Medicines ---------- */
@@ -409,7 +410,7 @@ export const DAYS: [string, string][] = [['السبت', 'Saturday'], ['الأح�
 
 /* ---------- Easy days ---------- */
 
-export type EasyWhy = 'flare' | 'dose' | 'check';
+export type EasyWhy = 'flare' | 'dose' | 'check' | 'period';
 /**
  * Whether a day's workout should be the gentle recovery session, and why: the person said they're in a flare,
  * a weekly injection was the day before, or the check-in says it's a rough day. The last two can be turned off
@@ -421,5 +422,7 @@ export function easyDay(p: Profile, log: DayLog | null | undefined, d: Date): { 
   const med = afterWeeklyDose(p, d);
   if (med) return { easy: true, why: 'dose', med };
   if (roughDay(log?.check)) return { easy: true, why: 'check' };
+  // The first two days of a period, logged or expected.
+  if (p.sex === 'f' && p.women?.preg !== 'yes' && cycleInfo(p.cycle, d).heavy) return { easy: true, why: 'period' };
   return { easy: false, why: null };
 }

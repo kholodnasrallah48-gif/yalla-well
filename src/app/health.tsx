@@ -8,9 +8,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LabCard } from '../components/LabCard.tsx';
 import { MedList, migrateMeds } from '../components/MedList.tsx';
-import { Bg, Btn, Card, T, styles } from '../components/ui.tsx';
+import { Bg, Btn, Card, Chip, T, styles } from '../components/ui.tsx';
 import { dayKey, weekIndex } from '../lib/day.ts';
-import { doctorHTML } from '../lib/health.ts';
+import { doctorHTML, newMedPlan } from '../lib/health.ts';
+import { KB_BY_ID } from '../lib/kb.ts';
+import { play } from '../lib/sound.ts';
 import { L } from '../lib/i18n.ts';
 import { genderFor, sessionFor } from '../lib/plan.ts';
 import { programWeek } from '../lib/progress.ts';
@@ -50,6 +52,23 @@ export default function Health() {
         <T kind="small">{L(`لكل واحد: الجرعة والعدد وكل قد إيه والميعاد. هيجي${g('لك', 'لك')} تنبيه في كل ميعاد، و${g('تقدر تعلم', 'تقدري تعلمي')} عليه من الصفحة الرئيسية.`, "For each one: dose, how many, how often and when. You'll get a reminder at each time, and can tick it off on Home.")}</T>
         <MedList value={p} onChange={(patch) => saveProfile({ ...p, ...patch })} />
       </Card>
+
+      {p.sex === 'f' && p.women?.preg && p.women.preg !== 'no' ? (
+        <Card>
+          <T kind="h2">{p.women.preg === 'yes' ? L('فيتامينات الحمل', 'Pregnancy vitamins') : p.women.preg === 'nursing' ? L('فيتامينات الرضاعة', 'Breastfeeding vitamins') : L('قبل الحمل', 'Before pregnancy')}</T>
+          <T kind="small">{p.women.preg === 'trying'
+            ? L('حمض الفوليك قبل الحمل بشهور بيحمي الجنين. اسألي دكتورتك عن الجرعة المناسبة ليكي، ولو كتبته دوسي عليه وهنفكرك بيه كل يوم.', 'Folic acid for a few months before pregnancy protects the baby. Ask your doctor about the right dose, and if it is prescribed, tap it and we will remind you daily.')
+            : L('اسألي دكتورتك عن دول. اللي تكتبهولك دوسي عليه، هيتضاف لأدويتك فوق ونفكرك بيه، وتقدري تظبطي الجرعة والميعاد.', "Ask your doctor about these. Tap the ones she prescribes: they're added to your medicines above with reminders, and you can set the dose and time.")}</T>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {(p.women.preg === 'trying' ? ['v_folic', 'v_d'] : ['v_folic', 'v_iron', 'v_d', 'v_calc', 'v_omega']).map((id) => {
+              const kb = KB_BY_ID[id];
+              const name = L(kb.n[0], kb.n[1]);
+              const have = Object.values(p.medPlan ?? {}).some((m) => m?.kb === id);
+              return <Chip key={id} label={have ? L(`${name} ✓`, `${name} ✓`) : `+ ${name}`} on={have} onPress={() => { if (have) return; play('add'); saveProfile({ ...p, medPlan: { ...p.medPlan, ['x:' + name]: newMedPlan(name, kb) } }); }} />;
+            })}
+          </View>
+        </Card>
+      ) : null}
 
       <LabCard profile={p} onChange={saveProfile} />
 

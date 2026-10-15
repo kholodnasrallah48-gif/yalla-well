@@ -4,6 +4,7 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { DailyFire } from '../../components/DailyFire.tsx';
 import { CheckInCard, TodayDoses } from '../../components/health.tsx';
 import { CalorieCheckCard } from '../../components/PlanSettings.tsx';
+import { CycleCard, PregnancyCard, SleepCard } from '../../components/wellbeing.tsx';
 import { CaptainCard, MealBar, ScoreRow, type Seg } from '../../components/match.tsx';
 import { Mascot } from '../../components/Mascot.tsx';
 import { TourTarget } from '../../components/TourTarget.tsx';
@@ -103,6 +104,8 @@ export default function Home() {
       <TodayDoses profile={profile} day={day} update={updateDay} g={g} />
       {careful ? <CheckInCard day={day} update={updateDay} g={g} /> : null}
       <CalorieCheckCard p={profile} onChange={saveProfile} />
+      {profile.sex === 'f' ? (profile.women?.preg === 'yes' ? <PregnancyCard profile={profile} /> : <CycleCard profile={profile} onChange={saveProfile} />) : null}
+      <SleepCard profile={profile} day={day} history={history} update={updateDay} />
 
       <Rise i={3}>
         <TourTarget id="home.week">

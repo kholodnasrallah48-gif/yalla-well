@@ -16,8 +16,11 @@ const PREFIXES = ['بال', 'وال', 'ال', 'ب', 'و'];
 function forms(w: string): string[] {
   const out = [w];
   for (const p of PREFIXES) if (w.startsWith(p) && w.length - p.length > 2) out.push(w.slice(p.length));
+  for (const x of [...out]) { const s = SAME[x]; if (s) out.push(s); }
   return out;
 }
+/** Words that mean the same food in different countries (normalized): chicken, bread, meat, spoon. */
+const SAME: Record<string, string> = { فراخ: 'دجاج', دجاج: 'فراخ', فرخه: 'دجاجه', دجاجه: 'فرخه', عيش: 'خبز', خبز: 'عيش', لحمه: 'لحم', لحم: 'لحمه', رز: 'ارز', ارز: 'رز' };
 /** Normalized search words of a text, without stop words. */
 export function words(s: string): string[] {
   return norm(s).replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter((w) => w.length > 1 && !STOP.has(w));

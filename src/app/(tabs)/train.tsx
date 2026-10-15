@@ -168,7 +168,7 @@ export default function Train() {
         {!ses.flare ? (
           <T kind="small">{L('الأسبوع', 'Week')} {num(week + 1)} · {ses.variant === 'A' ? L('الأجهزة الأساسية', 'Main machines') : L('أجهزة بديلة', 'Alternate machines')} · {tx(ses.phase.n)}. {L(`المجهود: ${ses.rpe}.`, `Effort: ${ses.rpe}.`)}</T>
         ) : (
-          <NoteView note={{ tone: 'warn', title: L('يوم تعافي', 'Recovery day'), text: L(`عشان ${g('قلت', 'قلتي')} إنك ${g('تعبان', 'تعبانة')} النهارده: حركة خفيفة بس.`, "Because you said you're feeling tired today: light movement only.") }} />
+          <NoteView note={{ tone: 'warn', title: L('يوم تعافي', 'Recovery day'), text: isToday && (ez.why === 'dose' || ez.why === 'period') ? L('النهارده حركة خفيفة بس، والسبب مكتوب فوق.', 'Light movement only today; the reason is above.') : L(`عشان ${g('قلت', 'قلتي')} إنك ${g('تعبان', 'تعبانة')} النهارده: حركة خفيفة بس.`, "Because you said you're feeling tired today: light movement only.") }} />
         )}
         {!canTick ? <T kind="small" color={c.warn}>{past ? L(`اليوم ده اتقفل واتسجل في التقرير: ${g('خلصت', 'خلصتي')} ${n} من ${total}.`, `This day is closed and saved to your report: you did ${n} of ${total}.`) : L(`ده يوم جاي، ${g('هتقدر تعلم', 'هتقدري تعلمي')} على التمارين يومها.`, 'This day is still ahead; you can tick off the exercises on the day.')}</T> : null}
 

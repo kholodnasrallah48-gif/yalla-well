@@ -54,6 +54,19 @@ export const RECIPE_TITLES: Record<string, string[]> = {
   s_apple_qareish: ['Areesh cheese', 'Cottage cheese'], s_date_oat_balls: ['Energy ball', 'Date palm'], s_rayeb_dates: ['Buttermilk', 'Date palm'],
   s_apple_chips: ['Apple chips', 'Apple'], s_watermelon_feta: ['Watermelon'], s_tuna_cucumber_boats: ['Tuna salad', 'Cucumber'],
   s_strawberry_dark_choc: ['Chocolate-covered fruit', 'Strawberry'], s_cocoa_milk: ['Chocolate milk'],
+  b_manakish_zaatar: ['Manakish'], b_fatteh_hummus: ['Fatteh'], b_halloumi_veg: ['Halloumi'], b_balaleet: ['Balaleet'],
+  b_regag_egg: ['Regag', 'Flatbread'], b_chabab: ['Chebab (food)', 'Pancake'], b_lablabi: ['Lablabi', 'Chickpea'],
+  b_baqilla_egg: ['Vicia faba', 'Ful medames'], b_fatoot: ['Fatoot', 'Scrambled eggs'], l_kibbeh_saniyeh: ['Kibbeh'],
+  l_musakhan: ['Musakhan'], l_maqluba: ['Maqluba'], l_samke_harra: ['Samke harra', 'Fish as food'],
+  l_dawood_basha: ['Dawood Basha', 'Meatball'], l_machboos_fish: ['Machboos'], l_kabsa_chicken: ['Kabsa'],
+  l_mandi_chicken: ['Mandi (food)'], l_saloona_chicken: ['Saloona', 'Stew'], l_jareesh: ['Jareesh'], l_tagine_chicken: ['Tajine'],
+  l_couscous_veg: ['Couscous'], l_tashreeb: ['Tashreeb', 'Tharid'], l_masgouf: ['Masgouf'], l_saltah: ['Saltah'],
+  d_fasolia_bzeit: ['Green bean'], d_tabbouleh_chicken: ['Tabbouleh'], d_adas_bhamod: ['Adas bi hamod', 'Lentil soup'],
+  d_lahm_bajeen: ['Lahmacun'], d_arayes: ['Arayes', 'Kofta'], d_harees: ['Harees'], d_madrouba: ['Madrouba', 'Congee'],
+  d_hamour_grilled: ['Grouper', 'Fish as food'], d_harira: ['Harira'], d_kefta_tagine: ['Kefta', 'Tajine'],
+  d_slata_mechouia: ['Slata mechouia', 'Tuna salad'], d_tepsi_baytinijan: ['Tepsi Baytinijan', 'Moussaka'], d_shafoot: ['Shafut'],
+  d_mercimek_kofte: ['Mercimek köftesi'], s_muhammara: ['Muhammara'], s_ayran: ['Ayran'], s_fatayer_spinach: ['Fatayer'],
+  s_nakhi: ['Chickpea'], s_gahwa_dates: ['Arabic coffee'], s_luqaimat: ['Luqaimat'], s_zaalouk: ['Zaalouk'],
 };
 
 /** Wikipedia titles for foods in our list whose English names wouldn't find the right article, by Arabic name. */

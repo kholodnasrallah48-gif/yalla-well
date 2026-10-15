@@ -2,19 +2,33 @@
 
 export type Option = { id: string; n: string };
 
+/** The common conditions, most common first. Ids that are also in lib/kb bring that entry's food and training rules. */
 export const CONDITIONS: Option[] = [
-  { id: 'hashimoto', n: 'هاشيموتو (قصور الغدة المناعي)' },
-  { id: 'graves', n: 'جريفز (فرط نشاط الغدة)' },
-  { id: 'ra', n: 'روماتويد مفصلي' },
-  { id: 'psoriasis', n: 'صدفية أو التهاب مفاصل صدفي' },
-  { id: 'lupus', n: 'الذئبة الحمراء (لوبس)' },
-  { id: 't1d', n: 'سكر النوع الأول' },
   { id: 't2d', n: 'سكر النوع التاني' },
+  { id: 't1d', n: 'سكر النوع الأول' },
   { id: 'ir', n: 'مقاومة الإنسولين' },
+  { id: 'htn', n: 'ضغط عالي' },
+  { id: 'obesity', n: 'سمنة' },
+  { id: 'chol', n: 'كوليسترول عالي' },
   { id: 'pcos', n: 'تكيس المبايض' },
-  { id: 'celiac', n: 'حساسية القمح (سيلياك)' },
+  { id: 'hashimoto', n: 'هاشيموتو (قصور الغدة المناعي)' },
+  { id: 'hypo', n: 'قصور الغدة' },
+  { id: 'graves', n: 'جريفز (فرط نشاط الغدة)' },
+  { id: 'heart', n: 'أمراض القلب' },
+  { id: 'kidney', n: 'أمراض الكلى' },
+  { id: 'fatliver', n: 'دهون على الكبد' },
+  { id: 'anemia', n: 'أنيميا' },
+  { id: 'asthma', n: 'ربو أو حساسية صدر' },
+  { id: 'osteo', n: 'هشاشة العظام' },
+  { id: 'cancer', n: 'سرطان (أثناء العلاج أو بعده)' },
   { id: 'ms', n: 'التصلب المتعدد (MS)' },
+  { id: 'ra', n: 'روماتويد مفصلي' },
+  { id: 'lupus', n: 'الذئبة الحمراء (لوبس)' },
+  { id: 'psoriasis', n: 'صدفية أو التهاب مفاصل صدفي' },
+  { id: 'celiac', n: 'حساسية القمح (سيلياك)' },
   { id: 'ibd', n: 'كرون أو القولون التقرحي' },
+  { id: 'ibs', n: 'القولون العصبي' },
+  { id: 'gerd', n: 'ارتجاع وحموضة' },
 ];
 
 export const MEDS: Option[] = [
@@ -28,13 +42,24 @@ export const MEDS: Option[] = [
   { id: 'anticoag', n: 'مسيل للدم' },
 ];
 
-export type Joint = 'knee' | 'back' | 'shoulder' | 'wrist';
+export type Joint = 'knee' | 'back' | 'shoulder' | 'wrist' | 'neck';
 export const PAINS: { id: Joint; n: string }[] = [
   { id: 'knee', n: 'الركبة' },
   { id: 'back', n: 'الضهر' },
   { id: 'shoulder', n: 'الكتف' },
   { id: 'wrist', n: 'الرسغ / الإيد' },
+  { id: 'neck', n: 'الرقبة' },
 ];
+/** How bad it is: pain that lets you train around it, or an injury still being treated (nothing that loads it). */
+export type Hurt = 'pain' | 'injury';
+
+/**
+ * Upper-body exercises: all of them leave the plan while a shoulder, neck or wrist injury is being treated, since even
+ * the "safe" versions still move that area.
+ */
+export const UPPER = new Set(['g_bench', 'g_chestm', 'g_pecdeck', 'g_latpull', 'g_cablerow', 'g_dbrow', 'g_ohp', 'g_lateral', 'g_facepull', 'g_curl', 'g_cablecurl', 'g_pushdown', 'g_inclinedb', 'g_inclinem', 'g_shoulderm', 'g_cablelateral', 'g_ohtricep', 'g_assistpull', 'g_machinerow', 'g_straightarm', 'g_reardelt', 'g_hammer', 'g_benchbb', 'g_smithbench', 'g_inclinebb', 'g_cablefly', 'g_dbfly', 'g_ohpbb', 'g_skull', 'g_dipm', 'g_kickback', 'g_pullup', 'g_bbrow', 'g_highrow', 'g_ezcurl', 'g_preacher', 'g_dbreardelt', 'g_cablereardelt', 'h_pushup', 'h_bandpress', 'h_row', 'h_bandrow', 'h_bottlepress', 'h_bandcurl', 'h_dips', 'h_sideplank', 'g_plank']);
+/** Lying on the back (supine) or the belly (prone): left out of the plan after the first 3 months of pregnancy. */
+export const LYING = new Set(['g_bench', 'g_benchbb', 'g_smithbench', 'g_dbfly', 'g_skull', 'g_legcurl', 'g_deadbug', 'h_deadbug', 'h_bridge', 'g_inclinedb', 'g_inclinebb', 'g_plank', 'h_glutekick']);
 
 /** Saturday-first week, as used in Egypt. */
 export const WEEK = ['السبت', 'الأحد', 'الاتنين', 'التلات', 'الأربع', 'الخميس', 'الجمعة'];
@@ -61,10 +86,10 @@ export type Equip = 'machine' | 'cable' | 'smith' | 'dumbbell' | 'barbell' | 'bo
 export const isFreeWeight = (e: Equip | undefined) => e === 'dumbbell' || e === 'barbell';
 
 export const EXERCISES: Record<string, Exercise> = {
-  g_squat: { n: 'سكوات بالبار', k: 'str', stress: ['knee', 'back'], free: true, alt: 'g_legpress' },
+  g_squat: { n: 'سكوات بالبار', k: 'str', stress: ['knee', 'back', 'neck'], free: true, alt: 'g_legpress' },
   g_legpress: { n: 'ضغط الرجل (ليج برس)', k: 'str', stress: ['knee'], alt: 'g_hipthrust' },
   g_hipthrust: { n: 'هيب ثرست على الماكينة', k: 'str', stress: [] },
-  g_rdl: { n: 'رومانيان ديدليفت بالدمبل', k: 'str', stress: ['back'], free: true, alt: 'g_legcurl' },
+  g_rdl: { n: 'رومانيان ديدليفت بالدمبل', k: 'str', stress: ['back', 'neck'], free: true, alt: 'g_legcurl' },
   g_legcurl: { n: 'ليج كيرل (خلفي)', k: 'str', stress: [] },
   g_legext: { n: 'ليج إكستنشن (أمامي)', k: 'str', stress: ['knee'], alt: 'g_abduct' },
   g_abduct: { n: 'أبدكشن على الماكينة', k: 'str', stress: [] },
@@ -73,23 +98,23 @@ export const EXERCISES: Record<string, Exercise> = {
   g_bench: { n: 'تشست برس بالدمبل', k: 'str', stress: ['shoulder', 'wrist'], free: true, alt: 'g_chestm' },
   g_chestm: { n: 'تشست برس على الماكينة', k: 'str', stress: ['shoulder'], alt: 'g_pecdeck' },
   g_pecdeck: { n: 'بيك ديك (فراشة)', k: 'str', stress: [] },
-  g_latpull: { n: 'لات بول داون', k: 'str', stress: ['shoulder'], alt: 'g_cablerow' },
+  g_latpull: { n: 'لات بول داون', k: 'str', stress: ['shoulder', 'neck'], alt: 'g_cablerow' },
   g_cablerow: { n: 'سحب كيبل وانت قاعد', k: 'str', stress: [] },
-  g_dbrow: { n: 'دمبل رو بإيد واحدة', k: 'str', stress: ['back'], free: true, alt: 'g_cablerow' },
-  g_ohp: { n: 'شولدر برس بالدمبل', k: 'str', stress: ['shoulder', 'wrist'], free: true, alt: 'g_lateral' },
-  g_lateral: { n: 'رفرفة جانبي خفيف', k: 'str', stress: ['shoulder'], alt: 'g_facepull' },
+  g_dbrow: { n: 'دمبل رو بإيد واحدة', k: 'str', stress: ['back', 'neck'], free: true, alt: 'g_cablerow' },
+  g_ohp: { n: 'شولدر برس بالدمبل', k: 'str', stress: ['shoulder', 'wrist', 'neck'], free: true, alt: 'g_lateral' },
+  g_lateral: { n: 'رفرفة جانبي خفيف', k: 'str', stress: ['shoulder', 'neck'], alt: 'g_facepull' },
   g_facepull: { n: 'فيس بول بالكيبل', k: 'str', stress: [] },
   g_curl: { n: 'بايسبس كيرل', k: 'str', stress: ['wrist'], alt: 'g_cablecurl' },
   g_cablecurl: { n: 'بايسبس على الكيبل بالحبل', k: 'str', stress: [] },
   g_pushdown: { n: 'ترايسبس بوش داون', k: 'str', stress: [] },
   g_inclinedb: { n: 'إنكلاين برس بالدمبل', k: 'str', stress: ['shoulder', 'wrist'], free: true, alt: 'g_inclinem' },
   g_inclinem: { n: 'إنكلاين برس على الماكينة', k: 'str', stress: ['shoulder'], alt: 'g_pecdeck' },
-  g_shoulderm: { n: 'شولدر برس على الماكينة', k: 'str', stress: ['shoulder'], alt: 'g_cablelateral' },
-  g_cablelateral: { n: 'رفرفة جانبي بالكيبل', k: 'str', stress: ['shoulder'], alt: 'g_facepull' },
+  g_shoulderm: { n: 'شولدر برس على الماكينة', k: 'str', stress: ['shoulder', 'neck'], alt: 'g_cablelateral' },
+  g_cablelateral: { n: 'رفرفة جانبي بالكيبل', k: 'str', stress: ['shoulder', 'neck'], alt: 'g_facepull' },
   g_ohtricep: { n: 'ترايسبس فوق الراس بالكيبل', k: 'str', stress: ['shoulder'], alt: 'g_pushdown' },
-  g_assistpull: { n: 'عقلة بالماكينة المساعدة', k: 'str', stress: ['shoulder'], alt: 'g_latpull' },
+  g_assistpull: { n: 'عقلة بالماكينة المساعدة', k: 'str', stress: ['shoulder', 'neck'], alt: 'g_latpull' },
   g_machinerow: { n: 'سحب على الماكينة بسند للصدر', k: 'str', stress: [] },
-  g_straightarm: { n: 'سحب بدراع مفرود بالكيبل', k: 'str', stress: ['shoulder'], alt: 'g_machinerow' },
+  g_straightarm: { n: 'سحب بدراع مفرود بالكيبل', k: 'str', stress: ['shoulder', 'neck'], alt: 'g_machinerow' },
   g_reardelt: { n: 'كتف خلفي على البيك ديك', k: 'str', stress: [] },
   g_hammer: { n: 'هامر كيرل بالدمبل', k: 'str', stress: ['wrist'], free: true, alt: 'g_cablecurl' },
   g_hacksquat: { n: 'هاك سكوات على الماكينة', k: 'str', stress: ['knee'], alt: 'g_hipthrust' },
@@ -102,30 +127,30 @@ export const EXERCISES: Record<string, Exercise> = {
   g_bike: { n: 'عجلة ثابتة', k: 'cardio', stress: [] },
   g_incline: { n: 'مشي على المشاية بميل', k: 'cardio', stress: [] },
   // Extra versions of the same movement, so each exercise can be done with free weights or on a machine.
-  g_benchbb: { n: 'بنش برس بالبار', k: 'str', stress: ['shoulder', 'wrist'], free: true, alt: 'g_chestm' },
+  g_benchbb: { n: 'بنش برس بالبار', k: 'str', stress: ['shoulder', 'wrist', 'neck'], free: true, alt: 'g_chestm' },
   g_smithbench: { n: 'بنش برس على السميث', k: 'str', stress: ['shoulder'], alt: 'g_chestm' },
-  g_inclinebb: { n: 'إنكلاين برس بالبار', k: 'str', stress: ['shoulder', 'wrist'], free: true, alt: 'g_inclinem' },
+  g_inclinebb: { n: 'إنكلاين برس بالبار', k: 'str', stress: ['shoulder', 'wrist', 'neck'], free: true, alt: 'g_inclinem' },
   g_cablefly: { n: 'فراشة بالكيبل (كروس أوفر)', k: 'str', stress: ['shoulder'], alt: 'g_pecdeck' },
   g_dbfly: { n: 'فراشة بالدمبل على البنش', k: 'str', stress: ['shoulder'], free: true, alt: 'g_pecdeck' },
-  g_ohpbb: { n: 'شولدر برس بالبار وانت واقف', k: 'str', stress: ['shoulder', 'wrist', 'back'], free: true, alt: 'g_shoulderm' },
+  g_ohpbb: { n: 'شولدر برس بالبار وانت واقف', k: 'str', stress: ['shoulder', 'wrist', 'back', 'neck'], free: true, alt: 'g_shoulderm' },
   g_skull: { n: 'ترايسبس بالبار المتعرج (سكال كراشر)', k: 'str', stress: ['wrist'], free: true, alt: 'g_pushdown' },
   g_dipm: { n: 'ترايسبس على ماكينة الديبس', k: 'str', stress: ['shoulder'], alt: 'g_pushdown' },
   g_kickback: { n: 'ترايسبس كيك باك بالدمبل', k: 'str', stress: [], free: true },
-  g_pullup: { n: 'عقلة بوزن الجسم', k: 'str', stress: ['shoulder'], alt: 'g_assistpull' },
-  g_bbrow: { n: 'سحب بالبار وانت مايل', k: 'str', stress: ['back'], free: true, alt: 'g_machinerow' },
+  g_pullup: { n: 'عقلة بوزن الجسم', k: 'str', stress: ['shoulder', 'neck'], alt: 'g_assistpull' },
+  g_bbrow: { n: 'سحب بالبار وانت مايل', k: 'str', stress: ['back', 'neck'], free: true, alt: 'g_machinerow' },
   g_highrow: { n: 'سحب عالي على الماكينة', k: 'str', stress: [] },
   g_ezcurl: { n: 'بايسبس بالبار المتعرج', k: 'str', stress: ['wrist'], free: true, alt: 'g_cablecurl' },
   g_preacher: { n: 'بايسبس على ماكينة البريتشر', k: 'str', stress: [] },
   g_gobletsquat: { n: 'سكوات بالدمبل قدام الصدر (جوبلت)', k: 'str', stress: ['knee'], free: true, alt: 'g_legpress' },
   g_smithsquat: { n: 'سكوات على السميث', k: 'str', stress: ['knee'], alt: 'g_legpress' },
-  g_rdlbb: { n: 'رومانيان ديدليفت بالبار', k: 'str', stress: ['back'], free: true, alt: 'g_legcurl' },
+  g_rdlbb: { n: 'رومانيان ديدليفت بالبار', k: 'str', stress: ['back', 'neck'], free: true, alt: 'g_legcurl' },
   g_seatedcurl: { n: 'ليج كيرل وانت قاعد', k: 'str', stress: [] },
   g_bbthrust: { n: 'هيب ثرست بالبار على البنش', k: 'str', stress: [], free: true, alt: 'g_hipthrust' },
   g_dbcalf: { n: 'سمانة بالدمبل على سلمة', k: 'str', stress: [], free: true },
   g_smithcalf: { n: 'سمانة على السميث', k: 'str', stress: [] },
-  g_dbreardelt: { n: 'كتف خلفي بالدمبل وانت مايل', k: 'str', stress: ['back'], free: true, alt: 'g_reardelt' },
+  g_dbreardelt: { n: 'كتف خلفي بالدمبل وانت مايل', k: 'str', stress: ['back', 'neck'], free: true, alt: 'g_reardelt' },
   g_cablereardelt: { n: 'كتف خلفي بالكيبل', k: 'str', stress: [] },
-  g_bblunge: { n: 'لانجز بالبار', k: 'str', stress: ['knee', 'back'], free: true, alt: 'g_legpress' },
+  g_bblunge: { n: 'لانجز بالبار', k: 'str', stress: ['knee', 'back', 'neck'], free: true, alt: 'g_legpress' },
   g_adduct: { n: 'أدكشن على الماكينة (داخلي)', k: 'str', stress: [] },
   h_squat: { n: 'سكوات بوزن الجسم', k: 'str', stress: ['knee'], alt: 'h_bridge' },
   h_chair: { n: 'قعدة وقومة من على الكرسي', k: 'str', stress: [] },
@@ -135,7 +160,7 @@ export const EXERCISES: Record<string, Exercise> = {
   h_bandpress: { n: 'دفع بالأستك قدامك', k: 'str', stress: [] },
   h_row: { n: 'سحب بزجاجات مياه أو أستك', k: 'str', stress: ['back'], alt: 'h_bandrow' },
   h_bandrow: { n: 'سحب بالأستك وانت قاعد', k: 'str', stress: [] },
-  h_bottlepress: { n: 'ضغط كتف بزجاجات مياه', k: 'str', stress: ['shoulder'], alt: 'h_bandrow' },
+  h_bottlepress: { n: 'ضغط كتف بزجاجات مياه', k: 'str', stress: ['shoulder', 'neck'], alt: 'h_bandrow' },
   h_birddog: { n: 'بيرد دوج', k: 'core', stress: ['wrist'], alt: 'h_deadbug' },
   h_deadbug: { n: 'ديد باج', k: 'core', stress: [] },
   h_calf: { n: 'سمانة على السلمة', k: 'str', stress: [] },

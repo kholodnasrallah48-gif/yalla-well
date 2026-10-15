@@ -63,6 +63,25 @@ test('searchRecipes finds dishes by Arabic or English name', () => {
   assert.deepEqual(ids(''), []);
 });
 
+test('recipes: unique ids, sensible macros, a cuisine on each and a varied mix', () => {
+  assert.equal(RECIPES.length, 151);
+  assert.equal(new Set(RECIPES.map((r) => r.id)).size, RECIPES.length);
+  const by: Record<string, number> = {};
+  for (const r of RECIPES) {
+    assert.ok(r.cuisine, `cuisine for ${r.id}`);
+    by[r.cuisine!] = (by[r.cuisine!] ?? 0) + 1;
+    const k = 4 * r.p + 4 * r.c + 9 * r.f;
+    assert.ok(Math.abs(k - r.kcal) / r.kcal <= 0.08, `kcal for ${r.id}: ${r.kcal} vs ${k}`);
+    for (const t of [r.n, r.serving, ...r.ingredients, ...r.steps]) assert.ok(!/[\u064B-\u0652]|…|—/.test(t), `${r.id}: ${t}`);
+  }
+  assert.ok(by.levant >= 20 && by.gulf >= 12 && by.maghreb + by.iraq + by.yemen >= 12, JSON.stringify(by));
+  assert.ok(by.egypt < RECIPES.length / 2, JSON.stringify(by));
+  const ids = (q: string) => searchRecipes(q).map((x) => x.r.id);
+  assert.equal(ids('كبسة')[0], 'l_kabsa_chicken');
+  assert.equal(ids('harira')[0], 'd_harira');
+  assert.equal(ids('مناقيش زعتر')[0], 'b_manakish_zaatar');
+});
+
 test('mealBudget: the plan share while open, the share minus what is in it once started', () => {
   const T = targets(base).kcal;
   const plan = dayPlan(base, '2026-10-02');

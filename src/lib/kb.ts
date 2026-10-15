@@ -7,6 +7,7 @@ import type { Joint } from './data.ts';
 import type { FoodTag } from './foods.ts';
 import type { MedRule } from './health.ts';
 import type { Gender, Profile } from './plan.ts';
+import { allergyAvoids } from './allergy.ts';
 import { L } from './i18n.ts';
 
 /** Things to cut down on in food. */
@@ -21,7 +22,13 @@ export type Answers = { food?: FoodFlag[]; train?: TrainFlag[]; watch?: Watch[];
 type Txt = (g: Gender) => [string, string];
 type Level = 'ok' | 'warn' | 'bad';
 /** A food the item asks to avoid, by name (fava beans with G6PD, grapefruit with statins, nuts with an allergy). */
-export type Avoid = { re: RegExp; level: Level; text: Txt };
+export type Avoid = {
+  re: RegExp; level: Level; text: Txt;
+  /** Food tags that count too (dairy, gluten). */
+  tags?: FoodTag[];
+  /** An allergy: recipes are also checked by their ingredients. */
+  allergy?: boolean;
+};
 
 export type KBItem = {
   id: string;
@@ -394,6 +401,7 @@ export function effective(p: Profile): Effective {
   splitItems(p.otherCond).forEach((t) => typed(t, 'cond'));
   splitItems(p.otherMeds).forEach((t) => typed(t, 'med'));
   for (const [id, m] of Object.entries(p.medPlan ?? {})) if (id.startsWith('x:')) typed(m?.name ?? id.slice(2), 'med', m?.kb);
+  e.avoid.push(...allergyAvoids(p));
   cache.set(p, e);
   return e;
 }

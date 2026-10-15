@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { PhotoPicker } from '../../components/Photo.tsx';
-import { CalorieCheckCard, EquipPicker, MacroPicker, usesGym } from '../../components/PlanSettings.tsx';
+import { EquipPicker, MacroPicker, usesGym } from '../../components/PlanSettings.tsx';
 import { TourTarget, startTour } from '../../components/TourTarget.tsx';
 import { Btn, Card, Chip, NoteView, Screen, T, WeekStrip, styles } from '../../components/ui.tsx';
 import { onSoundChange, setSoundOn, soundOn } from '../../lib/sound.ts';
 import { notifyOn, onNotifyChange, setNotifyOn, testReminder } from '../../lib/notify.ts';
+import { ALLERGEN_BY_ID } from '../../lib/allergy.ts';
 import { CONDITIONS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { doseText, medIds, medName, medPlan } from '../../lib/health.ts';
 import { fmt } from '../../lib/day.ts';
@@ -44,6 +45,7 @@ export default function Me() {
   const dropCount = Object.values(p.drop ?? {}).reduce((a, x) => a + x.length, 0);
   const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '') + (p.hurt?.[id] === 'injury' ? ` (${L('إصابة', 'injury')}${p.injuryNote?.[id]?.trim() ? `: ${ux(p, p.injuryNote[id])}` : ''})` : '')), ux(p, p.otherPain)].filter(Boolean);
   const injured = p.pains.filter((id) => p.hurt?.[id] === 'injury');
+  const allergies = [...(p.allergies ?? []).map((id) => ALLERGEN_BY_ID[id]).filter(Boolean).map((a) => L(a.n[0], a.n[1])), ux(p, p.otherAllergy)].filter(Boolean);
 
   return (
     <Screen title={L('ملفي', 'Me')} name="me">
@@ -77,12 +79,11 @@ export default function Me() {
         </View>
       </Card>
 
-      <CalorieCheckCard p={p} onChange={saveProfile} />
-
       <View style={[styles.row, { gap: 8 }]}>
         <Btn kind="primary" title={L('تقدمي', 'My progress')} onPress={() => router.push('/progress')} style={{ flex: 1 }} />
-        <Btn kind="outline" title={L('خطتي في ملف', 'Plan as a file')} onPress={() => router.push('/myplan')} style={{ flex: 1 }} />
+        <Btn kind="outline" title={L('تقرير الأسبوع', 'Weekly report')} onPress={() => router.push('/report')} style={{ flex: 1 }} />
       </View>
+      <Btn kind="outline" title={L('خطتي في ملف', 'Plan as a file')} onPress={() => router.push('/myplan')} />
 
       <Card>
         <T kind="h2">{L(g('سجل وزنك', 'سجلي وزنك'), 'Log your weight')}</T>
@@ -118,12 +119,11 @@ export default function Me() {
         <MacroPicker p={p} onChange={(macro) => saveProfile({ ...p, macro })} />
       </Card>
 
-      <Btn kind="outline" title={L('صحتي: الأدوية والتحاليل وتقرير الدكتور', 'My health: medicines, labs and doctor report')} onPress={() => router.push('/health')} />
-
       <Card>
         <T kind="h2">{L('الهيستوري الطبي', 'Medical history')}</T>
         <T kind="small">{L('الأمراض:', 'Conditions:')} {conds.length ? conds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
         <T kind="small">{L('الأدوية والفيتامينات:', 'Medicines and supplements:')} {meds.length ? meds.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
+        <T kind="small">{L('الحساسية:', 'Allergies:')} {allergies.length ? allergies.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
         <T kind="small">{L('أماكن الألم:', 'Pain areas:')} {pains.length ? pains.join(L('، ', ', ')) : L('مفيش', 'None')}</T>
         {injured.length ? (
           <Btn kind="outline" title={L(g('اتعالجت من الإصابة', 'اتعالجتي من الإصابة'), 'My injury has healed')}

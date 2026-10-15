@@ -1,6 +1,6 @@
 // Weekly calorie check: compares the real weight trend with the goal and suggests a small change to the target.
 import { L, num } from './i18n.ts';
-import { genderFor, kcalFloor, medical, targets, type Profile } from './plan.ts';
+import { genderFor, kcalFloor, medical, ownDiet, targets, type Profile } from './plan.ts';
 
 const DAY = 86400000;
 const t = (d: string) => { const [y, m, dd] = d.split('-').map(Number); return Date.UTC(y, m - 1, dd) / DAY; };
@@ -38,6 +38,8 @@ export type CalorieCheck =
  * People whose condition limits the calorie deficit never get a lower target from here; they're sent to their doctor.
  */
 export function calorieCheck(p: Profile, today: Date): CalorieCheck | null {
+  // A dietitian's plan is changed by the dietitian, not by the app.
+  if (ownDiet(p)) return null;
   if (p.adjAt && t(key(today)) - t(p.adjAt) < 7) return null;
   const g = genderFor(p.sex);
   const r = weeklyRate(p.weights, today);

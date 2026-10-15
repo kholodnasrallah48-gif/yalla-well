@@ -78,9 +78,16 @@ export type Profile = {
   women?: Women;
   /** Women: logged periods (see lib/women). */
   cycle?: Cycle;
+  /** Food allergies picked at the start (lib/allergy ids), and others in the person's words. */
+  allergies?: string[];
+  otherAllergy?: string;
 };
-/** auto = the app's split; custom = the person's own percentages (protein, carbs, fat). */
-export type MacroPref = { mode: 'auto' | 'highp' | 'lowcarb' | 'keto' | 'custom'; p?: number; c?: number; f?: number };
+/**
+ * auto = the app's split; custom = the person's own percentages (protein, carbs, fat); own = a plan written by
+ * their dietitian or doctor: calories and grams as given (kg, kept as typed).
+ */
+export type MacroPref = { mode: 'auto' | 'highp' | 'lowcarb' | 'keto' | 'custom' | 'own'; p?: number; c?: number; f?: number; own?: OwnDiet };
+export type OwnDiet = { kcal: number; p: number; c: number; f: number };
 /**
  * An exercise the person added: one of the app's exercises (ref), or their own in their words with the machine or
  * equipment they use (n, gear).
@@ -354,11 +361,22 @@ export function ketoBlocked(p: Profile): string | null {
   return hit ? L('الكيتو مش متاح مع حالتك أو أدويتك من غير متابعة دكتور قريبة، فقفلناه.', "Keto isn't available with your condition or medicines without close medical follow-up, so it's turned off.") : null;
 }
 
+/** The dietitian's plan when the person follows one (and it has calories in it). */
+export const ownDiet = (p: Profile): OwnDiet | null => (p.macro?.mode === 'own' && p.macro.own && p.macro.own.kcal >= 800 ? p.macro.own : null);
+
+/** Mifflin-St Jeor BMR × activity (with training). */
+function bmrTdee(p: Profile): number {
+  const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161);
+  return bmr * (ACTIVITY_FACTOR[p.activity] + trainingFactor(p));
+}
+
 /** Mifflin-St Jeor BMR × activity, adjusted for the goal, medical caps, weekly checks and the macro split. */
 export function targets(p: Profile): Targets {
   const { mod } = medical(p);
-  const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161);
-  const tdee = bmr * (ACTIVITY_FACTOR[p.activity] + trainingFactor(p));
+  const own = ownDiet(p);
+  // A dietitian's plan with its grams is used as written; with calories only, the grams are split the usual way.
+  if (own && own.p + own.c + own.f > 0) return { kcal: own.kcal, protein: own.p, carbs: own.c, fat: own.f, waterCups: Math.ceil((p.weight * 35) / CUP_ML) + mod.extraCups, tdee: Math.round(bmrTdee(p)) };
+  const tdee = bmrTdee(p);
   let kcal = tdee;
   const pw = pregWeek(p.women, new Date());
   if (pw) kcal = tdee + PREG_KCAL[trimester(pw)];
@@ -369,10 +387,10 @@ export function targets(p: Profile): Targets {
     if (p.goal === 'gain') kcal = base * 1.1;
     kcal += p.kcalAdj ?? 0;
   }
-  kcal = Math.round(Math.max(kcal, kcalFloor(p)) / 10) * 10;
+  kcal = own ? own.kcal : Math.round(Math.max(kcal, kcalFloor(p)) / 10) * 10;
   let ppk = p.goal === 'maintain' ? 1.6 : 1.8;
   if (mod.proteinPerKg) ppk = Math.max(ppk, mod.proteinPerKg);
-  const mode = p.macro?.mode === 'keto' && ketoBlocked(p) ? 'auto' : p.macro?.mode ?? 'auto';
+  const mode = (p.macro?.mode === 'keto' && ketoBlocked(p)) || own ? 'auto' : p.macro?.mode ?? 'auto';
   if (mode === 'highp') ppk = Math.max(ppk, 2.2);
   if (mode === 'keto') ppk = Math.min(ppk, 1.6);
   if (mod.proteinCap) ppk = Math.min(ppk, mod.proteinCap);
@@ -405,6 +423,7 @@ export function macroName(mode: MacroPref['mode']): string {
     lowcarb: L('كارب قليل', 'Low carb'),
     keto: L('كيتو', 'Keto'),
     custom: L('نسب بنفسي', 'My own split'),
+    own: L('نظام من أخصائي التغذية', "My dietitian's plan"),
   }[mode];
 }
 

@@ -36,7 +36,7 @@ const TITLES: Record<ReminderKind, [string, string][]> = {
   nothing: [['يوم النهارده', 'Today'], ['قبل نص الليل', 'Before midnight']],
   med: [['ميعاد الدوا', 'Medicine time']],
   lab: [['ميعاد تحليل', 'Lab test due'], ['صحتي', 'My health']],
-  week: [['آخر الأسبوع', 'End of the week'], ['ستوري الأسبوع', 'Week story']],
+  week: [['آخر الأسبوع', 'End of the week'], ['أسبوعك', 'Your week']],
 };
 
 /** What a reminder can say about this person's day: water left, calories left, today's workout. */
@@ -204,12 +204,12 @@ export function labText(name: string, when: 'soon' | 'due' | 'late', date: strin
   return { title: title('lab', date, lang), body };
 }
 
-/** The last evening of the week: the week report and story picture are ready. */
+/** The last evening of the week: the week report, and the photo with the week's numbers. */
 export function weekText(date: string, lang: Lang, sex: Profile['sex'] | undefined): { title: string; body: string } {
   const g = genderFor(sex);
   const lines = lang === 'en'
-    ? ['The week is nearly over. Your week story picture is ready on Home', 'Last day of the week. Have a look at the weekly report and see what moved', 'Your week in one picture is ready, if you feel like sharing it']
-    : [`الأسبوع قرب يخلص. ستوري الأسبوع جاهزة في الرئيسية`, `آخر يوم في الأسبوع. ${g('بص', 'بصي')} على تقرير الأسبوع ${g('وشوف', 'وشوفي')} إيه اتحسن`, `أسبوعك في صورة واحدة جاهز، لو ${g('حابب تشاركه', 'حابة تشاركيه')}`];
+    ? ['The week is nearly over. Tap the ring by your name for a photo with your numbers', 'Last day of the week. Have a look at the weekly report and see what moved', 'Your week is in the ring by your name, if you feel like sharing it']
+    : [`الأسبوع قرب يخلص. ${g('دوس', 'دوسي')} على الدايرة اللي جنب اسمك ${g('وصور', 'وصوري')} إنجازك`, `آخر يوم في الأسبوع. ${g('بص', 'بصي')} على تقرير الأسبوع ${g('وشوف', 'وشوفي')} إيه اتحسن`, `أسبوعك في الدايرة اللي جنب اسمك، لو ${g('حابب تشاركه', 'حابة تشاركيه')}`];
   return { title: title('week', date, lang), body: pick(lines, date, 'week') };
 }
 
@@ -270,7 +270,7 @@ export function planReminders({ profile, day, now, lang, days = 7 }: PlanInput):
       if (at.getTime() <= now.getTime() + 5000) continue;
       out.push({ id: `${REMINDER_PREFIX}${key}-lab-${k}`, kind: 'lab', date: at, ...labText(labName(k), when, key, lang, profile.sex) });
     }
-    // The week report and story picture, on the last evening of the week.
+    // The week report and the numbers photo, on the last evening of the week.
     if (weekIndex(d) === 6) {
       const at = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 20, 30);
       if (at.getTime() > now.getTime() + 5000) out.push({ id: `${REMINDER_PREFIX}${key}-week`, kind: 'week', date: at, ...weekText(key, lang, profile.sex) });

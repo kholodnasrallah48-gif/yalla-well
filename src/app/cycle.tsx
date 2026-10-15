@@ -109,7 +109,7 @@ export default function CycleScreen() {
           ))}
         </Card>
       ) : null}
-      <T kind="small" color={c.muted}>{L('الحسابات تقديرية من التواريخ اللي بتسجليها، ومش وسيلة لمنع الحمل أو للتخطيط له. لو الدورة مش منتظمة كلمي دكتورة النسا.', "These are estimates from the dates you log, not a method of contraception or conception planning. If your cycle is irregular, talk to your gynaecologist.")}</T>
+      <T kind="small" color={c.muted}>{L('لو الدورة مش منتظمة كلمي دكتورة النسا.', 'If your cycle is irregular, talk to your gynaecologist.')}</T>
     </ScrollView></Bg>
   );
 }

@@ -1,4 +1,4 @@
-// Home cards for sleep, the period cycle and pregnancy.
+// Health cards for sleep, the period cycle and pregnancy.
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -106,7 +106,6 @@ export function CycleCard({ profile, onChange }: { profile: Profile; onChange: (
         {ci.late ? <T kind="small" color={c.warn}>{L(`الدورة متأخرة ${num(ci.late)} يوم عن المتوقع.`, `Your period is ${ci.late} day${ci.late > 1 ? 's' : ''} later than expected.`)}</T>
           : <T kind="small">{L(`الجاية متوقعة ${dateLabel(ci.next!)}`, `Next expected ${dateLabel(ci.next!)}`)}</T>}
         {ci.fertile ? <T kind="small">{L(`أيام التبويض من ${dateLabel(ci.fertile[0])} لـ ${dateLabel(ci.fertile[1])}`, `Fertile days ${dateLabel(ci.fertile[0])} to ${dateLabel(ci.fertile[1])}`)}</T> : null}
-        <T kind="small" color={c.muted}>{L('تقدير من التواريخ اللي بتسجليها، مش وسيلة لمنع الحمل.', "An estimate from the dates you log, not a method of contraception.")}</T>
       </View>
       {ci.phase !== 'period' ? <Btn title={L('الدورة بدأت النهارده', 'My period started today')} onPress={log} /> : null}
     </Card>
@@ -130,7 +129,6 @@ export function PregnancyCard({ profile }: { profile: Profile }) {
         <View style={{ width: `${Math.min(100, (w / 40) * 100)}%`, height: '100%', backgroundColor: c.petrol }} />
       </View>
       <T kind="small">{L(`الولادة متوقعة حوالي ${dateLabel(dueDate(profile.women!))}`, `Due around ${dateLabel(dueDate(profile.women!))}`)}</T>
-      <Btn kind="outline" title={L('الفيتامينات والتحاليل', 'Vitamins and tests')} onPress={() => router.navigate('/health')} />
     </Card>
   );
 }

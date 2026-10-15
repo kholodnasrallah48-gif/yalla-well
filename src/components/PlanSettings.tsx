@@ -1,12 +1,13 @@
 // Settings that shape the plan: the equipment the gym has, the macro split, and the weekly calorie check.
-import { Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { calorieCheck } from '../lib/adapt.ts';
-import { L, num } from '../lib/i18n.ts';
-import { EQUIP_KINDS, genderFor, ketoBlocked, macroName, targets, weekPlaces, type MacroPref, type Profile } from '../lib/plan.ts';
+import { L, num, toNum } from '../lib/i18n.ts';
+import { EQUIP_KINDS, genderFor, ketoBlocked, macroName, medical, targets, weekPlaces, type MacroPref, type OwnDiet, type Profile } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
 import { fonts, useColors } from '../theme.ts';
-import { Btn, Card, Chip, NoteView, Num, RADIUS, T, styles } from './ui.tsx';
+import { Btn, Card, Chip, NoteView, Num, RADIUS, START, T, styles } from './ui.tsx';
 
 const key = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -43,6 +44,50 @@ function Pct({ label, value, onChange }: { label: string; value: number; onChang
   );
 }
 
+type G = (m: string, f: string) => string;
+
+/** Said wherever the person picks between their own diet plan and the app's numbers. */
+export function DietNote({ g, strong }: { g: G; strong?: boolean }) {
+  const c = useColors();
+  return (
+    <View style={{ backgroundColor: strong ? c.warnBg : c.soft, borderRadius: RADIUS, padding: 10 }}>
+      <T kind="small" color={strong ? c.warn : c.ink}>{L(`لو عندك مرض معين، الأفضل ${g('ترجع', 'ترجعي')} لدكتور أو أخصائي تغذية ${g('يكتبلك', 'يكتبلك')} نظام أكل على حالتك. ${g('سجله', 'سجليه')} هنا ${g('وامشي', 'وامشي')} عليه عادي، والوجبات والاقتراحات هتمشي على أرقامه.`, 'If you have a health condition, it is best to see a doctor or dietitian for a plan written for you. Enter it here and follow it as usual; meals and suggestions will use its numbers.')}</T>
+    </View>
+  );
+}
+
+/** The dietitian's numbers: calories, and the grams of protein, carbs and fat when the plan has them. */
+export function OwnDietFields({ value, onChange, g }: { value?: OwnDiet; onChange: (o: OwnDiet) => void; g: G }) {
+  const c = useColors();
+  const [txt, setTxt] = useState(() => ({ kcal: value?.kcal ? String(value.kcal) : '', p: value?.p ? String(value.p) : '', c: value?.c ? String(value.c) : '', f: value?.f ? String(value.f) : '' }));
+  const set = (k: keyof typeof txt, v: string) => {
+    const next = { ...txt, [k]: v };
+    setTxt(next);
+    onChange({ kcal: Math.round(toNum(next.kcal)) || 0, p: Math.round(toNum(next.p)) || 0, c: Math.round(toNum(next.c)) || 0, f: Math.round(toNum(next.f)) || 0 });
+  };
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 9, fontFamily: fonts.body, fontSize: 16, color: c.ink, textAlign: START() } as const;
+  const field = (k: keyof typeof txt, label: string, ph: string) => (
+    <View key={k} style={{ flex: 1, minWidth: 70, gap: 4 }}>
+      <T kind="label">{label}</T>
+      <TextInput value={txt[k]} onChangeText={(v) => set(k, v)} keyboardType="number-pad" placeholder={ph} placeholderTextColor={c.dim} style={input} accessibilityLabel={label} />
+    </View>
+  );
+  const kcal = toNum(txt.kcal);
+  return (
+    <View style={{ gap: 8 }}>
+      {field('kcal', L('السعرات في اليوم', 'Calories a day'), '1600')}
+      <View style={[styles.row, { gap: 8 }]}>
+        {field('p', L('بروتين (جم)', 'Protein (g)'), '110')}
+        {field('c', L('كارب (جم)', 'Carbs (g)'), '160')}
+        {field('f', L('دهون (جم)', 'Fat (g)'), '55')}
+      </View>
+      <T kind="small" color={txt.kcal && kcal < 800 ? c.warn : c.muted}>{txt.kcal && kcal < 800
+        ? L(`${g('اكتب', 'اكتبي')} السعرات المكتوبة في النظام (٨٠٠ أو أكتر).`, 'Enter the calories from the plan (800 or more).')
+        : L(`لو النظام مفيهوش جرامات ${g('سيبها', 'سيبيها')} فاضية، وهنقسم السعرات إحنا.`, "If the plan doesn't give grams, leave them empty and we'll split the calories.")}</T>
+    </View>
+  );
+}
+
 /** Picks how the calories split between protein, carbs and fat. */
 export function MacroPicker({ p, onChange }: { p: Profile; onChange: (m: MacroPref) => void }) {
   const c = useColors();
@@ -57,26 +102,30 @@ export function MacroPicker({ p, onChange }: { p: Profile; onChange: (m: MacroPr
     if (P + F > 95) return;
     onChange({ mode: 'custom', p: P, f: F, c: 100 - P - F });
   };
-  const modes: MacroPref['mode'][] = ['auto', 'highp', 'lowcarb', 'keto', 'custom'];
+  const modes: MacroPref['mode'][] = ['auto', 'own', 'highp', 'lowcarb', 'keto', 'custom'];
   const hint: Record<MacroPref['mode'], string> = {
     auto: L('البروتين على حسب وزنك وهدفك وحالتك، والباقي متوزع بين الكارب والدهون.', 'Protein from your weight, goal and health; the rest split between carbs and fat.'),
     highp: L('للي بيبني عضل أو بيحضر لبطولة: ٢.٢ جم بروتين لكل كيلو.', 'For building muscle or competition prep: 2.2 g protein per kg.'),
     lowcarb: L('ربع السعرات بس من الكارب، والباقي بروتين ودهون.', 'Only a quarter of calories from carbs; the rest protein and fat.'),
     keto: keto ?? L(`حوالي ٣٠ جم كارب في اليوم. ${g('ابدأه', 'ابدأيه')} بس بعد ما الدكتور يوافق، خصوصا لو ${g('بتاخد', 'بتاخدي')} أدوية.`, 'About 30 g carbs a day. Start it only after your doctor agrees, especially if you take medicines.'),
     custom: L(`${g('حط', 'حطي')} النسب بنفسك. البروتين مش هيعدي الحد الآمن لحالتك.`, 'Set the percentages yourself. Protein won’t go over the safe limit for your health.'),
+    own: L(`${g('اكتب', 'اكتبي')} الأرقام زي ما هي في النظام. مش هنغيرها لوحدنا مع متابعة الوزن، ده دور أخصائي التغذية.`, "Enter the numbers as they are in the plan. We won't change them with your weigh-ins; that's your dietitian's call."),
   };
+  const anyCond = medical(p).mod.anyCondition;
   return (
     <View style={{ gap: 8 }}>
-      <T kind="h3">{L('توزيع الماكروز', 'Macro split')}</T>
+      <T kind="h3">{L('نظام الأكل', 'Your diet')}</T>
       <View style={styles.wrap}>
         {modes.map((m) => <Chip key={m} label={macroName(m)} on={mode === m} onPress={() => {
           if (m === 'keto' && keto) return;
           play('tap');
-          onChange(m === 'custom' ? { mode: 'custom', p: cur.p, f: cur.f, c: 100 - cur.p - cur.f } : { mode: m });
+          onChange(m === 'custom' ? { mode: 'custom', p: cur.p, f: cur.f, c: 100 - cur.p - cur.f } : m === 'own' ? { mode: 'own', own: p.macro?.own } : { mode: m });
         }} />)}
       </View>
+      <DietNote g={g} strong={anyCond && mode !== 'own'} />
       <T kind="small" color={mode === 'keto' || (keto && mode !== 'custom') ? c.warn : c.muted}>{hint[mode]}</T>
       {keto && mode !== 'keto' ? <T kind="small" color={c.muted}>{keto}</T> : null}
+      {mode === 'own' ? <OwnDietFields value={p.macro?.own} onChange={(own) => onChange({ mode: 'own', own })} g={g} /> : null}
       {mode === 'custom' ? (
         <View style={[styles.row, { gap: 6 }]}>
           <Pct label={L('بروتين', 'Protein')} value={p.macro?.p ?? cur.p} onChange={(v) => setCustom(v, p.macro?.f ?? cur.f)} />

@@ -1,4 +1,4 @@
-// Camera story: the camera opens inside a quiet frame with the week's real numbers (streak, workouts, days on the
+// "Snap your progress": the camera opens inside a quiet frame with the week's real numbers (streak, workouts, days on the
 // calorie target). The person takes a photo of anything, or picks one, and shares the picture with the frame on it.
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Btn, T } from '../components/ui.tsx';
 import { dayKey } from '../lib/day.ts';
@@ -20,7 +21,7 @@ import { useWeek } from '../lib/useWeek.ts';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts } from '../theme.ts';
 
-const GREEN = '#19E68C', WHITE = '#FFFFFF', SOFT = 'rgba(255,255,255,0.72)', HAIR = 'rgba(255,255,255,0.22)';
+const GREEN = '#19E68C', BLUE = '#2E9BFF', WHITE = '#FFFFFF', SOFT = 'rgba(255,255,255,0.72)', HAIR = 'rgba(255,255,255,0.22)';
 const shadow = { textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 } as const;
 
 /** The see-through frame: the name and dates on top, the week's numbers at the bottom over a soft shade. */
@@ -37,7 +38,15 @@ export function NumbersFrame({ w, s, streak, from, to }: { w: number; s: WeekSto
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between' }}>
       <LinearGradient colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0)']} style={{ paddingHorizontal: 20 * u, paddingTop: 20 * u, paddingBottom: 30 * u, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={t(20, fonts.brand)}>{L('يلا ', 'Yalla ')}<Text style={{ color: GREEN }}>{L('ويل', 'Well')}</Text></Text>
+        {/* The English lockup from the brand kit: the champ mark and YALLA WELL in Almarai ExtraBold caps. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 * u }}>
+          <Svg width={22 * u} height={22 * u} viewBox="0 0 100 100">
+            <Path d="M50 58V82" stroke={WHITE} strokeWidth={9} strokeLinecap="round" fill="none" />
+            <Path d="M28 36L50 58L72 36" stroke={WHITE} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <Circle cx={50} cy={24} r={9} fill={GREEN} />
+          </Svg>
+          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12 * u, lineHeight: 16 * u, letterSpacing: 3.2 * u, color: BLUE, writingDirection: 'ltr', ...shadow }}>YALLA WELL</Text>
+        </View>
         <Text style={t(11, fonts.bodyMedium, SOFT)}>{shortDate(from)} – {shortDate(to)}</Text>
       </LinearGradient>
       <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.75)']} locations={[0, 0.45, 1]} style={{ paddingHorizontal: 20 * u, paddingTop: 60 * u, paddingBottom: 22 * u, gap: 12 * u }}>
@@ -126,7 +135,10 @@ export default function StoryCam() {
     <View style={{ flex: 1, backgroundColor: '#000', paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12, alignItems: 'center', gap: 14 }}>
       <View style={{ width: w, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={L('قفل', 'Close')} hitSlop={12}><Text style={{ fontSize: 28, color: SOFT }}>×</Text></Pressable>
-        <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: SOFT }}>{L('ستوري بأرقامك', 'Story with your numbers')}</Text>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 15, color: WHITE }}>{L(`${g('صور', 'صوري')} إنجازك`, 'Snap your progress')}</Text>
+          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: SOFT }}>{L(`${g('وشاركه', 'وشاركيه')} مع ${g('أصحابك', 'أصحابك')}`, 'and share it with friends')}</Text>
+        </View>
         <View style={{ width: 28 }} />
       </View>
 

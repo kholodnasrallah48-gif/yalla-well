@@ -93,7 +93,7 @@ export default function Report() {
               </View>
             ))}
           </Card>
-          <Btn kind="outline" title={L(g('اعمل منه ستوري', 'اعملي منه ستوري'), 'Make it a story')} onPress={() => router.push('/story')} />
+          <Btn kind="outline" title={L(`${g('صور', 'صوري')} إنجازك ${g('وشاركه', 'وشاركيه')}`, 'Snap your progress and share it')} onPress={() => router.push({ pathname: '/storycam', params: { offset: String(offset) } })} />
           <Btn title={L(g('اطبع أو شارك التقرير', 'اطبعي أو شاركي التقرير'), 'Print or share the report')} onPress={print} />
           <T kind="small">{L(`بيفتح صفحة الطباعة في الموبايل، ومنها ${g('تقدر', 'تقدري')} ${g('تحفظه', 'تحفظيه')} PDF أو ${g('تبعته', 'تبعتيه')} لحد.`, 'This opens the print screen on your phone, where you can save it as a PDF or send it to someone.')}</T>
         </>

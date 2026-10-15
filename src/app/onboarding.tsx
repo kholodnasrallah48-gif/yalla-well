@@ -15,13 +15,14 @@ import { DateField } from '../components/pickers.tsx';
 import { setLastStart, startFromMonth } from '../lib/women.ts';
 import { dayKey as fmtKey, fmt } from '../lib/day.ts';
 import { L, getLang, num, setLang, toNum, tx } from '../lib/i18n.ts';
-import { allGymChoices, genderFor, medical, recommendPlan, splitLabel, targets, weekPlaces, weekSessions, type CondInfo, type DayPlace, type Profile, type Quiz } from '../lib/plan.ts';
+import { allGymChoices, genderFor, medical, ownDiet, recommendPlan, splitLabel, targets, weekPlaces, weekSessions, type CondInfo, type DayPlace, type Profile, type Quiz } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
-import { EquipPicker } from '../components/PlanSettings.tsx';
+import { DietNote, EquipPicker, OwnDietFields } from '../components/PlanSettings.tsx';
+import { ALLERGENS } from '../lib/allergy.ts';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
 
-const STEPS = ['lang', 'basics', 'women', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'pain', 'done'] as const;
+const STEPS = ['lang', 'basics', 'women', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'food', 'pain', 'done'] as const;
 type Step = (typeof STEPS)[number];
 /** Changing only the training plan (from Me): the three plan questions, then save. */
 const PLAN_STEPS: Step[] = ['has', 'plan', 'week'];
@@ -61,6 +62,7 @@ export default function Onboarding() {
     if (st === 'has' && !d.trains) return L(`${g('اختار', 'اختاري')} إجابة.`, 'Pick an answer.');
     if (st === 'plan' && d.trains === 'no' && !(d.quiz?.days && d.quiz.where && d.quiz.focus)) return L(`${g('جاوب', 'جاوبي')} على الـ٣ أسئلة.`, 'Answer the three questions.');
     if (st === 'plan' && !d.schedule) return L(`${g('اختار', 'اختاري')} نظام التمرين.`, 'Pick a workout plan.');
+    if (st === 'food' && d.macro?.mode === 'own' && !ownDiet(d as Profile)) return L(`${g('اكتب', 'اكتبي')} السعرات اللي في نظامك، أو ${g('اختار', 'اختاري')} «${g('احسبهالي', 'احسبيهالي')}».`, 'Enter the calories in your plan, or pick “Work it out for me”.');
     if (st === 'cond') {
       // Typed conditions that are on the list (روماتيزم → rheumatoid arthritis) become picked ones.
       const keep: string[] = [];
@@ -363,6 +365,30 @@ export default function Onboarding() {
         <T kind="h1">{L(`${g('بتاخد', 'بتاخدي')} أدوية بشكل مستمر؟`, 'Do you take any regular medication?')}</T>
         <T kind="body" color={c.muted}>{L(`والفيتامينات والمكملات كمان. ${g('حدد', 'حددي')} لكل واحد الجرعة والعدد وكل قد إيه والميعاد، وهنفكر${g('ك', 'كي')} بيه وهنراعيه في الأكل والتمرين.`, "Vitamins and supplements too. Set each one's dose, how many, how often and when; we'll remind you and take it into account in food and training.")}</T>
         <MedList value={d} onChange={(patch) => setD((x) => ({ ...x, ...patch }))} />
+      </>}
+
+      {st === 'food' && <>
+        <T kind="h1">{L(`عندك حساسية من أكل؟`, 'Any food allergies?')}</T>
+        <T kind="body" color={c.muted}>{L('هنشيل الوصفات اللي فيها الأكل ده من الاقتراحات، ولو اتسجل هيظهر عليه تنبيه أحمر.', "We'll keep recipes with it out of your suggestions, and show a red alert if you log it.")}</T>
+        <View style={styles.wrap}>
+          <Chip label={L('مفيش', 'None')} on={!d.allergies?.length && !d.otherAllergy?.trim()} onPress={() => set({ allergies: [], otherAllergy: '' })} />
+          {ALLERGENS.map((a) => {
+            const on = !!d.allergies?.includes(a.id);
+            return <Chip key={a.id} label={L(a.n[0], a.n[1])} on={on} onPress={() => { play('tap'); set({ allergies: on ? d.allergies!.filter((x) => x !== a.id) : [...(d.allergies ?? []), a.id] }); }} />;
+          })}
+        </View>
+        <View style={{ gap: 4 }}>
+          <T kind="label">{L('أكل تاني', 'Something else')}</T>
+          <TextInput value={d.otherAllergy ?? ''} onChangeText={(v) => set({ otherAllergy: v })} placeholder={L('مثلا: الفراولة، الكيوي', 'e.g. strawberries, kiwi')} placeholderTextColor={c.muted} style={input} />
+        </View>
+
+        <T kind="h1" style={{ marginTop: 8 }}>{L(`${g('ماشي', 'ماشية')} على نظام أكل معين؟`, 'Do you follow a set diet plan?')}</T>
+        <Choice title={L(`لأ، ${g('احسبهالي', 'احسبيهالي')} تلقائي`, 'No, work it out for me')} sub={L('هنحسب السعرات والبروتين والكارب والدهون على حسب جسمك وهدفك وحالتك.', 'We work out calories, protein, carbs and fat from your body, goal and health.')}
+          on={d.macro?.mode !== 'own'} onPress={() => set({ macro: undefined })} />
+        <Choice title={L('أيوه، نظام من دكتور أو أخصائي تغذية', 'Yes, a plan from a doctor or dietitian')} sub={L(`${g('هتكتب', 'هتكتبي')} أرقامه، والتطبيق هيمشي عليها.`, 'Enter its numbers and the app follows them.')}
+          on={d.macro?.mode === 'own'} onPress={() => set({ macro: { mode: 'own', own: d.macro?.own } })} />
+        {d.macro?.mode === 'own' ? <OwnDietFields value={d.macro.own} onChange={(own) => set({ macro: { mode: 'own', own } })} g={g} /> : null}
+        <DietNote g={g} strong={(d.conditions.length > 0 || !!d.otherCond?.trim()) && d.macro?.mode !== 'own'} />
       </>}
 
       {st === 'pain' && <>

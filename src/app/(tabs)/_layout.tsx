@@ -10,7 +10,7 @@ import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
 import { fonts, useColors } from '../../theme.ts';
 
-/** Tab icons drawn in the champ's stroke style: the champ for today, a bowl, a dumbbell, and the person's initial. */
+/** Tab icons drawn in the champ's stroke style: the champ for today, a bowl, a dumbbell, a heart, and the person's initial. */
 function Icon({ name, color, focused, initial }: { name: string; color: ColorValue; focused: boolean; initial: string }) {
   const c = useColors();
   const pop = useRef(new Animated.Value(focused ? 1 : 0)).current;
@@ -30,6 +30,14 @@ function Icon({ name, color, focused, initial }: { name: string; color: ColorVal
       <View style={{ width: 24, height: 24, borderRadius: 4, backgroundColor: focused ? c.ink : c.soft, alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ fontFamily: fonts.displaySemi, fontSize: 11, lineHeight: 15, color: focused ? c.bg : c.muted }}>{initial}</Text>
       </View>
+    );
+  } else if (name === 'health') {
+    // A heart with a pulse line through it.
+    icon = (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+        <Path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z" />
+        <Path d="M3 12.5h4.5l1.5-2.5 2.5 5 1.8-2.5H21" stroke={focused ? c.petrol : color} strokeWidth={2} />
+      </Svg>
     );
   } else {
     icon = (
@@ -68,6 +76,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="index" options={{ title: L('النهارده', 'Today') }} />
         <Tabs.Screen name="food" options={{ title: L('الأكل', 'Food') }} />
         <Tabs.Screen name="train" options={{ title: L('التمرين', 'Train') }} />
+        <Tabs.Screen name="health" options={{ title: L('الصحة', 'Health') }} />
         <Tabs.Screen name="me" options={{ title: L('ملفي', 'Me') }} />
       </Tabs>
       <Tour />

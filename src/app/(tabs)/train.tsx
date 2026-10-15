@@ -2,7 +2,7 @@ import { EasyBanner } from '../../components/health.tsx';
 import { easyDay } from '../../lib/health.ts';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 
 import { AddExercise } from '../../components/AddExercise.tsx';
 import { CaptainCard } from '../../components/match.tsx';
@@ -123,6 +123,18 @@ export default function Train() {
   return (
     <Screen name="train" kicker={kicker} title={ses ? splitLabel(ses.id) : L('راحة', 'Rest')} sub={ses ? tx(ses.n) : L('مفيش تمرين في اليوم ده', 'No workout this day')}
       aside={isToday ? <MatchClock start={day.trainStart} end={day.trainEnd} /> : null}>
+      {M.mod.anyCondition ? (
+        <TourTarget id="train.flare">
+          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, ...(day.flare ? { borderColor: c.warn } : null) }}>
+            <View style={{ flex: 1 }}>
+              <T kind="h3">{L(`${g('حاسس', 'حاسة')} بإرهاق أو نشاط للمرض النهارده؟`, 'Feeling fatigued or having a flare-up today?')}</T>
+              <T kind="small" color={day.flare ? c.warn : undefined}>{day.flare ? L('تمرين النهارده بقى يوم تعافي خفيف.', "Today's workout is now a light recovery day.") : L('هنحول تمرين النهارده ليوم تعافي خفيف.', "We'll switch today's workout to a light recovery day.")}</T>
+            </View>
+            <Switch value={day.flare} onValueChange={(v) => { play('tap'); setSel(todayIdx); updateDay((d) => ({ ...d, flare: v })); }}
+              trackColor={{ true: c.petrol, false: c.line }} thumbColor={c.ink} accessibilityLabel={L('يوم تعافي', 'Recovery day')} />
+          </Card>
+        </TourTarget>
+      ) : null}
       <TourTarget id="train.days" style={{ gap: 10 }}>
         <WeekStrip profile={profile} today={todayIdx} sel={sel} onSelect={setSel} done={doneWeek} />
         {past ? null : (

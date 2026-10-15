@@ -7,7 +7,9 @@ import { CaptainCard } from '../../components/match.tsx';
 import { TourTarget } from '../../components/TourTarget.tsx';
 import { foodLine } from '../../lib/captain.ts';
 import { MealIdea } from '../../components/MealIdea.tsx';
+import { CalorieCheckCard } from '../../components/PlanSettings.tsx';
 import { RecipeFinder } from '../../components/RecipeFinder.tsx';
+import { WaterCard } from '../../components/WaterCard.tsx';
 import { Card, CountUp, MacroBar, NoteView, Num, RADIUS, RoundCheck, Rise, Screen, T, styles } from '../../components/ui.tsx';
 import { changePortion, fmt, mealTotals, planned, totals, type LoggedFood } from '../../lib/day.ts';
 import { FOODS, MY_FOODS_CAT, itemAlerts, type Food } from '../../lib/foods.ts';
@@ -37,7 +39,7 @@ const showU = (u: string) => (isEn() ? tx(u).replace(/(\d) جم$/, '$1 g') : u);
  * an add button, and a suggestion that opens only when asked for. */
 export default function FoodScreen() {
   const c = useColors();
-  const { profile, day, today, custom, updateDay } = useStore();
+  const { profile, day, today, custom, updateDay, saveProfile } = useStore();
   const [ideas, setIdeas] = useState<Meal | null>(null);
   const all = useMemo(() => [...FOODS, ...custom.map((f) => ({ ...f, cat: MY_FOODS_CAT }))], [custom]);
   const byId = useMemo(() => new Map(all.map((f) => [f.id, f])), [all]);
@@ -184,6 +186,12 @@ export default function FoodScreen() {
           return mi === 0 ? <TourTarget key={meal} id="food.meal">{row}</TourTarget> : <View key={meal}>{row}</View>;
         })}
       </Rise>
+
+      <TourTarget id="food.water">
+        <WaterCard day={day} cups={T0.waterCups} update={updateDay} />
+      </TourTarget>
+
+      <CalorieCheckCard p={profile} onChange={saveProfile} />
 
       {loose.length ? (
         <Card>

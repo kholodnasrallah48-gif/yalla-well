@@ -61,7 +61,7 @@ function judge(p: Profile, f: Food): Note[] {
   const out: Note[] = [];
   const name = norm(f.n);
   // Foods a typed condition, allergy or medicine rules out by name (fava beans with G6PD, grapefruit with statins).
-  for (const a of eff.avoid) if (a.re.test(name)) { const [ar, en] = a.text(g); out.push({ level: a.level, text: L(ar, en) }); }
+  for (const a of eff.avoid) if (a.re.test(name) || a.tags?.some((x) => t.has(x))) { const [ar, en] = a.text(g); out.push({ level: a.level, text: L(ar, en) }); }
 
   if (has('celiac') && t.has('gluten')) out.push({ level: 'bad', text: L('فيه جلوتين، وده ممنوع مع السيلياك.', 'Contains gluten, which is off-limits with celiac disease.') });
   if (auto.length || eff.auto.length) {
@@ -153,8 +153,10 @@ export const recipeFood = (r: Recipe): Food => ({ id: 'r_' + r.id, cat: MEAL_CAT
 export const recipeFits = (p: Profile, r: Recipe) => {
   const eff = effective(p);
   if ((r.avoid ?? []).some((x) => eff.ids.has(x))) return false;
+  // The dish name and its ingredients, so an allergy also catches what's inside (sesame in tahini, egg in a batter).
   const name = norm(r.n);
-  return !eff.avoid.some((a) => a.level === 'bad' && a.re.test(name)) && !(eff.food.has('gluten') && r.tags.includes('gluten'));
+  const all = norm([r.n, ...(r.ingredients ?? [])].join(' '));
+  return !eff.avoid.some((a) => a.level === 'bad' && (a.re.test(a.allergy ? all : name) || !!a.tags?.some((x) => r.tags.includes(x)))) && !(eff.food.has('gluten') && r.tags.includes('gluten'));
 };
 
 type Kind = { re: RegExp; alts: string[]; recipes?: RegExp; meal?: Meal; drink?: boolean };

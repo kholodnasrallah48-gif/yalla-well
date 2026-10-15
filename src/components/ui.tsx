@@ -126,7 +126,7 @@ const dateLine = () => {
   return `${tx(WEEK[(d.getDay() + 1) % 7])} ${d.getDate()}/${d.getMonth() + 1}`;
 };
 
-export function Screen({ title, kicker, bigTitle, children, themeToggle, name, sub, aside }: {
+export function Screen({ title, kicker, bigTitle, children, themeToggle, name, sub, aside, lead }: {
   title: string; children: ReactNode; themeToggle?: boolean;
   /** Small line above the title (e.g. the greeting when the title is the person's name). */
   kicker?: string;
@@ -138,6 +138,8 @@ export function Screen({ title, kicker, bigTitle, children, themeToggle, name, s
   name?: string;
   /** Shown at the end of the header row (e.g. the workout clock). */
   aside?: ReactNode;
+  /** Shown before the title, beside it (e.g. the story ring next to the name). */
+  lead?: ReactNode;
 }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -152,10 +154,13 @@ export function Screen({ title, kicker, bigTitle, children, themeToggle, name, s
     <ScrollView ref={ref} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 18, paddingTop: insets.top + 12, paddingBottom: 40, gap: 14 }} keyboardShouldPersistTaps="handled"
       scrollEventThrottle={32} onScroll={name ? (e) => { const s = scrollers.get(name); if (s) s.y = e.nativeEvent.contentOffset.y; } : undefined}>
       <View style={[styles.rowBetween, { alignItems: 'flex-start' }]}>
-        <View style={{ flexShrink: 1 }}>
-          {kicker ? <T kind="small" color={c.muted}>{kicker}</T> : null}
-          <T kind="h1" color={c.ink} style={bigTitle ? { fontSize: 34, lineHeight: 50 } : { fontSize: 32, lineHeight: 48 }} numberOfLines={1}>{title}</T>
-          <T kind="label" color={c.dim} style={{ marginTop: -4 }}>{sub ?? dateLine()}</T>
+        <View style={[styles.row, { flexShrink: 1, gap: 12 }]}>
+          {lead}
+          <View style={{ flexShrink: 1 }}>
+            {kicker ? <T kind="small" color={c.muted}>{kicker}</T> : null}
+            <T kind="h1" color={c.ink} style={bigTitle ? { fontSize: 34, lineHeight: 50 } : { fontSize: 32, lineHeight: 48 }} numberOfLines={1}>{title}</T>
+            <T kind="label" color={c.dim} style={{ marginTop: -4 }}>{sub ?? dateLine()}</T>
+          </View>
         </View>
         {aside}
         {themeToggle ? (

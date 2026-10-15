@@ -364,7 +364,7 @@ a.store-web:hover { border-color: var(--accent); box-shadow: 0 16px 44px -12px r
 /* ---------- download panel ---------- */
 .cta-band { padding-block: 24px clamp(80px, 10vw, 128px); }
 .cta {
-  position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 48px;
+  position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr; align-items: center; justify-items: center; text-align: center; gap: 48px;
   padding: clamp(32px, 5.5vw, 72px); border-radius: 40px;
   background:
     radial-gradient(90% 120% at 90% 0%, rgba(25, 230, 140, 0.16), transparent 60%),
@@ -374,8 +374,9 @@ a.store-web:hover { border-color: var(--accent); box-shadow: 0 16px 44px -12px r
   will-change: transform, opacity;
 }
 [dir='rtl'] .cta { background: radial-gradient(90% 120% at 10% 0%, rgba(25, 230, 140, 0.16), transparent 60%), linear-gradient(180deg, #101215, #060708); }
-.cta-champ { will-change: transform; color: var(--ink); margin-bottom: 8px; margin-inline-start: -10px; }
-.cta .lead { margin: 0 0 28px; max-width: 560px; }
+.cta-champ { will-change: transform; color: var(--ink); margin: 0 auto 8px; }
+.cta .lead { margin: 0 auto 28px; max-width: 560px; }
+.cta .stores { justify-content: center; }
 .qr-box { text-align: center; width: 196px; }
 .qr-box img { width: 172px; height: 172px; padding: 12px; margin: 0 auto 14px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.05); }
 .qr-box p { color: var(--muted); margin: 0; line-height: 1.6; }

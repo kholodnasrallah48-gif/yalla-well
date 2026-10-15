@@ -2,7 +2,6 @@
 // Arabic copy: light Egyptian mixed with common colloquial Arabic any Arab reader understands (no heavy dialect words,
 // no formal fusha), gender neutral ("we", the app or nouns as the subject, no imperatives), no tashkeel. Use "دايت",
 // never "رجيم". No disease or medicine names outside the "try it" examples.
-import { WEB_APP } from './config.mjs';
 import { SOCIAL_NAMES, champ, contact, hasSocial, icon, socialLinks, storeButtons } from './layout.mjs';
 import { SOCIAL } from './config.mjs';
 
@@ -34,7 +33,7 @@ function faqGroups(ctx) {
       [L('إيه هو يلا ويل؟', 'What is Yalla Well?'), L('تطبيق بيعملك خطة أكل وتمرين على حسب جسمك وهدفك وصحتك، وبيفكرك بمواعيد الأدوية والتحاليل. ولو صحتك أو أدويتك اتغيرت، الخطة بتتغير معاها.', 'An app that builds a food and training plan around your body, your goal and your health, and keeps track of your medicines and lab tests. When your health or medicines change, the plan changes too.')],
       [L('التطبيق مجاني؟', 'Does it cost anything?'), L('النسخة الحالية تجريبية ومن غير أي اشتراك.', 'The current version is a trial and has no subscription.')],
       [L('لازم أعمل حساب؟', 'Do I need an account?'), L('لا. التطبيق من غير تسجيل دخول، وكل بياناتك متخزنة على موبايلك نفسه.', "No. There's no sign-in, and everything is saved on your phone.")],
-      [L('بيشتغل على أي موبايلات؟', 'Which phones does it work on?'), L('نسخة الويب شغالة حاليا على أي موبايل أو كمبيوتر، وتطبيق آيفون وأندرويد جاي قريب.', 'The web version works now on any phone or computer. iPhone and Android apps are coming soon.')],
+      [L('إمتى التطبيق ينزل؟', 'When does the app launch?'), L('قريبا على آيفون وأندرويد. هنعلن على وسائل التواصل أول ما ينزل.', "Soon on iPhone and Android. We'll announce it on social media as soon as it's out.")],
       [L('موجود بالإنجليزي؟', 'Is it available in English?'), L('أيوه، عربي وإنجليزي، واللغة بتتغير من الشاشة الرئيسية في أي وقت.', 'Yes, Arabic and English. Switch any time from the home screen.')],
     ] },
     { id: 'food', title: L('الأكل', 'Food'), items: [
@@ -78,12 +77,8 @@ function downloadPanel(ctx) {
       <div class="cta-text">
         ${champ('cheer', { size: 96, cls: 'cta-champ' })}
         <h2 class="h2">${L('يلا نبدأ.', "Let's start.")}</h2>
-        <p class="lead">${L('نسخة الويب شغالة حاليا على أي موبايل أو كمبيوتر، وتطبيق آيفون وأندرويد جاي قريب.', 'The web version works now on any phone or computer. iPhone and Android are coming soon.')}</p>
+        <p class="lead">${L('التطبيق جاي قريب على آيفون وأندرويد.', 'The app is coming soon to iPhone and Android.')}</p>
         ${storeButtons(ctx)}
-      </div>
-      <div class="qr-box">
-        <img src="${ctx.root}static/img/qr-web.svg" alt="${L('رمز QR بيفتح نسخة الويب', 'QR code that opens the web version')}" width="148" height="148">
-        <p class="small">${L('الرمز بيفتح نسخة الويب من كاميرا الموبايل', "Scan with your phone's camera to open the web version")}</p>
       </div>
     </div>
   </div></section>`;
@@ -453,23 +448,13 @@ ${downloadPanel(ctx)}`;
 const download = {
   file: 'download.html',
   title: (ctx) => ctx.L('التحميل', 'Download'),
-  desc: (ctx) => ctx.L('يلا ويل شغال حاليا على الويب من أي موبايل أو كمبيوتر، وقريبا على آيفون وأندرويد.', 'Yalla Well works now on the web from any phone or computer, and is coming soon to iPhone and Android.'),
+  desc: (ctx) => ctx.L('يلا ويل جاي قريب على آيفون وأندرويد.', 'Yalla Well is coming soon to iPhone and Android.'),
   body(ctx) {
     const { L } = ctx;
-    return `${pageHero(ctx, L('التحميل', 'Download'), L('يلا ويل على موبايلك.', 'Yalla Well on your phone.'), L('نسخة الويب شغالة حاليا، وتطبيق آيفون وأندرويد في السكة.', 'The web version works today. iPhone and Android apps are on the way.'))}
+    return `${pageHero(ctx, L('التحميل', 'Download'), L('يلا ويل على موبايلك.', 'Yalla Well on your phone.'), L('التطبيق جاي قريب على آيفون وأندرويد.', 'The app is coming soon to iPhone and Android.'))}
 <section class="section tight">
   <div class="wrap">
     <div class="dl-grid">
-      <div class="dl-card is-live reveal">
-        <span class="badge">${L('متاح حاليا', 'Available now')}</span>
-        <span class="dl-ic">${icon('globe', 30)}</span>
-        <h2 class="h3">${L('نسخة الويب', 'Web version')}</h2>
-        <p>${L('بتتفتح من المتصفح على أي موبايل أو كمبيوتر، ومن غير تحميل.', 'Opens in the browser on any phone or computer, nothing to install.')}</p>
-        <div class="dl-actions">
-          <a class="btn btn-primary" href="${WEB_APP}">${L('فتح نسخة الويب', 'Open the web version')}</a>
-          <img class="dl-qr" src="${ctx.root}static/img/qr-web.svg" alt="${L('رمز QR بيفتح نسخة الويب', 'QR code that opens the web version')}" width="112" height="112">
-        </div>
-      </div>
       <div class="dl-card reveal">
         <span class="badge badge-soon">${L('قريبا', 'Coming soon')}</span>
         <span class="dl-ic">${icon('phone', 30)}</span>
@@ -483,16 +468,6 @@ const download = {
         <p>${L('على Google Play، ومعاه التنبيهات وقراءة الباركود.', 'On Google Play, with reminders and barcode scanning.')}</p>
       </div>
     </div>
-  </div>
-</section>
-<section class="section">
-  <div class="wrap narrow">
-    <div class="sec-head reveal">${kicker(L('خطوة صغيرة', 'One small step'))}<h2 class="h2">${L('يلا ويل على الشاشة الرئيسية', 'Yalla Well on your home screen')}</h2><p class="lead">${L('علشان يفتح زي أي تطبيق، بأيقونة الكابتن.', 'So it opens like any app, with the captain as its icon.')}</p></div>
-    <div class="howto">
-      <div class="howto-col reveal"><h3 class="h3">${L('آيفون (Safari)', 'iPhone (Safari)')}</h3><ol><li>${L('فتح نسخة الويب من Safari', 'Open the web version in Safari')}</li><li>${L('زرار المشاركة تحت', 'Tap the Share button')}</li><li>${L('"إضافة إلى الشاشة الرئيسية"', '"Add to Home Screen"')}</li></ol></div>
-      <div class="howto-col reveal"><h3 class="h3">${L('أندرويد (Chrome)', 'Android (Chrome)')}</h3><ol><li>${L('فتح نسخة الويب من Chrome', 'Open the web version in Chrome')}</li><li>${L('القائمة ⋮ فوق', 'Tap the ⋮ menu')}</li><li>${L('"إضافة إلى الشاشة الرئيسية" أو "تثبيت التطبيق"', '"Add to Home screen" or "Install app"')}</li></ol></div>
-    </div>
-    <p class="note reveal">${L('التنبيهات وقراءة الباركود مش موجودين في نسخة الويب، وهيكونوا في تطبيق الموبايل.', 'The web version has no reminders or barcode camera. Those come with the phone app.')}</p>
   </div>
 </section>
 <section class="section">

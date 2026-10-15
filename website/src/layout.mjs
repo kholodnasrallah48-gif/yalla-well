@@ -1,6 +1,6 @@
 // The frame every page shares (head, header, footer) and small pieces several pages use: the champ, store buttons,
 // social links and icons.
-import { APP_STORE, EMAIL, GOOGLE_PLAY, SITE_URL, SOCIAL, WEB_APP, WHATSAPP } from './config.mjs';
+import { APP_STORE, EMAIL, GOOGLE_PLAY, SITE_URL, SOCIAL, WHATSAPP } from './config.mjs';
 
 /** The champ from the logo. `pose`: cheer (arms up), eat, lift or point. */
 export function champ(pose = 'cheer', { size = 40, ink = 'currentColor', head = 'var(--accent)', cls = '' } = {}) {
@@ -49,8 +49,8 @@ const ICON_PATHS = {
 export const icon = (name, size = 22) =>
   `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICON_PATHS[name]}</svg>`;
 
-/** App Store, Google Play and the web version. Stores without a link yet read "coming soon". */
-export function storeButtons(ctx, { web = true } = {}) {
+/** App Store and Google Play. Stores without a link yet read "coming soon". */
+export function storeButtons(ctx) {
   const { L } = ctx;
   const store = (url, name, label) => url
     ? `<a class="store" href="${url}" rel="noopener"><span class="store-small">${L('متاح على', 'Get it on')}</span><span class="store-big" lang="en">${name}</span></a>`
@@ -58,7 +58,6 @@ export function storeButtons(ctx, { web = true } = {}) {
   return `<div class="stores">
     ${store(APP_STORE, 'App Store', L('قريبا على آب ستور', 'Coming soon to the App Store'))}
     ${store(GOOGLE_PLAY, 'Google Play', L('قريبا على جوجل بلاي', 'Coming soon to Google Play'))}
-    ${web ? `<a class="store store-web" href="${WEB_APP}"><span class="store-small">${L('متاح حاليا', 'Available now')}</span><span class="store-big">${L('على الويب', 'On the web')}</span></a>` : ''}
   </div>`;
 }
 
@@ -115,7 +114,7 @@ function footer(ctx) {
         ${social}
       </div>
       <nav class="ftr-cols" aria-label="${L('روابط آخر الصفحة', 'Footer links')}">
-        <div><h2>${L('التطبيق', 'The app')}</h2><a href="features.html">${L('المميزات', 'Features')}</a><a href="download.html">${L('التحميل', 'Download')}</a><a href="${WEB_APP}">${L('نسخة الويب', 'Web version')}</a></div>
+        <div><h2>${L('التطبيق', 'The app')}</h2><a href="features.html">${L('المميزات', 'Features')}</a><a href="download.html">${L('التحميل', 'Download')}</a></div>
         <div><h2>${L('مساعدة', 'Help')}</h2><a href="faq.html">${L('الأسئلة الشائعة', 'FAQ')}</a><a href="contact.html">${L('التواصل', 'Contact us')}</a></div>
         <div><h2>${L('يلا ويل', 'Yalla Well')}</h2><a href="about.html">${L('عن يلا ويل', 'About')}</a><a href="privacy.html">${L('الخصوصية', 'Privacy')}</a><a href="terms.html">${L('الشروط', 'Terms')}</a></div>
       </nav>

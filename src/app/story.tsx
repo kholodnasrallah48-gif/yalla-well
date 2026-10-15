@@ -2,7 +2,7 @@
 // week's scoreboard and the days on target, in the app's look. Shared through the phone's share sheet.
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -10,14 +10,13 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { BigFlame } from '../components/DailyFire.tsx';
 import { Head, Mascot } from '../components/Mascot.tsx';
 import { Bg, Btn, Card, Chip, Segmented, START, T, styles } from '../components/ui.tsx';
-import { weightOn } from '../lib/body.ts';
-import { dayKey, type DayLog } from '../lib/day.ts';
+import { dayKey } from '../lib/day.ts';
 import { L, isEn } from '../lib/i18n.ts';
 import { genderFor, type Profile } from '../lib/plan.ts';
-import { shortDate, weekKeys, weekStart } from '../lib/report.ts';
+import { shortDate } from '../lib/report.ts';
 import { shareView } from '../lib/shareImage.ts';
-import { weekStory, type WeekStory } from '../lib/story.ts';
-import { streaks } from '../lib/streaks.ts';
+import { type WeekStory } from '../lib/story.ts';
+import { useWeek } from '../lib/useWeek.ts';
 import { play } from '../lib/sound.ts';
 import { useStore } from '../store/AppStore.tsx';
 import { fonts, useColors } from '../theme.ts';
@@ -108,31 +107,16 @@ export default function Story() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { profile, readDay, day, today, history } = useStore();
+  const { profile } = useStore();
   const [offset, setOffset] = useState<'0' | '1'>('0');
   const [show, setShow] = useState<Show>({ weight: false, points: true });
-  const [logs, setLogs] = useState<Record<string, DayLog | null> | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null);
   const ref = useRef<View>(null);
-  const start = useMemo(() => weekStart(new Date(), Number(offset)), [offset]);
-  useEffect(() => {
-    let live = true;
-    setLogs(null);
-    const keys = weekKeys(start).map(dayKey);
-    Promise.all(keys.map(readDay)).then((xs) => { if (live) setLogs(Object.fromEntries(keys.map((k, i) => [k, xs[i]]))); });
-    return () => { live = false; };
-  }, [start, day]);
-  if (!profile) return null;
+  const wk = useWeek(Number(offset));
+  if (!profile || !wk) return null;
   const g = genderFor(profile.sex);
-  const end = weekKeys(start)[6];
-  const now = new Date();
-  // The streak on the story is the one at the end of that week (today for this week).
-  const until = end < now ? end : now;
-  const st = streaks(profile, { ...history, ...(logs ?? {}), [today]: day } as Record<string, DayLog>, until);
-  const s = logs ? weekStory(profile, start, { ...logs, [today]: day }, now) : null;
-  const before = new Date(start); before.setDate(before.getDate() - 1);
-  const kg = Math.round((weightOn(profile, dayKey(until)) - weightOn(profile, dayKey(before))) * 10) / 10;
+  const { s, streak, start, end, kg } = wk;
   const w = Math.min(width - 32, 360);
 
   const share = async () => {
@@ -160,10 +144,11 @@ export default function Story() {
       <View style={{ alignItems: 'center' }}>
         {s ? (
           <View ref={ref} collapsable={false} style={{ overflow: 'hidden' }}>
-            <StoryCard w={w} p={profile} s={s} streak={st.kcal} from={start} to={end} show={show} kg={kg} />
+            <StoryCard w={w} p={profile} s={s} streak={streak} from={start} to={end} show={show} kg={kg} />
           </View>
         ) : <View style={{ height: (w * 16) / 9, justifyContent: 'center' }}><ActivityIndicator color={c.petrol} /></View>}
       </View>
+      <Btn kind="outline" title={L(g('صور نفسك بإطار أرقامك', 'صوري نفسك بإطار أرقامك'), 'Take a photo with your numbers')} onPress={() => router.push({ pathname: '/storycam', params: { offset } })} />
       <Card>
         <Btn title={busy ? L('بنجهز الصورة...', 'Making the picture...') : L(g('شارك الستوري', 'شاركي الستوري'), 'Share the story')} onPress={share} disabled={busy || !s} />
         <T kind="small">{L(`من قايمة المشاركة ${g('تقدر', 'تقدري')} ${g('تختار', 'تختاري')} ستوري انستجرام أو واتساب، أو ${g('تحفظ', 'تحفظي')} الصورة.`, 'From the share menu you can pick an Instagram or WhatsApp story, or save the picture.')}</T>

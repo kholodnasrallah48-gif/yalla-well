@@ -84,7 +84,7 @@ export default function CycleScreen() {
           <Btn kind="outline" title={L('نهاية الدورة', 'Period ended')} disabled={!ci.last || pick < ci.last} onPress={() => { play('check'); save(endPeriod(cyc, pick)); }} style={{ flex: 1 }} />
         </View>
         <T kind="small" color={c.muted}>{L('اختاري اليوم من التقويم فوق، أو من هنا:', 'Pick the day on the calendar above, or here:')}</T>
-        <DateField value={pick} onChange={setPick} label={L('اليوم', 'Day')} />
+        <DateField value={pick} onChange={(k) => { setPick(k); setMonth(new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1)); }} label={L('اليوم', 'Day')} />
       </Card>
 
       <Card>

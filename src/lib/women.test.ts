@@ -8,7 +8,7 @@ import { easyDay } from './health.ts';
 import { effective } from './kb.ts';
 import { medical, sessionFor, targets, weekSessions, type Profile } from './plan.ts';
 import { sleepHours, sleepRange, sleepVerdict } from './sleep.ts';
-import { cycleInfo, dayKind, endPeriod, pregWeek, startFromMonth, startPeriod, trimester } from './women.ts';
+import { cycleInfo, dayKind, endPeriod, pregWeek, setLastStart, startFromMonth, startPeriod, trimester } from './women.ts';
 
 const base: Profile = {
   name: 'تجربة', sex: 'f', age: 30, height: 165, weight: 70, activity: 'low', goal: 'lose',
@@ -87,4 +87,14 @@ test('sleep hours across midnight and the range for the age', () => {
   assert.deepEqual(sleepRange(15), [8, 10]);
   assert.equal(sleepVerdict(5, 30), 'short');
   assert.equal(sleepVerdict(8, 30), 'ok');
+});
+
+test('picking the last period date in onboarding always moves it, wherever it lands', () => {
+  let c = setLastStart(undefined, '2026-10-15');
+  c = setLastStart(c, '2026-09-15');
+  assert.deepEqual(c.periods, [{ start: '2026-09-15' }]);
+  c = setLastStart(c, '2026-09-03');
+  assert.deepEqual(c.periods, [{ start: '2026-09-03' }]);
+  const logged = { periods: [{ start: '2026-08-01' }, { start: '2026-08-30' }] };
+  assert.deepEqual(setLastStart(logged, '2026-09-02').periods, [{ start: '2026-08-01' }, { start: '2026-09-02' }]);
 });

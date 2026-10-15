@@ -58,6 +58,7 @@ function Gate() {
         <Stack.Screen name="progress" />
         <Stack.Screen name="myplan" />
         <Stack.Screen name="story" />
+        <Stack.Screen name="storycam" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Screen name="cycle" />
         <Stack.Screen name="recipe/[id]" options={{ presentation: 'modal' }} />
       </Stack>

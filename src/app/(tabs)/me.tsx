@@ -42,7 +42,7 @@ export default function Me() {
   const meds = [...medIds(p).map((id) => { const pl = medPlan(p, id); const d = doseText(pl); return `${id.startsWith('x:') ? ux(p, medName(id, pl)) : medName(id, pl)}${d ? ` (${d})` : ''}`; }), ux(p, p.otherMeds)].filter(Boolean);
   const ownCount = Object.values(p.own ?? {}).reduce((a, x) => a + x.length, 0);
   const dropCount = Object.values(p.drop ?? {}).reduce((a, x) => a + x.length, 0);
-  const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '') + (p.hurt?.[id] === 'injury' ? L(' (إصابة تحت العلاج)', ' (injury being treated)') : '')), ux(p, p.otherPain)].filter(Boolean);
+  const pains = [...p.pains.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? '') + (p.hurt?.[id] === 'injury' ? ` (${L('إصابة', 'injury')}${p.injuryNote?.[id]?.trim() ? `: ${ux(p, p.injuryNote[id])}` : ''})` : '')), ux(p, p.otherPain)].filter(Boolean);
   const injured = p.pains.filter((id) => p.hurt?.[id] === 'injury');
 
   return (

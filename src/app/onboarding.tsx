@@ -12,7 +12,7 @@ import { Mascot } from '../components/Mascot.tsx';
 import { Bg, Btn, Card, Chip, Choice, Kicker, NoteView, RADIUS, Ring, START, Segmented, T, WeekStrip, styles } from '../components/ui.tsx';
 import { CONDITIONS, PAINS, SCHEDULES, SCHEDULE_ORDER, WEEK, type Hurt, type ScheduleId } from '../lib/data.ts';
 import { DateField } from '../components/pickers.tsx';
-import { startFromMonth, startPeriod } from '../lib/women.ts';
+import { setLastStart, startFromMonth } from '../lib/women.ts';
 import { dayKey as fmtKey, fmt } from '../lib/day.ts';
 import { L, getLang, num, setLang, toNum, tx } from '../lib/i18n.ts';
 import { allGymChoices, genderFor, medical, recommendPlan, splitLabel, targets, weekPlaces, weekSessions, type CondInfo, type DayPlace, type Profile, type Quiz } from '../lib/plan.ts';
@@ -178,7 +178,7 @@ export default function Onboarding() {
           <T kind="small" color={c.muted}>{L('في الحمل مفيش رجيم لنزول الوزن. هنحسب السعرات المناسبة لكل شهر، والتمرين هيبقى آمن للحمل. لازم دكتورة النسا توافق على التمرين.', "There's no weight-loss diet in pregnancy. We'll set the right calories for each stage and keep training pregnancy-safe. Your doctor should approve exercise first.")}</T>
         </> : d.women?.married !== undefined ? <>
           <T kind="label">{L('أول يوم في آخر دورة (اختياري)', 'First day of your last period (optional)')}</T>
-          <DateField value={d.cycle?.periods.at(-1)?.start ?? fmtKey(new Date())} onChange={(k) => set({ cycle: startPeriod(d.cycle, k) })} label={L('أول يوم', 'First day')} />
+          <DateField value={d.cycle?.periods.at(-1)?.start ?? fmtKey(new Date())} onChange={(k) => set({ cycle: setLastStart(d.cycle, k) })} label={L('أول يوم', 'First day')} />
           <T kind="small" color={c.muted}>{L('بيه نقدر نتوقع الدورة الجاية وأيام التبويض ونخفف التمرين أول يومين.', 'It lets us estimate your next period and fertile days, and keep the first two days lighter.')}</T>
         </> : null}
       </>}
@@ -376,9 +376,13 @@ export default function Onboarding() {
         {d.pains.map((j) => (
           <View key={j} style={{ gap: 6 }}>
             <T kind="label">{tx(PAINS.find((x) => x.id === j)?.n ?? j)}</T>
-            <Segmented<Hurt> items={[['pain', L('ألم بسيط', 'Mild pain')], ['injury', L('إصابة أو ديسك تحت العلاج', 'Injury or disc being treated')]]} value={d.hurt?.[j] ?? 'pain'} onChange={(k) => set({ hurt: { ...d.hurt, [j]: k } })} />
+            <Segmented<Hurt> items={[['pain', L('ألم بسيط', 'Mild pain')], ['injury', L('إصابة', 'Injury')]]} value={d.hurt?.[j] ?? 'pain'} onChange={(k) => set({ hurt: { ...d.hurt, [j]: k } })} />
+            {d.hurt?.[j] === 'injury' ? (
+              <TextInput value={d.injuryNote?.[j] ?? ''} onChangeText={(v) => set({ injuryNote: { ...d.injuryNote, [j]: v } })} placeholder={L('الإصابة إيه؟ مثلا: تمزق، كسر، شرخ، ديسك', 'What is it? e.g. a tear, fracture, crack, disc')} placeholderTextColor={c.muted} style={input} accessibilityLabel={L('نوع الإصابة', 'Type of injury')} />
+            ) : null}
           </View>
         ))}
+        {d.pains.some((j) => (d.hurt?.[j] ?? 'pain') === 'pain') ? <T kind="small" color={c.muted}>{L(`الألم البسيط: ${g('بتتمرن', 'بتتمرني')} عادي، بس من غير تمارين بتضغط على المكان ده.`, "Mild pain: you train as usual, just without exercises that load that spot.")}</T> : null}
         {d.pains.some((j) => d.hurt?.[j] === 'injury') ? <T kind="small" color={c.warn}>{L(`أي تمرين بيحرك المكان المصاب هيتشال لحد ما ${g('تتعالج', 'تتعالجي')}. لما ${g('تخف', 'تخفي')} ${g('غير', 'غيري')} ده من ملفي والخطة ترجع.`, "Anything that moves the injured area is left out until it's treated. Once you've recovered, change it in Me and the plan comes back.")}</T> : null}
         {otherPain ? <View style={{ gap: 4 }}><T kind="label">{L('فين بالظبط؟', 'Where exactly?')}</T><TextInput value={d.otherPain ?? ''} onChangeText={(v) => set({ otherPain: v })} style={input} /></View> : null}
       </>}

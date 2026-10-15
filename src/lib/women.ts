@@ -111,6 +111,11 @@ export function startPeriod(c: Cycle | undefined, key: string): Cycle {
   const rest = ps.filter((x) => x !== near);
   return { ...c, periods: [...rest, { start: key }].sort((a, b) => a.start.localeCompare(b.start)) };
 }
+/** Sets the first day of the latest period (onboarding asks for just that one date). Later logged periods are dropped. */
+export function setLastStart(c: Cycle | undefined, key: string): Cycle {
+  const ps = [...(c?.periods ?? [])].sort((a, b) => a.start.localeCompare(b.start)).slice(0, -1).filter((x) => x.start < key && diff(key, x.start) >= 10);
+  return { ...c, periods: [...ps, { start: key }] };
+}
 /** Marks the last period as ended on a day. */
 export function endPeriod(c: Cycle | undefined, key: string): Cycle {
   const ps = [...(c?.periods ?? [])].sort((a, b) => a.start.localeCompare(b.start));

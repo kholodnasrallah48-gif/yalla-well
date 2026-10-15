@@ -72,6 +72,8 @@ export type Profile = {
   adjAt?: string;
   /** How bad each painful area is; missing = pain the plan trains around. */
   hurt?: Partial<Record<Joint, Hurt>>;
+  /** What the injury is, in the person's words (a tear, a fracture, a disc...). */
+  injuryNote?: Partial<Record<Joint, string>>;
   /** Women: marital status and pregnancy (see lib/women). */
   women?: Women;
   /** Women: logged periods (see lib/women). */
@@ -267,9 +269,9 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
   // Injuries still being treated: everything that loads the area leaves the plan.
   const hurtNow = (Object.entries(p.hurt ?? {}) as [Joint, Hurt][]).filter(([j, h]) => h === 'injury' && p.pains.includes(j)).map(([j]) => j);
   if (hurtNow.length) {
-    const names = hurtNow.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? id));
+    const names = hurtNow.map((id) => tx(PAINS.find((x) => x.id === id)?.n ?? id) + (p.injuryNote?.[id]?.trim() ? ` (${q(p.injuryNote[id]!.trim())})` : ''));
     const upper = hurtNow.some((j) => j === 'shoulder' || j === 'neck' || j === 'wrist');
-    train.unshift({ tone: 'bad', title: L('إصابة تحت العلاج', 'Injury being treated'), text: L(`عشان إصابة ${names.join(' و')}، شلنا ${upper ? 'تمارين الجزء العلوي كلها (الدفع والسحب)' : 'كل تمرين بيضغط عليها'} لحد ما ${g('تتعالج', 'تتعالجي')}، وحطينا مكانها تمارين للرجل والبطن ومشي. لما الدكتور يقول${g('لك', 'لك')} إنك ${g('خفيت', 'خفيتي')}، ${g('غير', 'غيري')} الإصابة لألم أو ${g('شيلها', 'شيليها')} من ملفي والخطة ترجع.`, `Because of your ${names.join(' and ').toLowerCase()} injury, ${upper ? 'all upper-body work (pushing and pulling) is out' : 'everything that loads it is out'} until it's treated, replaced with legs, core and walking. Once your doctor says you've recovered, change it to pain or remove it in Me and the plan comes back.`) });
+    train.unshift({ tone: 'bad', title: L('إصابة', 'Injury'), text: L(`عشان الإصابة في ${names.join(' و')}، شلنا ${upper ? 'تمارين الجزء العلوي كلها (الدفع والسحب)' : 'كل تمرين بيضغط عليها'} لحد ما ${g('تتعالج', 'تتعالجي')}، وحطينا مكانها تمارين للرجل والبطن ومشي. لما الدكتور يقول${g('لك', 'لك')} إنك ${g('خفيت', 'خفيتي')}، ${g('غير', 'غيري')} الإصابة لألم أو ${g('شيلها', 'شيليها')} من ملفي والخطة ترجع.`, `Because of the injury in your ${names.join(' and ').toLowerCase()}, ${upper ? 'all upper-body work (pushing and pulling) is out' : 'everything that loads it is out'} until it's treated, replaced with legs, core and walking. Once your doctor says you've recovered, change it to pain or remove it in Me and the plan comes back.`) });
   }
   // Pregnancy: no deficit, gentler training, and nothing lying flat after the first trimester.
   const pw = pregWeek(p.women, new Date());

@@ -3,7 +3,7 @@
 // no formal fusha), gender neutral ("we", the app or nouns as the subject, no imperatives), no tashkeel. Use "دايت",
 // never "رجيم". No disease or medicine names outside the "try it" examples.
 import { SOCIAL_NAMES, champ, contact, hasSocial, icon, socialLinks, storeButtons } from './layout.mjs';
-import { SOCIAL } from './config.mjs';
+import { SOCIAL, WHATSAPP_CHANNEL } from './config.mjs';
 
 // ---------- small pieces ----------
 
@@ -33,7 +33,7 @@ function faqGroups(ctx) {
       [L('إيه هو يلا ويل؟', 'What is Yalla Well?'), L('تطبيق بيعملك خطة أكل وتمرين على حسب جسمك وهدفك وصحتك، وبيفكرك بمواعيد الأدوية والتحاليل. ولو صحتك أو أدويتك اتغيرت، الخطة بتتغير معاها.', 'An app that builds a food and training plan around your body, your goal and your health, and keeps track of your medicines and lab tests. When your health or medicines change, the plan changes too.')],
       [L('التطبيق مجاني؟', 'Does it cost anything?'), L('النسخة الحالية تجريبية ومن غير أي اشتراك.', 'The current version is a trial and has no subscription.')],
       [L('لازم أعمل حساب؟', 'Do I need an account?'), L('لا. التطبيق من غير تسجيل دخول، وكل بياناتك متخزنة على موبايلك نفسه.', "No. There's no sign-in, and everything is saved on your phone.")],
-      [L('إمتى التطبيق ينزل؟', 'When does the app launch?'), L('قريبا على آيفون وأندرويد. هنعلن على وسائل التواصل أول ما ينزل.', "Soon on iPhone and Android. We'll announce it on social media as soon as it's out.")],
+      [L('إمتى التطبيق ينزل؟', 'When does the app launch?'), L('قريبا على آيفون وأندرويد. هنعلن على قناة الواتساب والسوشيال ميديا أول ما ينزل.', "Soon on iPhone and Android. We'll announce it on our WhatsApp channel and social media as soon as it's out.")],
       [L('موجود بالإنجليزي؟', 'Is it available in English?'), L('أيوه، عربي وإنجليزي، واللغة بتتغير من صفحة اليوم في أي وقت.', 'Yes, Arabic and English. Switch any time from the Today page.')],
     ] },
     { id: 'food', title: L('الأكل', 'Food'), items: [
@@ -480,7 +480,8 @@ const download = {
 <section class="section">
   <div class="wrap narrow center reveal">
     <h2 class="h2">${L('التطبيق جاي قريب.', 'Want to know when it launches?')}</h2>
-    <p class="lead">${hasSocial() ? L('هنعلن على السوشيال ميديا أول ما التطبيق ينزل.', "Follow us on social media; we'll announce it there first.") : L('هنعلن على السوشيال ميديا أول ما التطبيق ينزل، والحسابات هتتضاف هنا قريب.', "We'll announce it on social media first; our accounts will be listed here soon.")}</p>
+    <p class="lead">${L('أول خبر عن نزول التطبيق هيكون على قناة الواتساب والسوشيال ميديا.', "The first news of the launch goes out on our WhatsApp channel and social media.")}</p>
+    ${WHATSAPP_CHANNEL ? `<p><a class="btn btn-primary" href="${WHATSAPP_CHANNEL}" rel="noopener">${icon('whatsapp', 20)} ${L('قناة يلا ويل على واتساب', 'Yalla Well on WhatsApp')}</a></p>` : ''}
     ${hasSocial() ? `<div class="socials socials-lg">${socialLinks(ctx)}</div>` : ''}
     <p><a class="link-arrow" href="contact.html">${L('صفحة التواصل', 'Or contact us')} ${icon('arrow', 18)}</a></p>
   </div>
@@ -578,7 +579,7 @@ const contactPage = {
     </form>
     <div class="contact-cards">
       <div class="c-card reveal"><span class="tile-ic">${icon('mail', 22)}</span><div><h2 class="h3">${L('الإيميل', 'Email')}</h2>${contact.email ? `<a href="mailto:${contact.email}" dir="ltr">${contact.email}</a>` : soon}</div></div>
-      <div class="c-card reveal"><span class="tile-ic">${icon('chat', 22)}</span><div><h2 class="h3">${L('واتساب', 'WhatsApp')}</h2>${contact.whatsapp ? `<a href="https://wa.me/${contact.whatsapp}" dir="ltr" rel="noopener">+${contact.whatsapp}</a>` : soon}</div></div>
+      <div class="c-card reveal"><span class="tile-ic">${icon('whatsapp', 22)}</span><div><h2 class="h3">${L('واتساب', 'WhatsApp')}</h2>${contact.whatsapp ? `<a href="https://wa.me/${contact.whatsapp}" dir="ltr" rel="noopener">+${contact.whatsapp}</a>` : soon}</div></div>
       <div class="c-card reveal"><span class="tile-ic">${icon('instagram', 22)}</span><div><h2 class="h3">${L('السوشيال ميديا', 'Social media')}</h2>${socials.length ? `<div class="c-links">${socials.map(([k, u]) => `<a href="${u}" rel="noopener">${L(SOCIAL_NAMES[k][0], SOCIAL_NAMES[k][1])}</a>`).join('')}</div>` : soon}</div></div>
       <div class="c-card reveal"><span class="tile-ic">${icon('book', 22)}</span><div><h2 class="h3">${L('قبل الرسالة', 'Before you write')}</h2><a href="faq.html">${L('ممكن الإجابة تكون في الأسئلة الشائعة', 'The answer may be in the FAQ')}</a></div></div>
     </div>

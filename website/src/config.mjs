@@ -5,10 +5,14 @@ export const APP_STORE = '';
 export const GOOGLE_PLAY = '';
 export const EMAIL = '';
 /** WhatsApp number in international form, digits only (for example 201001234567). */
-export const WHATSAPP = '';
+export const WHATSAPP = '971506439750';
+/** WhatsApp channel for news (launch, updates). */
+export const WHATSAPP_CHANNEL = 'https://whatsapp.com/channel/0029Vb9MfP3A89MgNpzCwk11';
 export const SOCIAL = {
-  instagram: '',
-  tiktok: '',
+  instagram: 'https://www.instagram.com/yallawell/',
+  tiktok: 'https://www.tiktok.com/@yallawell',
+  linkedin: 'https://www.linkedin.com/company/yalla-well',
+  whatsapp: 'https://whatsapp.com/channel/0029Vb9MfP3A89MgNpzCwk11',
   facebook: '',
   youtube: '',
   x: '',

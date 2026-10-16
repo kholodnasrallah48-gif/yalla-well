@@ -41,6 +41,8 @@ const ICON_PATHS = {
   instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="0.6" fill="currentColor"/>',
   tiktok: '<path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.5 2.6 2.4 4.5 5 4.8"/>',
   facebook: '<path d="M14 21v-8h3l.5-3.5H14V7.5c0-1 .4-1.8 1.8-1.8h1.8V2.6c-.4 0-1.5-.1-2.7-.1-2.7 0-4.4 1.6-4.4 4.6v2.4H7.5V13h3v8"/>',
+  linkedin: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 10.5V16M8 7.6v.1M11.5 16v-5.5M11.5 13c0-1.6 1-2.6 2.4-2.6s2.1 1 2.1 2.6V16"/>',
+  whatsapp: '<path d="M4 20l1.3-3.9A8 8 0 1 1 8 18.8z"/><path d="M9.2 8.6c-.3 1.6.6 3.5 2 4.8s3 2 4.3 1.6l.6-1.4-1.8-.9-.8.9c-1-.4-2-1.4-2.4-2.4l.9-.8-.9-1.8z"/>',
   youtube: '<rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z"/>',
   x: '<path d="M4 4l16 16M20 4L4 20"/>',
 };
@@ -61,7 +63,7 @@ export function storeButtons(ctx) {
   </div>`;
 }
 
-const SOCIAL_NAMES = { instagram: ['انستجرام', 'Instagram'], tiktok: ['تيك توك', 'TikTok'], facebook: ['فيسبوك', 'Facebook'], youtube: ['يوتيوب', 'YouTube'], x: ['إكس', 'X'] };
+const SOCIAL_NAMES = { instagram: ['انستجرام', 'Instagram'], tiktok: ['تيك توك', 'TikTok'], linkedin: ['لينكد إن', 'LinkedIn'], whatsapp: ['قناة الواتساب', 'WhatsApp channel'], facebook: ['فيسبوك', 'Facebook'], youtube: ['يوتيوب', 'YouTube'], x: ['إكس', 'X'] };
 
 /** Social accounts that have a link; empty when none is set yet. */
 export function socialLinks(ctx) {

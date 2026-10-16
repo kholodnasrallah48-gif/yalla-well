@@ -55,6 +55,70 @@
     });
   }
 
+
+  // ---------- waitlist: send to our Google Sheet, then on to the WhatsApp channel ----------
+  const join = document.getElementById('join-form');
+  if (join) {
+    const en = doc.lang === 'en';
+    const note = document.getElementById('join-note');
+    const params = new URLSearchParams(location.search);
+    join.addEventListener('change', (e) => {
+      e.target.setAttribute('aria-invalid', 'false');
+      const set = e.target.closest('fieldset'); if (set) set.setAttribute('aria-invalid', 'false');
+    });
+    join.addEventListener('input', (e) => e.target.setAttribute('aria-invalid', 'false'));
+    join.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = join.dataset.endpoint;
+      if (!url) return;
+      let bad = null;
+      const mark = (el, ok) => { el.setAttribute('aria-invalid', ok ? 'false' : 'true'); if (!ok && !bad) bad = el; };
+      const f = join.elements;
+      mark(f.name, !!f.name.value.trim());
+      mark(f.email, /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.value.trim()));
+      const dev = join.querySelector('input[name="device"]:checked');
+      const devSet = join.querySelector('input[name="device"]').closest('fieldset');
+      devSet.setAttribute('aria-invalid', dev ? 'false' : 'true'); if (!dev && !bad) bad = join.querySelector('input[name="device"]');
+      mark(f.country, !!f.country.value);
+      mark(f.agree, f.agree.checked);
+      if (bad) {
+        bad.focus();
+        note.textContent = en ? 'Please fill in your name, a valid email, your phone and country, and tick the agreement.' : 'محتاجين الاسم، وإيميل صحيح، ونوع الموبايل، والبلد، والموافقة.';
+        return;
+      }
+      if (f.website.value) return; // a bot filled the hidden field
+      const body = new URLSearchParams({
+        name: f.name.value.trim(), email: f.email.value.trim(), device: dev.value, country: f.country.value,
+        goal: [...join.querySelectorAll('input[name="goal"]:checked')].map((c) => c.value).join(', '),
+        lang: join.dataset.lang, src: params.get('src') || params.get('utm_source') || document.referrer.replace(/^https?:\/\//, '').split('/')[0] || 'direct',
+      });
+      const btn = join.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      note.textContent = en ? 'Sending…' : 'بنسجل بياناتك…';
+      try {
+        // Apps Script answers with a redirect the browser can't read across sites; a network error still throws.
+        await fetch(url, { method: 'POST', mode: 'no-cors', body });
+      } catch (err) {
+        btn.disabled = false;
+        note.textContent = en ? 'That didn\'t go through. Please check the internet and try again.' : 'التسجيل موصلش. ممكن نجرب تاني بعد التأكد من النت.';
+        return;
+      }
+      const done = document.getElementById('join-done');
+      join.hidden = true; done.hidden = false; done.focus();
+      const go = join.dataset.channel;
+      if (go) {
+        let n = 5;
+        const count = document.getElementById('join-count');
+        const tick = () => {
+          count.textContent = en ? `Opening the channel in ${n}…` : `القناة هتفتح بعد ${n} ثواني…`;
+          if (n-- <= 0) { location.href = go; return; }
+          setTimeout(tick, 1000);
+        };
+        tick();
+      }
+    });
+  }
+
   // ---------- jump bar: mark the section in view ----------
   const jump = document.querySelector('.jump');
   if (jump && 'IntersectionObserver' in window) {

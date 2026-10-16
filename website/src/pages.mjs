@@ -3,7 +3,7 @@
 // no formal fusha), gender neutral ("we", the app or nouns as the subject, no imperatives), no tashkeel. Use "دايت",
 // never "رجيم". No disease or medicine names outside the "try it" examples.
 import { SOCIAL_NAMES, champ, contact, hasSocial, icon, socialLinks, storeButtons } from './layout.mjs';
-import { SOCIAL, WHATSAPP_CHANNEL } from './config.mjs';
+import { SOCIAL, WAITLIST_URL, WHATSAPP_CHANNEL } from './config.mjs';
 
 // ---------- small pieces ----------
 
@@ -481,7 +481,8 @@ const download = {
   <div class="wrap narrow center reveal">
     <h2 class="h2">${L('التطبيق جاي قريب.', 'Want to know when it launches?')}</h2>
     <p class="lead">${L('أول خبر عن نزول التطبيق هيكون على قناة الواتساب والسوشيال ميديا.', "The first news of the launch goes out on our WhatsApp channel and social media.")}</p>
-    ${WHATSAPP_CHANNEL ? `<p><a class="btn btn-primary" href="${WHATSAPP_CHANNEL}" rel="noopener">${icon('whatsapp', 20)} ${L('قناة يلا ويل على واتساب', 'Yalla Well on WhatsApp')}</a></p>` : ''}
+    ${WAITLIST_URL ? `<p><a class="btn btn-primary" href="join.html">${L('التسجيل في قائمة الانتظار', 'Join the waitlist')}</a></p>` : ''}
+    ${WHATSAPP_CHANNEL ? `<p><a class="btn ${WAITLIST_URL ? 'btn-ghost' : 'btn-primary'}" href="${WHATSAPP_CHANNEL}" rel="noopener">${icon('whatsapp', 20)} ${L('قناة يلا ويل على واتساب', 'Yalla Well on WhatsApp')}</a></p>` : ''}
     ${hasSocial() ? `<div class="socials socials-lg">${socialLinks(ctx)}</div>` : ''}
     <p><a class="link-arrow" href="contact.html">${L('صفحة التواصل', 'Or contact us')} ${icon('arrow', 18)}</a></p>
   </div>
@@ -613,6 +614,7 @@ const privacy = {
       ]]],
       [L('التنبيهات', 'Reminders'), [L('التنبيهات بتتجهز على الموبايل نفسه، ومش بتعدي على أي سيرفر.', 'Reminders are scheduled on the phone itself and do not pass through a server.')]],
       [L('الموقع ده', 'This website'), [L('الموقع من غير إعلانات ولا ملفات تتبع ولا أدوات تحليل، والخطوط والصور والفيديو كلها متخزنة عندنا.', 'This website has no ads, tracking cookies or analytics, and serves its own fonts, images and video.')]],
+      [L('قائمة الانتظار', 'The waitlist'), [L('اللي بيسجل في قائمة الانتظار بيبعت الاسم والإيميل ونوع الموبايل والبلد واللي يهمه. البيانات دي بتتحفظ في جدول خاص بينا على Google Sheets، وبنستخدمها بس علشان نبلغ بنزول التطبيق ونبعت نسخة التجربة. مش بتتباع ولا بتتشارك، ولمسحها يكفي إيميل لـ <a href="mailto:yallawell@gmail.com" dir="ltr">yallawell@gmail.com</a>.', 'Joining the waitlist sends your name, email, phone type, country and what matters to you. We keep this in a private Google Sheet and use it only to tell you about the launch and send the test version. It is never sold or shared; to have it deleted, email <a href="mailto:yallawell@gmail.com" dir="ltr">yallawell@gmail.com</a>.')]],
       [L('مسح البيانات', 'Deleting your data'), [L('في "ملفي" فيه زرار بيمسح كل البيانات. ومسح التطبيق، أو مسح بيانات الموقع من المتصفح، بيمسحها كمان. وإحنا مش محتفظين بأي نسخة، فمش هينفع ترجع.', 'In "Me" there is a button that deletes all your data. Uninstalling the app or clearing the site data in your browser deletes it too. We hold no copy, so it cannot be restored.')]],
       [L('التغييرات والتواصل', 'Changes and contact'), [L('لو الصفحة دي اتغيرت، التاريخ اللي فوق هيتغير. ولأي سؤال، <a href="contact.html">صفحة التواصل</a>.', 'If this page changes, the date above will change. For any question, see the <a href="contact.html">contact page</a>.')]],
     ]);
@@ -635,4 +637,48 @@ const terms = {
   },
 };
 
-export const PAGES = [home, features, download, faq, about, contactPage, privacy, terms];
+
+const COUNTRIES = [
+  ['مصر', 'Egypt'], ['السعودية', 'Saudi Arabia'], ['الإمارات', 'UAE'], ['الكويت', 'Kuwait'], ['قطر', 'Qatar'], ['البحرين', 'Bahrain'],
+  ['عمان', 'Oman'], ['الأردن', 'Jordan'], ['فلسطين', 'Palestine'], ['لبنان', 'Lebanon'], ['سوريا', 'Syria'], ['العراق', 'Iraq'],
+  ['المغرب', 'Morocco'], ['الجزائر', 'Algeria'], ['تونس', 'Tunisia'], ['ليبيا', 'Libya'], ['السودان', 'Sudan'], ['اليمن', 'Yemen'],
+  ['بلد تاني', 'Another country'],
+];
+
+const join = {
+  file: 'join.html',
+  title: (ctx) => ctx.L('قائمة الانتظار', 'Waitlist'),
+  desc: (ctx) => ctx.L('التسجيل في قائمة انتظار يلا ويل: أول ناس تعرف بنزول التطبيق وتجربه.', 'Join the Yalla Well waitlist: be among the first to hear when the app launches and to try it.'),
+  body(ctx) {
+    const { L } = ctx;
+    const radio = (name, value, label) => `<label class="pick"><input type="radio" name="${name}" value="${value}" required><span>${label}</span></label>`;
+    const check = (name, value, label) => `<label class="pick"><input type="checkbox" name="${name}" value="${value}"><span>${label}</span></label>`;
+    const goals = [['lose', L('نزول وزن', 'Lose weight')], ['muscle', L('عضلات وقوة', 'Muscle and strength')], ['fit', L('لياقة وصحة عامة', 'Fitness and general health')], ['health', L('متابعة ظروف صحية', 'Follow a health condition')], ['food', L('أكل منظم', 'Organised eating')]];
+    return `${pageHero(ctx, L('قائمة الانتظار', 'Waitlist'), L('أول ناس تجرب يلا ويل.', 'Be first to try Yalla Well.'), L('بعد التسجيل نبعتلك أول ما التطبيق ينزل، واللي موبايلهم أندرويد ممكن يجربوا نسخة التجربة قبل الكل.', "Leave your details and we'll tell you the moment the app is out. Android users can try the test version before everyone else."))}
+<section class="section tight">
+  <div class="wrap narrow">
+    <form class="form join-form reveal" id="join-form" data-endpoint="${WAITLIST_URL}" data-channel="${WHATSAPP_CHANNEL}" data-lang="${ctx.lang}" novalidate>
+      <div class="field"><label for="j-name">${L('الاسم', 'Name')}</label><input id="j-name" name="name" autocomplete="name" maxlength="80" required></div>
+      <div class="field"><label for="j-email">${L('الإيميل', 'Email')}</label><input id="j-email" name="email" type="email" autocomplete="email" dir="ltr" maxlength="120" required>
+        <p class="small muted hint">${L('لو الموبايل أندرويد، يا ريت إيميل جيميل علشان نسخة التجربة على جوجل بلاي بتشتغل بيه.', 'On Android, a Gmail address please: the Google Play test version works with it.')}</p></div>
+      <fieldset class="field"><legend>${L('نوع الموبايل', 'Your phone')}</legend><div class="picks">${radio('device', 'android', L('أندرويد', 'Android'))}${radio('device', 'iphone', L('آيفون', 'iPhone'))}</div></fieldset>
+      <div class="field"><label for="j-country">${L('البلد', 'Country')}</label><select id="j-country" name="country" required><option value="">${L('اختيار البلد', 'Choose a country')}</option>${COUNTRIES.map(([ar, en]) => `<option value="${en}">${L(ar, en)}</option>`).join('')}</select></div>
+      <fieldset class="field"><legend>${L('إيه أكتر حاجة تهمك؟', 'What matters most to you?')} <span class="muted">${L('(اختياري)', '(optional)')}</span></legend><div class="picks">${goals.map(([v, t]) => check('goal', v, t)).join('')}</div></fieldset>
+      <label class="agree"><input type="checkbox" name="agree" required><span>${L('أوافق إن يلا ويل يبعتلي على الإيميل ده بخصوص نزول التطبيق بس.', 'I agree that Yalla Well may email me about the app launch only.')}</span></label>
+      <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+      <button class="btn btn-primary" type="submit"${WAITLIST_URL ? '' : ' disabled'}>${L('التسجيل', 'Join the waitlist')}</button>
+      <p class="small muted" id="join-note" aria-live="polite">${L('بياناتك بتتحفظ عندنا بس، ومش بتتباع ولا بتتشارك مع حد. التفاصيل في <a href="privacy.html">الخصوصية</a>.', 'Your details stay with us and are never sold or shared. Details in <a href="privacy.html">Privacy</a>.')}</p>
+    </form>
+    <div class="form join-done" id="join-done" hidden tabindex="-1">
+      <span class="done-mark" aria-hidden="true">${icon('heart', 30)}</span>
+      <h2 class="h2">${L('تم التسجيل.', "You're on the list.")}</h2>
+      <p class="lead">${L('آخر خطوة: قناة يلا ويل على واتساب. أخبار نزول التطبيق ونسخة التجربة بتنزل هناك الأول.', 'One last step: the Yalla Well WhatsApp channel. Launch news and the test version go there first.')}</p>
+      <p><a class="btn btn-primary" id="join-go" href="${WHATSAPP_CHANNEL}" rel="noopener">${icon('whatsapp', 20)} ${L('متابعة القناة', 'Follow the channel')}</a></p>
+      <p class="small muted" id="join-count"></p>
+    </div>
+  </div>
+</section>`;
+  },
+};
+
+export const PAGES = [home, features, download, faq, about, contactPage, privacy, terms, join];

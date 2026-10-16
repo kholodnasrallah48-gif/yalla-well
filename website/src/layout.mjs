@@ -1,6 +1,6 @@
 // The frame every page shares (head, header, footer) and small pieces several pages use: the champ, store buttons,
 // social links and icons.
-import { APP_STORE, EMAIL, GOOGLE_PLAY, SITE_URL, SOCIAL, WHATSAPP } from './config.mjs';
+import { APP_STORE, EMAIL, GOOGLE_PLAY, SITE_URL, SOCIAL, WAITLIST_URL, WHATSAPP } from './config.mjs';
 
 /** The champ from the logo. `pose`: cheer (arms up), eat, lift or point. */
 export function champ(pose = 'cheer', { size = 40, ink = 'currentColor', head = 'var(--accent)', cls = '' } = {}) {
@@ -97,7 +97,7 @@ function header(ctx, page) {
     </nav>
     <div class="hdr-end">
       <a class="lang" href="${ctx.other}" hreflang="${ctx.en ? 'ar' : 'en'}" lang="${ctx.en ? 'ar' : 'en'}">${ctx.en ? 'عربي' : 'EN'}</a>
-      <a class="btn btn-primary btn-sm" href="download.html">${L('التحميل', 'Download')}</a>
+      ${WAITLIST_URL ? `<a class="btn btn-primary btn-sm" href="join.html">${L('قائمة الانتظار', 'Join waitlist')}</a>` : `<a class="btn btn-primary btn-sm" href="download.html">${L('التحميل', 'Download')}</a>`}
       <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav" aria-label="${L('فتح القائمة', 'Open menu')}" data-open="${L('فتح القائمة', 'Open menu')}" data-close="${L('إغلاق القائمة', 'Close menu')}">${icon('menu', 24)}</button>
     </div>
   </div>
@@ -116,7 +116,7 @@ function footer(ctx) {
         ${social}
       </div>
       <nav class="ftr-cols" aria-label="${L('روابط آخر الصفحة', 'Footer links')}">
-        <div><h2>${L('التطبيق', 'The app')}</h2><a href="features.html">${L('المميزات', 'Features')}</a><a href="download.html">${L('التحميل', 'Download')}</a></div>
+        <div><h2>${L('التطبيق', 'The app')}</h2><a href="features.html">${L('المميزات', 'Features')}</a><a href="download.html">${L('التحميل', 'Download')}</a>${WAITLIST_URL ? `<a href="join.html">${L('قائمة الانتظار', 'Waitlist')}</a>` : ''}</div>
         <div><h2>${L('مساعدة', 'Help')}</h2><a href="faq.html">${L('الأسئلة الشائعة', 'FAQ')}</a><a href="contact.html">${L('التواصل', 'Contact us')}</a></div>
         <div><h2>${L('يلا ويل', 'Yalla Well')}</h2><a href="about.html">${L('عن يلا ويل', 'About')}</a><a href="privacy.html">${L('الخصوصية', 'Privacy')}</a><a href="terms.html">${L('الشروط', 'Terms')}</a></div>
       </nav>

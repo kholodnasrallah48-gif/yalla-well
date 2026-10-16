@@ -8,5 +8,7 @@ jobs:
     steps:
       - run: |
           U='https://script.google.com/macros/s/AKfycbwTLo8YyjJwJ4K1YNhyq6MJdENIi64AdCElDANWHP-cm2PZ1cqTC2pqqZ1JP4ySiw--bg/exec'
-          echo "== GET (retry)"; curl -sS -L "$U" | head -c 1500; echo
-          echo "== POST"; curl -sS -L -X POST --data-urlencode 'name=Test (Claude check)' --data-urlencode 'email=check@yallawellfit.com' -d 'device=android&country=Egypt&lang=ar&src=claude-check' "$U" -D - | head -c 3000; echo
+          echo "== POST (3rd try)"
+          curl -sS -L -o body.html -w 'status %{http_code} final %{url_effective}\n' -X POST --data-urlencode 'name=Test (Claude check)' --data-urlencode 'email=check@yallawellfit.com' -d 'device=android&country=Egypt&lang=ar&src=claude-check' "$U"
+          grep -o '<title>[^<]*</title>' body.html || true
+          sed -e 's/<[^>]*>/ /g' body.html | tr -s ' \n' | grep -v '^\s*$' | tail -c 600

@@ -8,5 +8,5 @@ jobs:
     steps:
       - run: |
           U='https://script.google.com/macros/s/AKfycbwTLo8YyjJwJ4K1YNhyq6MJdENIi64AdCElDANWHP-cm2PZ1cqTC2pqqZ1JP4ySiw--bg/exec'
-          echo "== GET"; curl -sS -L "$U" | head -c 1500; echo
+          echo "== GET (retry)"; curl -sS -L "$U" | head -c 1500; echo
           echo "== POST"; curl -sS -L -X POST --data-urlencode 'name=Test (Claude check)' --data-urlencode 'email=check@yallawellfit.com' -d 'device=android&country=Egypt&lang=ar&src=claude-check' "$U" -D - | head -c 3000; echo

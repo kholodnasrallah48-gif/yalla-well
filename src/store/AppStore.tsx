@@ -8,6 +8,7 @@ import { blankDay, dayKey, type DayLog } from '../lib/day.ts';
 import type { Profile } from '../lib/plan.ts';
 import { translateMissing, withTr } from '../lib/translate.ts';
 import { addToHistory, type LiftLog } from '../lib/progress.ts';
+import { accountsOn, signOut } from '../lib/account.ts';
 
 const K = { profile: 'yallawell:profile', custom: 'yallawell:custom', lifts: 'yallawell:lifts', hist: 'yallawell:lifthist', day: (k: string) => 'yallawell:day:' + k };
 
@@ -130,6 +131,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setDay((prev) => { const next = fn(prev); writeJSON(K.day(todayRef.current), next); return next; });
   }, []);
   const resetAll = useCallback(async () => {
+    // Starting over also signs this phone out (the account keeps its saved copy), so it opens on the sign-in screen.
+    if (accountsOn) await signOut().catch(() => {});
     const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('yallawell:'));
     await AsyncStorage.multiRemove(keys);
     setProfile(null); setCustom([]); setLifts({}); setLiftHist({}); setDay(blankDay());

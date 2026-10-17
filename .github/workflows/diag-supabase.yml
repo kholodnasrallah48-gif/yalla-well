@@ -10,7 +10,7 @@ jobs:
           U: ${{ secrets.SUPABASE_URL }}
           K: ${{ secrets.SUPABASE_KEY }}
         run: |
-          U=$(echo "$U" | tr -d ' \n\r' | sed 's:/*$::'); K=$(echo "$K" | tr -d ' \n\r')
+          U=$(echo "$U" | tr -d ' \n\r' | sed 's:/*$::'); K=$(echo "$K" | tr -d ' \n\r' | sed 's:[.]*$::')
           echo "url host: $(echo $U | sed 's#https://##')  key length: ${#K}"
           echo "--- auth settings"; curl -s "$U/auth/v1/settings" -H "apikey: $K" | jq -c '{email: .external.email, disable_signup, mailer_autoconfirm}'
           echo "--- backups table (expect [] )"; curl -s -w " HTTP %{http_code}\n" "$U/rest/v1/backups?select=user_id" -H "apikey: $K" -H "Authorization: Bearer $K"

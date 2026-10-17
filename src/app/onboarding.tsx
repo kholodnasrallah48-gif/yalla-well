@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,7 +24,7 @@ import { SignIn } from '../components/Account.tsx';
 import { useAccount } from '../lib/account.ts';
 import { fonts, useColors } from '../theme.ts';
 
-const STEPS = ['lang', 'account', 'basics', 'women', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'food', 'pain', 'done'] as const;
+const STEPS = ['account', 'lang', 'basics', 'women', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'food', 'pain', 'done'] as const;
 type Step = (typeof STEPS)[number];
 /** Changing only the training plan (from Me): the three plan questions, then save. */
 const PLAN_STEPS: Step[] = ['has', 'plan', 'week'];
@@ -100,8 +100,18 @@ export default function Onboarding() {
   };
   // The condition-details step only shows when a condition was picked.
   // The women's questions only show for women.
-  // The sign-in step only shows on first launch, when accounts are set up and nobody is signed in yet.
-  const skipTo = (i: number, dir: 1 | -1) => ((flow[i] === 'account' && (!acct.on || !!acct.email || !!profile)) || (flow[i] === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length) || (flow[i] === 'women' && d.sex !== 'f') ? i + dir : i);
+  // Sign-in comes first on first launch (when accounts are set up), with the language pick on the same screen, so
+  // the separate language step only shows when accounts are off.
+  const hidden = (s: Step) => (s === 'account' && (!acct.on || !!acct.email || !!profile)) || (s === 'lang' && acct.on)
+    || (s === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length) || (s === 'women' && d.sex !== 'f');
+  const skipTo = (i: number, dir: 1 | -1): number => {
+    let j = i;
+    while (j >= 0 && j < flow.length && hidden(flow[j])) j += dir;
+    return j < 0 ? skipTo(0, 1) : Math.min(j, flow.length - 1);
+  };
+  const start = Math.max(first, skipTo(0, 1));
+  // Signing in (or the saved sign-in being read) moves past the sign-in screen.
+  useEffect(() => { if (acct.ready && hidden(flow[step])) setStep(skipTo(step, 1)); });
   // The draft as a profile, for the week preview.
   const draft = { name: '', ...d, schedule: d.schedule ?? 'fb3' } as Profile;
   const pickSchedule = (k: ScheduleId) => set({ schedule: k, places: undefined, splits: undefined });
@@ -138,10 +148,11 @@ export default function Onboarding() {
       </>}
 
       {st === 'account' && <>
-        <View style={{ alignItems: 'center', gap: 6, paddingTop: 24, paddingBottom: 8 }}>
+        <Segmented items={[['ar', 'العربية'], ['en', 'English']]} value={getLang()} onChange={(l) => setLang(l)} />
+        <View style={{ alignItems: 'center', gap: 6, paddingTop: 16, paddingBottom: 8 }}>
           <Mascot pose="point" size={88} />
-          <T kind="h1" style={{ textAlign: 'center' }}>{L('الدخول بالإيميل', 'Sign in with email')}</T>
-          <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>{L('بياناتك تفضل محفوظة في حسابك، ولو غيرت الموبايل ترجع زي ما هي.', 'Your data stays saved in your account and comes back if you change phones.')}</T>
+          <T kind="h1" style={{ textAlign: 'center' }}>{L('أهلا في يلا ويل', 'Welcome to Yalla Well')}</T>
+          <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>{L('الدخول بالإيميل وكود بيوصل عليه. بياناتك بتتحفظ في حسابك، ولو الموبايل اتغير ترجع زي ما هي.', 'Sign in with your email and a code we send to it. Your data is saved to your account and comes back if you change phones.')}</T>
         </View>
         <SignIn hasLocal={false} onDone={() => { setStep(skipTo(step + 1, 1)); }} />
       </>}
@@ -452,12 +463,12 @@ export default function Onboarding() {
       })()}
 
       {err ? <T kind="small" color={c.bad}>{err}</T> : null}
-      <View style={[styles.row, { gap: 10 }]}>
-        {step > first
+      {st === 'account' ? null : <View style={[styles.row, { gap: 10 }]}>
+        {step > start
           ? <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => { setErr(''); setStep(skipTo(step - 1, -1)); }} />
           : profile ? <Btn kind="outline" title={L('إلغاء', 'Cancel')} onPress={() => router.back()} /> : null}
-        <Btn kind={st === 'account' ? 'outline' : 'primary'} title={st === 'account' ? L('من غير حساب دلوقتي', 'Skip for now') : st === 'done' ? L('يلا نبدأ', "Let's go") : flow !== STEPS && step === flow.length - 1 ? L('حفظ', 'Save') : L('التالي', 'Next')} onPress={next} sound={st === 'done' ? 'whistle' : 'swoosh'} style={{ flex: 1 }} />
-      </View>
+        <Btn title={st === 'done' ? L('يلا نبدأ', "Let's go") : flow !== STEPS && step === flow.length - 1 ? L('حفظ', 'Save') : L('التالي', 'Next')} onPress={next} sound={st === 'done' ? 'whistle' : 'swoosh'} style={{ flex: 1 }} />
+      </View>}
     </ScrollView></Bg>
   );
 }

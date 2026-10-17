@@ -9,8 +9,9 @@ import { AppState, Platform } from 'react-native';
 
 import { backupKey, backupSig, hasProfile, makeBackup, type Backup } from './backup.ts';
 
-const SB_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+// Trimmed: a value pasted into the GitHub secret can carry a stray space, line break or full stop.
+const SB_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
+const ANON = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim().replace(/[.]+$/, '');
 export const accountsOn = !!(SB_URL && ANON);
 
 let client: SupabaseClient | null = null;

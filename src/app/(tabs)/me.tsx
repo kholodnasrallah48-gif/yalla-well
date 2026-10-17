@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
+import { AccountCard } from '../../components/Account.tsx';
 import { PhotoPicker } from '../../components/Photo.tsx';
 import { EquipPicker, MacroPicker, usesGym } from '../../components/PlanSettings.tsx';
 import { TourTarget, startTour } from '../../components/TourTarget.tsx';
@@ -12,6 +13,7 @@ import { ALLERGEN_BY_ID } from '../../lib/allergy.ts';
 import { CONDITIONS, PAINS, SCHEDULES } from '../../lib/data.ts';
 import { doseText, medIds, medName, medPlan } from '../../lib/health.ts';
 import { fmt } from '../../lib/day.ts';
+import { useAccount } from '../../lib/account.ts';
 import { L, getLang, num, setLang, toNum, tx } from '../../lib/i18n.ts';
 import { genderFor, medical, targets } from '../../lib/plan.ts';
 import { ux } from '../../lib/translate.ts';
@@ -24,6 +26,7 @@ const GOALS_EN = { lose: 'Lose weight', maintain: 'Maintain & tone', gain: 'Buil
 
 export default function Me() {
   const { profile, resetAll, saveProfile } = useStore();
+  const acct = useAccount();
   const c = useColors();
   const [kg, setKg] = useState('');
   const [testMsg, setTestMsg] = useState('');
@@ -162,7 +165,9 @@ export default function Me() {
         {testMsg ? <T kind="small" color={c.petrol}>{testMsg}</T> : null}
       </Card>
 
-      <T kind="small" style={{ textAlign: 'center' }}>{L('بياناتك محفوظة على الموبايل ده بس.\nالتطبيق ده للمساعدة ومش بديل عن دكتورك.', "Your data is saved on this phone only.\nThis app is here to help and doesn't replace your doctor.")}</T>
+      <AccountCard g={g} />
+
+      <T kind="small" style={{ textAlign: 'center' }}>{acct.email ? L('التطبيق ده للمساعدة ومش بديل عن دكتورك.', "This app is here to help and doesn't replace your doctor.") : L('بياناتك محفوظة على الموبايل ده بس.\nالتطبيق ده للمساعدة ومش بديل عن دكتورك.', "Your data is saved on this phone only.\nThis app is here to help and doesn't replace your doctor.")}</T>
       {confirm ? (
         <Card>
           <T kind="body">{L(`${g('متأكد', 'متأكدة')}؟ هتتمسح كل بياناتك وأكلك.`, 'Are you sure? All your data and food logs will be deleted.')}</T>

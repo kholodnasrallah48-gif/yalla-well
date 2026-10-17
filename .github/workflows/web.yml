@@ -25,6 +25,9 @@ jobs:
       - run: npx expo export -p web --output-dir dist/app
         env:
           EXPO_PUBLIC_USDA_KEY: ${{ secrets.USDA_KEY }}
+          # Sign-in (optional): the project URL and its public key; without them the app has no account parts.
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_KEY }}
       # Pages skips folders starting with "_" (like _expo) unless Jekyll is off; 404.html serves app routes and
       # sends old links (/site/..., app routes without /app) to their new place.
       - run: node scripts/pages-404.mjs dist && echo yallawellfit.com > dist/CNAME

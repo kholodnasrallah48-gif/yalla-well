@@ -11,6 +11,7 @@ import { I18nManager, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Reminders } from '../components/Reminders.tsx';
+import { useAutoSave } from '../lib/account.ts';
 import { Splash } from '../components/Splash.tsx';
 import { loadLang, onLangChange, type Lang } from '../lib/i18n.ts';
 import { AppStoreProvider, useStore } from '../store/AppStore.tsx';
@@ -35,6 +36,7 @@ function Gate() {
   const c = useColors();
   const { isDark } = useTheme();
   const { ready } = useStore();
+  useAutoSave();
   const [intro, setIntro] = useState(true);
   // null until the saved language is read; changing it re-renders every screen in the new language and direction.
   const [lang, setLangState] = useState<Lang | null>(null);

@@ -20,9 +20,11 @@ import { play } from '../lib/sound.ts';
 import { DietNote, EquipPicker, OwnDietFields } from '../components/PlanSettings.tsx';
 import { ALLERGENS } from '../lib/allergy.ts';
 import { useStore } from '../store/AppStore.tsx';
+import { SignIn } from '../components/Account.tsx';
+import { useAccount } from '../lib/account.ts';
 import { fonts, useColors } from '../theme.ts';
 
-const STEPS = ['lang', 'basics', 'women', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'food', 'pain', 'done'] as const;
+const STEPS = ['lang', 'account', 'basics', 'women', 'life', 'has', 'plan', 'week', 'cond', 'condx', 'meds', 'food', 'pain', 'done'] as const;
 type Step = (typeof STEPS)[number];
 /** Changing only the training plan (from Me): the three plan questions, then save. */
 const PLAN_STEPS: Step[] = ['has', 'plan', 'week'];
@@ -35,7 +37,8 @@ export default function Onboarding() {
   const { part } = useLocalSearchParams<{ part?: string }>();
   const flow: readonly Step[] = profile && part === 'plan' ? PLAN_STEPS : STEPS;
   // The language pick only shows the first time; editing starts at the details.
-  const first = profile && flow === STEPS ? 1 : 0;
+  const first = profile && flow === STEPS ? STEPS.indexOf('basics') : 0;
+  const acct = useAccount();
   const [more, setMore] = useState(false);
   const [step, setStep] = useState(first);
   const [d, setD] = useState<Draft>(() => profile ? migrateMeds({ ...profile }) : { sex: 'f', conditions: [], meds: [], pains: [], level: 'beg' });
@@ -97,7 +100,8 @@ export default function Onboarding() {
   };
   // The condition-details step only shows when a condition was picked.
   // The women's questions only show for women.
-  const skipTo = (i: number, dir: 1 | -1) => ((flow[i] === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length) || (flow[i] === 'women' && d.sex !== 'f') ? i + dir : i);
+  // The sign-in step only shows on first launch, when accounts are set up and nobody is signed in yet.
+  const skipTo = (i: number, dir: 1 | -1) => ((flow[i] === 'account' && (!acct.on || !!acct.email || !!profile)) || (flow[i] === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length) || (flow[i] === 'women' && d.sex !== 'f') ? i + dir : i);
   // The draft as a profile, for the week preview.
   const draft = { name: '', ...d, schedule: d.schedule ?? 'fb3' } as Profile;
   const pickSchedule = (k: ScheduleId) => set({ schedule: k, places: undefined, splits: undefined });
@@ -131,6 +135,15 @@ export default function Onboarding() {
         <Choice title="العربية" sub="التطبيق كله بالعربي" on={getLang() === 'ar'} onPress={() => setLang('ar')} />
         <Choice title="English" sub="The whole app in English" on={getLang() === 'en'} onPress={() => setLang('en')} />
         <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L('تقدر تغيرها في أي وقت من الصفحة الرئيسية أو ملفي.', 'You can change it any time from Home or Me.')}</T>
+      </>}
+
+      {st === 'account' && <>
+        <View style={{ alignItems: 'center', gap: 6, paddingTop: 24, paddingBottom: 8 }}>
+          <Mascot pose="point" size={88} />
+          <T kind="h1" style={{ textAlign: 'center' }}>{L('الدخول بالإيميل', 'Sign in with email')}</T>
+          <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>{L('بياناتك تفضل محفوظة في حسابك، ولو غيرت الموبايل ترجع زي ما هي.', 'Your data stays saved in your account and comes back if you change phones.')}</T>
+        </View>
+        <SignIn hasLocal={false} onDone={() => { setStep(skipTo(step + 1, 1)); }} />
       </>}
 
       {st === 'basics' && <>
@@ -443,7 +456,7 @@ export default function Onboarding() {
         {step > first
           ? <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => { setErr(''); setStep(skipTo(step - 1, -1)); }} />
           : profile ? <Btn kind="outline" title={L('إلغاء', 'Cancel')} onPress={() => router.back()} /> : null}
-        <Btn title={st === 'done' ? L('يلا نبدأ', "Let's go") : flow !== STEPS && step === flow.length - 1 ? L('حفظ', 'Save') : L('التالي', 'Next')} onPress={next} sound={st === 'done' ? 'whistle' : 'swoosh'} style={{ flex: 1 }} />
+        <Btn kind={st === 'account' ? 'outline' : 'primary'} title={st === 'account' ? L('من غير حساب دلوقتي', 'Skip for now') : st === 'done' ? L('يلا نبدأ', "Let's go") : flow !== STEPS && step === flow.length - 1 ? L('حفظ', 'Save') : L('التالي', 'Next')} onPress={next} sound={st === 'done' ? 'whistle' : 'swoosh'} style={{ flex: 1 }} />
       </View>
     </ScrollView></Bg>
   );

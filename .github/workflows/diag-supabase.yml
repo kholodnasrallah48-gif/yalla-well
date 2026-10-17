@@ -1,0 +1,17 @@
+name: diag supabase
+on:
+  push:
+    branches: [diag-waitlist]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          U: ${{ secrets.SUPABASE_URL }}
+          K: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          U=$(echo "$U" | tr -d ' \n\r' | sed 's:/*$::'); K=$(echo "$K" | tr -d ' \n\r')
+          echo "url host: $(echo $U | sed 's#https://##')  key length: ${#K}"
+          echo "--- auth settings"; curl -s "$U/auth/v1/settings" -H "apikey: $K" | jq -c '{email: .external.email, disable_signup, mailer_autoconfirm}'
+          echo "--- backups table (expect [] )"; curl -s -w " HTTP %{http_code}\n" "$U/rest/v1/backups?select=user_id" -H "apikey: $K" -H "Authorization: Bearer $K"
+          echo "--- delete_me as anon (expect 401/permission denied, not 404)"; curl -s -w " HTTP %{http_code}\n" -X POST "$U/rest/v1/rpc/delete_me" -H "apikey: $K" -H "Authorization: Bearer $K" -H "Content-Type: application/json" -d '{}'

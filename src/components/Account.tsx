@@ -1,6 +1,6 @@
 // Sign in with an email and a code: the email step, the code step, then (when the account already has data and this
 // phone does too) which data to keep. Used on first launch and from Me.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { applySaved, checkCode, cleanEmail, deleteAccount, okEmail, readSaved, saveNow, sendCode, signOut, useAccount, type AuthErr } from '../lib/account.ts';
@@ -135,5 +135,30 @@ export function AccountCard({ g }: { g: (m: string, f: string) => string }) {
         </View>
       ) : <Btn kind="text" title={L('مسح الحساب', 'Delete account')} onPress={() => setSure(true)} />}
     </Card>
+  );
+}
+
+/** First launch when this phone is already signed in but has no data yet (for example after "delete all my data"
+ * on an older version): brings back the account's saved copy if there is one, otherwise says which email is in use. */
+export function SignedInStep({ email, onDone, onSwitch }: { email: string; onDone: () => void; onSwitch: () => void }) {
+  const c = useColors();
+  const [checking, setChecking] = useState(true);
+  useEffect(() => {
+    let live = true;
+    readSaved().then((b) => {
+      if (!live) return;
+      if (hasProfile(b)) applySaved(b!);
+      else setChecking(false);
+    });
+    return () => { live = false; };
+  }, []);
+  if (checking) return <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>{L('ثواني، بنشوف حسابك...', 'One sec, checking your account...')}</T>;
+  return (
+    <View style={{ gap: 12 }}>
+      <T kind="body" style={{ textAlign: 'center' }}>{L('الحساب اللي داخل دلوقتي:', "You're signed in as:")}</T>
+      <T kind="h3" style={{ textAlign: 'center', writingDirection: 'ltr' }}>{email}</T>
+      <Btn title={L('يلا نكمل', 'Continue')} onPress={onDone} />
+      <Btn kind="text" title={L('دخول بإيميل تاني', 'Use a different email')} onPress={async () => { await signOut(); onSwitch(); }} />
+    </View>
   );
 }

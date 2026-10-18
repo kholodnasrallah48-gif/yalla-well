@@ -20,7 +20,7 @@ import { play } from '../lib/sound.ts';
 import { DietNote, EquipPicker, OwnDietFields } from '../components/PlanSettings.tsx';
 import { ALLERGENS } from '../lib/allergy.ts';
 import { useStore } from '../store/AppStore.tsx';
-import { SignIn } from '../components/Account.tsx';
+import { SignIn, SignedInStep } from '../components/Account.tsx';
 import { useAccount } from '../lib/account.ts';
 import { fonts, useColors } from '../theme.ts';
 
@@ -39,6 +39,10 @@ export default function Onboarding() {
   // The language pick only shows the first time; editing starts at the details.
   const first = profile && flow === STEPS ? STEPS.indexOf('basics') : 0;
   const acct = useAccount();
+  // Whether this screen saw the phone signed out: then the sign-in form stays up through the code step even after the
+  // sign-in lands; a phone that opens already signed in gets the short "signed in as" step instead.
+  const [wasOut, setWasOut] = useState(false);
+  useEffect(() => { if (acct.ready && acct.on && !acct.email) setWasOut(true); }, [acct.ready, acct.on, acct.email]);
   const [more, setMore] = useState(false);
   const [step, setStep] = useState(first);
   const [d, setD] = useState<Draft>(() => profile ? migrateMeds({ ...profile }) : { sex: 'f', conditions: [], meds: [], pains: [], level: 'beg' });
@@ -102,7 +106,7 @@ export default function Onboarding() {
   // The women's questions only show for women.
   // Sign-in comes first on first launch (when accounts are set up), with the language pick on the same screen, so
   // the separate language step only shows when accounts are off.
-  const hidden = (s: Step) => (s === 'account' && (!acct.on || !!acct.email || !!profile)) || (s === 'lang' && acct.on)
+  const hidden = (s: Step) => (s === 'account' && (!acct.on || !!profile)) || (s === 'lang' && acct.on)
     || (s === 'condx' && !d.conditions.length && !splitItems(d.otherCond).length) || (s === 'women' && d.sex !== 'f');
   const skipTo = (i: number, dir: 1 | -1): number => {
     let j = i;
@@ -154,7 +158,9 @@ export default function Onboarding() {
           <T kind="h1" style={{ textAlign: 'center' }}>{L('أهلا في يلا ويل', 'Welcome to Yalla Well')}</T>
           <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>{L('الدخول بالإيميل وكود بيوصل عليه. بياناتك بتتحفظ في حسابك، ولو الموبايل اتغير ترجع زي ما هي.', 'Sign in with your email and a code we send to it. Your data is saved to your account and comes back if you change phones.')}</T>
         </View>
-        <SignIn hasLocal={false} onDone={() => { setStep(skipTo(step + 1, 1)); }} />
+        {!acct.ready ? null : acct.email && !wasOut
+          ? <SignedInStep email={acct.email} onDone={() => setStep(skipTo(step + 1, 1))} onSwitch={() => setWasOut(true)} />
+          : <SignIn hasLocal={false} onDone={() => { setStep(skipTo(step + 1, 1)); }} />}
       </>}
 
       {st === 'basics' && <>

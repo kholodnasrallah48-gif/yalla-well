@@ -6,13 +6,14 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - run: |
+      - shell: bash {0}
+        run: |
           Q='[out:json][timeout:15];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,30.0444,31.2357);out center 60;'
           for U in https://overpass-api.de/api/interpreter https://overpass.kumi.systems/api/interpreter https://overpass.private.coffee/api/interpreter; do
-            echo "=== $U default UA"; curl -s -m 30 -o /tmp/o.json -w "HTTP %{http_code}\n" -X POST "$U" --data-urlencode "data=$Q"; head -c 300 /tmp/o.json; echo
-            echo "=== $U with UA"; curl -s -m 30 -o /tmp/o.json -w "HTTP %{http_code}\n" -A "YallaWell/1.0 (yallawell@gmail.com)" -X POST "$U" --data-urlencode "data=$Q"; jq '.elements|length' /tmp/o.json 2>/dev/null || head -c 300 /tmp/o.json; echo
+            echo "=== $U default UA"; curl -s -m 70 -o /tmp/o.json -w "HTTP %{http_code}\n" -X POST "$U" --data-urlencode "data=$Q"; head -c 300 /tmp/o.json; echo
+            echo "=== $U with UA"; curl -s -m 70 -o /tmp/o.json -w "HTTP %{http_code}\n" -A "YallaWell/1.0 (yallawell@gmail.com)" -X POST "$U" --data-urlencode "data=$Q"; jq '.elements|length' /tmp/o.json 2>/dev/null || head -c 300 /tmp/o.json; echo
           done
           echo "=== node fetch"; node -e '
           const q=process.argv[1];
-          for (const u of ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]) fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}}).then(async r=>console.log(u,r.status,(await r.text()).slice(0,200))).catch(e=>console.log(u,"ERR",String(e), e.cause&&String(e.cause)));' "$Q"
-          sleep 20
+          for (const u of ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]) fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded","User-Agent":"YallaWell/1.0"}}).then(async r=>console.log(u,r.status,(await r.text()).slice(0,200))).catch(e=>console.log(u,"ERR",String(e), e.cause&&String(e.cause)));' "$Q"
+          sleep 80

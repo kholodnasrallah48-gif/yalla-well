@@ -6,12 +6,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - env:
-          U: ${{ secrets.SUPABASE_URL }}
-          K: ${{ secrets.SUPABASE_KEY }}
-        run: |
-          U=$(echo "$U" | tr -d ' \n\r' | sed 's:/*$::'); K=$(echo "$K" | tr -d ' \n\r' | sed 's:[.]*$::')
-          echo "url host: $(echo $U | sed 's#https://##')  key length: ${#K}"
-          echo "--- auth settings"; curl -s "$U/auth/v1/settings" -H "apikey: $K" | jq -c '{email: .external.email, disable_signup, mailer_autoconfirm}'
-          echo "--- backups table (expect [] )"; curl -s -w " HTTP %{http_code}\n" "$U/rest/v1/backups?select=user_id" -H "apikey: $K" -H "Authorization: Bearer $K"
-          echo "--- delete_me as anon (expect 401/permission denied, not 404)"; curl -s -w " HTTP %{http_code}\n" -X POST "$U/rest/v1/rpc/delete_me" -H "apikey: $K" -H "Authorization: Bearer $K" -H "Content-Type: application/json" -d '{}'
+      - run: |
+          Q='[out:json][timeout:15];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,30.0444,31.2357);out center 60;'
+          for U in https://overpass-api.de/api/interpreter https://overpass.kumi.systems/api/interpreter https://overpass.private.coffee/api/interpreter; do
+            echo "=== $U default UA"; curl -s -m 30 -o /tmp/o.json -w "HTTP %{http_code}\n" -X POST "$U" --data-urlencode "data=$Q"; head -c 300 /tmp/o.json; echo
+            echo "=== $U with UA"; curl -s -m 30 -o /tmp/o.json -w "HTTP %{http_code}\n" -A "YallaWell/1.0 (yallawell@gmail.com)" -X POST "$U" --data-urlencode "data=$Q"; jq '.elements|length' /tmp/o.json 2>/dev/null || head -c 300 /tmp/o.json; echo
+          done
+          echo "=== node fetch"; node -e '
+          const q=process.argv[1];
+          for (const u of ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]) fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}}).then(async r=>console.log(u,r.status,(await r.text()).slice(0,200))).catch(e=>console.log(u,"ERR",String(e), e.cause&&String(e.cause)));' "$Q"
+          sleep 20

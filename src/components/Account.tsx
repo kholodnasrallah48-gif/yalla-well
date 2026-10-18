@@ -12,7 +12,7 @@ import { Btn, Card, START, T } from './ui.tsx';
 const ERR: Record<AuthErr, [string, string]> = {
   network: ['مفيش إنترنت دلوقتي. جربوا تاني بعد شوية.', 'No internet right now. Try again in a bit.'],
   wait: ['طلبات كتير ورا بعض. استنوا دقيقة وجربوا تاني.', 'Too many tries in a row. Wait a minute and try again.'],
-  code: ['الكود ده مش صح أو خلص وقته. اطلبوا كود جديد.', "That code is wrong or has expired. Ask for a new one."],
+  code: ['الكود ده مش شغال. لازم يكون من آخر إيميل وصلكم، لأن كل كود جديد بيلغي اللي قبله. اطلبوا كود جديد واستخدموه هو بس.', "That code doesn't work. It has to be from the latest email, since each new code cancels the one before. Ask for a new code and use only that one."],
   other: ['حصلت مشكلة. جربوا تاني.', 'Something went wrong. Please try again.'],
 };
 
@@ -24,6 +24,14 @@ export function SignIn({ hasLocal, onDone }: { hasLocal: boolean; onDone: () => 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState<Backup | null>(null);
+  // Supabase allows one code a minute, and each new code cancels the last, so "new code" waits a minute.
+  const [wait, setWait] = useState(0);
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    if (wait <= 0) return;
+    const t = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(t);
+  }, [wait]);
   const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 12, fontFamily: fonts.body, fontSize: 16, color: c.ink } as const;
   const fail = (e: AuthErr) => setErr(L(...ERR[e]));
 
@@ -32,11 +40,13 @@ export function SignIn({ hasLocal, onDone }: { hasLocal: boolean; onDone: () => 
     setBusy(true); setErr('');
     const e = await sendCode(email);
     setBusy(false);
-    if (e) fail(e); else { setCode(''); setStep('code'); }
+    if (e) { fail(e); return; }
+    setNote(step === 'code' ? L('بعتنا كود جديد. الكود اللي قبله مبقاش شغال.', 'We sent a new code. The one before no longer works.') : '');
+    setCode(''); setStep('code'); setWait(60);
   };
   const check = async () => {
     const digits = latin(code).replace(/\D/g, '');
-    if (digits.length < 6) { setErr(L('الكود ٦ أرقام.', 'The code has 6 digits.')); return; }
+    if (digits.length < 6) { setErr(L('اكتبوا الكود كله زي ما هو في الإيميل.', 'Type the whole code from the email.')); return; }
     setBusy(true); setErr('');
     const e = await checkCode(email, digits);
     if (e) { setBusy(false); fail(e); return; }
@@ -70,17 +80,18 @@ export function SignIn({ hasLocal, onDone }: { hasLocal: boolean; onDone: () => 
           keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress"
           returnKeyType="send" onSubmitEditing={send} style={[input, { textAlign: 'left', writingDirection: 'ltr' }]} />
         <Btn title={busy ? L('ثواني...', 'One sec...') : L('ابعتولي كود', 'Send me a code')} disabled={busy} onPress={send} />
-        <T kind="small">{L('هيوصلك إيميل فيه كود من ٦ أرقام. من غير باسورد.', "You'll get an email with a 6-digit code. No password needed.")}</T>
+        <T kind="small">{L('هيوصلك إيميل فيه كود. من غير باسورد.', "You'll get an email with a code. No password needed.")}</T>
       </> : <>
         <T kind="body">{L('بعتنا الكود على', 'We sent the code to')} <T kind="h3" style={{ writingDirection: 'ltr' }}>{cleanEmail(email)}</T></T>
         <TextInput value={code} onChangeText={(t) => { setErr(''); setCode(t); }} placeholder="123456" placeholderTextColor={c.dim}
-          keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={8}
+          keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={10}
           returnKeyType="done" onSubmitEditing={check} style={[input, { textAlign: 'center', fontFamily: fonts.num, fontSize: 28, letterSpacing: 8 }]} />
         <Btn title={busy ? L('ثواني...', 'One sec...') : L('دخول', 'Sign in')} disabled={busy} onPress={check} />
-        <T kind="small">{L('مش لاقيين الإيميل؟ بصوا في الـ Spam.', "Can't find it? Check your spam folder.")}</T>
+        {note ? <T kind="small" color={c.petrol}>{note}</T> : null}
+        <T kind="small">{L('استخدموا الكود اللي في آخر إيميل وصل. مش لاقيين الإيميل؟ بصوا في الـ Spam.', "Use the code in the latest email. Can't find it? Check your spam folder.")}</T>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Btn kind="text" title={L('كود جديد', 'Send a new code')} disabled={busy} onPress={send} style={{ flex: 1 }} />
-          <Btn kind="text" title={L('تغيير الإيميل', 'Change email')} disabled={busy} onPress={() => { setErr(''); setStep('email'); }} style={{ flex: 1 }} />
+          <Btn kind="text" title={wait > 0 ? L(`كود جديد بعد ${wait} ث`, `New code in ${wait}s`) : L('كود جديد', 'Send a new code')} disabled={busy || wait > 0} onPress={send} style={{ flex: 1 }} />
+          <Btn kind="text" title={L('تغيير الإيميل', 'Change email')} disabled={busy} onPress={() => { setErr(''); setNote(''); setStep('email'); }} style={{ flex: 1 }} />
         </View>
       </>}
       {err ? <T kind="small" color={c.bad} style={{ textAlign: START() }}>{err}</T> : null}

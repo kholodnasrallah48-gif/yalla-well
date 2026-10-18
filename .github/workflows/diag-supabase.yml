@@ -9,13 +9,18 @@ jobs:
       - shell: bash {0}
         run: |
           UA="YallaWell/1.0 (yallawell@gmail.com)"
-          t() { echo "=== $1"; curl -s -m 60 -o /tmp/o.json -w "HTTP %{http_code} in %{time_total}s\n" -A "$UA" "${@:2}"; (jq -c '(.elements // .features) | length' /tmp/o.json 2>/dev/null) || head -c 200 /tmp/o.json; echo; }
-          O=https://overpass-api.de/api/interpreter
-          for run in 1 2; do
-          t "nwr regex 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,30.0444,31.2357);out center 60;'
-          t "node only 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];node["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,30.0444,31.2357);out 60;'
-          t "union exact 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];(node["amenity"="restaurant"](around:700,30.0444,31.2357);node["amenity"="fast_food"](around:700,30.0444,31.2357);node["amenity"="cafe"](around:700,30.0444,31.2357););out 60;'
-          t "dubai node only 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];node["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,25.0805,55.1403);out 60;'
+          t() { echo "=== $1"; curl -s -m 60 -o /tmp/o.json -w "HTTP %{http_code} in %{time_total}s\n" -A "$UA" "${@:2}"; }
+          for P in "30.0444 31.2357" "25.0805 55.1403"; do set -- $P; LA=$1; LO=$2
+          t "photon reverse restaurant $LA" "https://photon.komoot.io/reverse?lat=$LA&lon=$LO&radius=1&limit=15&osm_tag=amenity:restaurant&osm_tag=amenity:fast_food&osm_tag=amenity:cafe&lang=default"
+          jq -c '[.features[]?|{n:.properties.name,v:.properties.osm_value,x:(.properties.extra // null)}]|.[0:8], (.features|length)' /tmp/o.json
+          VB="$(python3 -c "print(f'{$LO-0.008},{$LA+0.007},{$LO+0.008},{$LA-0.007}')")"
+          t "nominatim restaurant $LA" "https://nominatim.openstreetmap.org/search?q=restaurant&format=jsonv2&viewbox=$VB&bounded=1&limit=40&extratags=1&namedetails=1"
+          jq -c '[.[]|{n:.name,t:.type,c:.extratags.cuisine}]|.[0:8], length' /tmp/o.json
+          sleep 1
+          t "nominatim cafe $LA" "https://nominatim.openstreetmap.org/search?q=cafe&format=jsonv2&viewbox=$VB&bounded=1&limit=40&extratags=1"
+          jq -c 'length' /tmp/o.json
+          sleep 1
+          t "nominatim fast food $LA" "https://nominatim.openstreetmap.org/search?q=fast%20food&format=jsonv2&viewbox=$VB&bounded=1&limit=40&extratags=1"
+          jq -c '[.[]|{n:.name,t:.type,c:.extratags.cuisine}]|.[0:5], length' /tmp/o.json
+          sleep 1
           done
-          t "photon restaurant" "https://photon.komoot.io/api/?q=restaurant&lat=30.0444&lon=31.2357&limit=20&osm_tag=amenity:restaurant&location_bias_scale=0.1&zoom=16"
-          jq -c '[.features[]?|.properties|{name,city}]|.[0:5]' /tmp/o.json

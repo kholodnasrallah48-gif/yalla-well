@@ -8,12 +8,14 @@ jobs:
     steps:
       - shell: bash {0}
         run: |
-          Q='[out:json][timeout:15];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,30.0444,31.2357);out center 60;'
-          for U in https://overpass-api.de/api/interpreter https://overpass.kumi.systems/api/interpreter https://overpass.private.coffee/api/interpreter; do
-            echo "=== $U default UA"; curl -s -m 70 -o /tmp/o.json -w "HTTP %{http_code}\n" -X POST "$U" --data-urlencode "data=$Q"; head -c 300 /tmp/o.json; echo
-            echo "=== $U with UA"; curl -s -m 70 -o /tmp/o.json -w "HTTP %{http_code}\n" -A "YallaWell/1.0 (yallawell@gmail.com)" -X POST "$U" --data-urlencode "data=$Q"; jq '.elements|length' /tmp/o.json 2>/dev/null || head -c 300 /tmp/o.json; echo
+          UA="YallaWell/1.0 (yallawell@gmail.com)"
+          t() { echo "=== $1"; curl -s -m 60 -o /tmp/o.json -w "HTTP %{http_code} in %{time_total}s\n" -A "$UA" "${@:2}"; (jq -c '(.elements // .features) | length' /tmp/o.json 2>/dev/null) || head -c 200 /tmp/o.json; echo; }
+          O=https://overpass-api.de/api/interpreter
+          for run in 1 2; do
+          t "nwr regex 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,30.0444,31.2357);out center 60;'
+          t "node only 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];node["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,30.0444,31.2357);out 60;'
+          t "union exact 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];(node["amenity"="restaurant"](around:700,30.0444,31.2357);node["amenity"="fast_food"](around:700,30.0444,31.2357);node["amenity"="cafe"](around:700,30.0444,31.2357););out 60;'
+          t "dubai node only 700" -X POST $O --data-urlencode 'data=[out:json][timeout:20];node["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:700,25.0805,55.1403);out 60;'
           done
-          echo "=== node fetch"; node -e '
-          const q=process.argv[1];
-          for (const u of ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]) fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded","User-Agent":"YallaWell/1.0"}}).then(async r=>console.log(u,r.status,(await r.text()).slice(0,200))).catch(e=>console.log(u,"ERR",String(e), e.cause&&String(e.cause)));' "$Q"
-          sleep 80
+          t "photon restaurant" "https://photon.komoot.io/api/?q=restaurant&lat=30.0444&lon=31.2357&limit=20&osm_tag=amenity:restaurant&location_bias_scale=0.1&zoom=16"
+          jq -c '[.features[]?|.properties|{name,city}]|.[0:5]' /tmp/o.json

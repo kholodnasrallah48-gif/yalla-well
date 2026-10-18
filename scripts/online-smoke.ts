@@ -84,8 +84,8 @@ await check('en → ar "no heavy lifting"', () => translate('no heavy lifting'))
 
 console.log(`\n${ok}/${total} translation checks passed`);
 if (!ok) console.error('No translations came back');
-// Places near a point (OpenStreetMap Overpass), for "أنا برة البيت". Printed only: the public servers can be busy.
-console.log('\n— Places near a point (OpenStreetMap) —');
+// Places near a point (Photon, then Overpass), for "أنا برة البيت". Printed only: the public servers can be busy.
+console.log('\n— Places near a point (Photon, Overpass fallback) —');
 for (const [label, lat, lon] of [['Cairo, Tahrir', 30.0444, 31.2357], ['Dubai Marina', 25.0805, 55.1403]] as const) {
   const places = await nearby(lat, lon, true);
   console.log(`${places?.length ? '✓' : '✗'} ${label}: ${places == null ? 'no answer' : places.length + ' places'}`);

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { KINDS, kindOf, menu, meters, picks, toPlaces } from './outside.ts';
+import { fromPhoton, KINDS, kindOf, menu, meters, picks, toPlaces } from './outside.ts';
 import type { Profile } from './plan.ts';
 
 const base = {
@@ -53,4 +53,12 @@ test('a koshari shop or a pizzeria gets its own dishes', () => {
   assert.deepEqual(picks(base, 'fast', 1000, 4, 'koshari').map((x) => x.food.n), ['كشري']);
   assert.ok(picks(base, 'fast', 1000, 4, 'pizza').every((x) => x.food.n.includes('بيتزا')));
   assert.ok(picks(base, 'grill', 1000, 4, 'lebanese').length >= 3);
+});
+
+test('Photon places get a kind from their name when the map has no cuisine', () => {
+  const at = (name: string, v: string, lat: number) => ({ geometry: { coordinates: [31, lat] as [number, number] }, properties: { name, osm_value: v, osm_type: 'N', osm_id: lat * 1e6 } });
+  const places = fromPhoton([at('كشري التحرير', 'fast_food', 30.001), at('Pizza Hut', 'restaurant', 30.002), at('Cilantro', 'cafe', 30.003), at('Rouh Beirut', 'restaurant', 30.004)], 30, 31);
+  assert.deepEqual(places.map((x) => [x.name, x.kind, x.cuisine]), [
+    ['كشري التحرير', 'fast', 'koshari'], ['Pizza Hut', 'fast', 'pizza'], ['Cilantro', 'cafe', undefined], ['Rouh Beirut', 'grill', undefined],
+  ]);
 });

@@ -58,7 +58,7 @@ const has = (tag: string | undefined, re: RegExp) => !!tag && re.test(tag.toLowe
 
 /** What kind of place an OpenStreetMap restaurant, fast food or cafe is, from its amenity and cuisine tags. */
 export function kindOf(tags: Record<string, string>): Kind {
-  const a = tags.amenity, cu = tags.cuisine;
+  const a = tags.amenity, cu = tags.cuisine ?? (tags.name ? guessCuisine(tags.name) : undefined);
   if (a === 'cafe' || has(cu, /coffee|cafe|tea|juice|dessert|ice_cream|bakery|pastry|breakfast/)) return 'cafe';
   if (has(cu, /salad|health|vegan|vegetarian|poke|bowl|diet/) || Object.keys(tags).some((k) => k.startsWith('diet:') && tags[k] === 'only')) return 'healthy';
   if (has(cu, /burger|pizza|sandwich|fried_chicken|shawarma|fast_food|hot_dog|sushi|crepe|koshari|falafel|chicken_wings/)) return 'fast';
@@ -88,34 +88,61 @@ export function toPlaces(els: OsmEl[], lat: number, lon: number, ar: boolean): P
     const key = name.trim().toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ id: `${e.type}/${e.id}`, name: name.trim(), kind: kindOf(t), m: meters(lat, lon, pLat, pLon), lat: pLat, lon: pLon, cuisine: t.cuisine });
+    out.push({ id: `${e.type}/${e.id}`, name: name.trim(), kind: kindOf(t), m: meters(lat, lon, pLat, pLon), lat: pLat, lon: pLon, cuisine: t.cuisine ?? guessCuisine(name) });
   }
   return out.sort((a, b) => a.m - b.m);
 }
 
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+// A cuisine guessed from the place's name when the map has none ("Pizza Hut", "كشري التحرير").
+const NAME_CUISINE: [RegExp, string][] = [
+  [/koshar|كشري/i, 'koshari'], [/pizza|بيتزا/i, 'pizza'], [/burger|برجر|hardee|mcdonald|ماكدونالدز|كنتاكي|kfc/i, 'burger'],
+  [/shawarma|شاورما/i, 'shawarma'], [/sushi|سوشي/i, 'sushi'], [/fried chicken|crispy|كرسبي|broasted|بروستد/i, 'fried_chicken'],
+  [/kebab|kabab|kofta|كباب|كبابجي|كفتة/i, 'kebab'], [/fish|seafood|سمك|اسماك|أسماك|بحري/i, 'seafood'], [/grill|مشويات|مشاوي|شواية/i, 'grill'],
+  [/mandi|مندي|kabsa|كبسة/i, 'mandi'], [/salad|سلطة|healthy|صحي/i, 'salad'], [/juice|عصير|عصاير/i, 'juice'],
+  [/coffee|cafe|café|كافيه|قهوة|بن /i, 'coffee_shop'], [/crepe|كريب/i, 'crepe'], [/bakery|مخبز|فرن/i, 'bakery'],
+];
+export const guessCuisine = (name: string): string | undefined => NAME_CUISINE.find(([re]) => re.test(name))?.[1];
 
-/** Restaurants, fast food and cafes around a point (the radius grows once when there are few). Only the point is sent. */
-export async function nearby(lat: number, lon: number, ar: boolean): Promise<Place[] | null> {
-  let last: Place[] | null = null;
-  for (const r of [700, 2000]) {
-    const q = `[out:json][timeout:15];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:${r},${lat.toFixed(4)},${lon.toFixed(4)});out center 60;`;
-    let got: Place[] | null = null;
-    for (const url of OVERPASS) {
-      try {
-        const ctl = new AbortController();
-        const timer = setTimeout(() => ctl.abort(), 15000);
-        const res = await fetch(url, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal: ctl.signal });
-        clearTimeout(timer);
-        if (!res.ok) continue;
-        const j = (await res.json()) as { elements?: OsmEl[] };
-        got = toPlaces(j.elements ?? [], lat, lon, ar);
-        break;
-      } catch { /* try the next server */ }
-    }
-    if (got == null) return last;
-    last = got;
-    if (got.length >= 4) break;
+type PhotonFeature = { geometry?: { coordinates?: [number, number] }; properties?: { name?: string; osm_value?: string; osm_type?: string; osm_id?: number } };
+
+/** Turns a Photon answer (OpenStreetMap places by distance) into places. */
+export function fromPhoton(features: PhotonFeature[], lat: number, lon: number): Place[] {
+  return toPlaces(features.map((f) => {
+    const [pLon, pLat] = f.geometry?.coordinates ?? [];
+    const name = f.properties?.name ?? '';
+    return { type: f.properties?.osm_type ?? 'n', id: f.properties?.osm_id ?? 0, lat: pLat, lon: pLon,
+      tags: { amenity: f.properties?.osm_value ?? 'restaurant', name, ...(guessCuisine(name) ? { cuisine: guessCuisine(name)! } : {}) } };
+  }), lat, lon, false);
+}
+
+async function getJSON<T>(url: string, init?: RequestInit, ms = 12000): Promise<T | null> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), ms);
+  try {
+    const res = await fetch(url, { ...init, signal: ctl.signal });
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
-  return last;
+}
+
+/**
+ * Restaurants, fast food and cafes around a point, nearest first. Photon (komoot's OpenStreetMap search) answers in
+ * about a second; the public Overpass servers are the fallback since they are often busy. Only the point is sent.
+ */
+export async function nearby(lat: number, lon: number, ar: boolean): Promise<Place[] | null> {
+  const la = lat.toFixed(4), lo = lon.toFixed(4);
+  for (const km of [1, 2.5]) {
+    const tags = ['restaurant', 'fast_food', 'cafe'].map((t) => `&osm_tag=amenity:${t}`).join('');
+    const j = await getJSON<{ features?: PhotonFeature[] }>(`https://photon.komoot.io/reverse?lat=${la}&lon=${lo}&radius=${km}&limit=30${tags}`);
+    if (!j) break;
+    const got = fromPhoton(j.features ?? [], lat, lon);
+    if (got.length >= 4 || km > 1) return got;
+  }
+  const q = `[out:json][timeout:20];node["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:1000,${la},${lo});out 60;`;
+  const o = await getJSON<{ elements?: OsmEl[] }>('https://overpass-api.de/api/interpreter',
+    { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 30000);
+  return o ? toPlaces(o.elements ?? [], lat, lon, ar) : null;
 }

@@ -126,3 +126,16 @@ export function scaleLine(text: string, factor: number, en = false): string {
   // Digit conversion keeps lengths, so the rest of the original line (with its own digits) starts at `len`.
   return fmtQty(v * factor, GRAMS.test(s.slice(len)), en) + text.slice(len);
 }
+
+// Recipe steps are written to a woman ("ضيفي الملح وقلبي"). For a man the same verbs lose the feminine ي:
+// ضيفي → ضيف, قدميها → قدمها, سيبيه → سيبه. Weak verbs (اشوي، غطي، احشي، غلي، صفي) are spelled the same for both.
+const STEP_VERBS = ['ضيف', 'رش', 'ارش', 'قدم', 'قطع', 'شوح', 'اسلق', 'تبل', 'سخن', 'حط', 'تحط', 'رص', 'صب', 'اعمل', 'اخلط',
+  'اغسل', 'قشر', 'قلب', 'اقلب', 'اخفق', 'افرد', 'اخبز', 'ادخل', 'اعجن', 'شكل', 'شك', 'حمر', 'نضف', 'اهرس', 'اكسر', 'فتت',
+  'طبق', 'لف', 'شغل', 'ادهن', 'شيل', 'انقع', 'قور', 'كمل', 'جمع', 'اضرب', 'زين', 'هز', 'نشف', 'شق', 'كل', 'اكشط', 'جمد',
+  'غمس', 'اوزن', 'خد', 'سيب', 'تحمص'];
+const MASC_STEP: Record<string, string> = { متزوديش: 'متزودش', حابة: 'حابب' };
+for (const v of STEP_VERBS) for (const [f, m] of [['ي', ''], ['يه', 'ه'], ['يها', 'ها'], ['يهم', 'هم']]) MASC_STEP[v + f] = v + m;
+
+/** A recipe step addressed to a man: the feminine imperatives (with or without a leading و) turned masculine. */
+export const mascStep = (s: string): string =>
+  s.replace(/[ء-ي]+/g, (w) => MASC_STEP[w] ?? (w.startsWith('و') && MASC_STEP[w.slice(1)] ? 'و' + MASC_STEP[w.slice(1)] : w));

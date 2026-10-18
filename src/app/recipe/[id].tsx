@@ -16,7 +16,7 @@ import { L, isEn, num, tx } from '../../lib/i18n.ts';
 import { MEALS, MEAL_NAME, suitability, toMeal, videoURL } from '../../lib/mealplan.ts';
 import { estimateKcal, lookupMealDB, type KcalEstimate, type OnlineRecipe } from '../../lib/online-recipes.ts';
 import { genderFor, targets } from '../../lib/plan.ts';
-import { portionFor, portionText, scaleLine } from '../../lib/recipe-search.ts';
+import { mascStep, portionFor, portionText, scaleLine } from '../../lib/recipe-search.ts';
 import { RECIPES, type Meal } from '../../lib/recipes-data.ts';
 import { play } from '../../lib/sound.ts';
 import { useStore } from '../../store/AppStore.tsx';
@@ -141,7 +141,7 @@ function LocalRecipeScreen() {
       </Card>
       <Card>
         <T kind="h2">{L('الطريقة', 'Steps')}</T>
-        <Steps items={r.steps.map((x) => tx(x))} />
+        <Steps items={r.steps.map((x) => g(mascStep(tx(x)), tx(x)))} />
       </Card>
       <Btn kind="outline" title={L(g('شوف فيديو الطريقة', 'شوفي فيديو الطريقة'), 'Watch the how-to video')} onPress={() => openPage(videoURL(r), c.petrol)} />
       <Btn disabled={added}
@@ -201,7 +201,7 @@ function OnlineRecipeScreen() {
             {est === undefined ? (
               <>
                 <T kind="body">{L('السعرات مش معروفة للوصفة دي. نقدر نحسبها تقريبا من المكونات وكمياتها.', "This recipe's calories aren't known. We can estimate them roughly from the ingredients and amounts.")}</T>
-                <Btn kind="outline" title={L('احسب السعرات تقريبا', 'Estimate the calories')} onPress={estimate} />
+                <Btn kind="outline" title={L(g('احسب السعرات تقريبا', 'احسبي السعرات تقريبا'), 'Estimate the calories')} onPress={estimate} />
               </>
             ) : est === 'loading' ? (
               <View style={[styles.row, { gap: 8 }]}>

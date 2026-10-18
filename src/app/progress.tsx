@@ -181,7 +181,7 @@ export default function Progress() {
         {ofPose.length ? <T kind="small" color={c.muted}>{L(`${g('دوس', 'دوسي')} على صورة كتير عشان ${g('تمسحها', 'تمسحيها')}.`, 'Press and hold a photo to delete it.')}</T> : null}
         {del ? (
           <View style={[styles.row, { gap: 8 }]}>
-            <Btn kind="secondary" title={L('امسح الصورة دي', 'Delete this photo')} onPress={() => { savePhotos((photos ?? []).filter((x) => x.id !== del)); setDel(null); play('remove'); }} style={{ flex: 1 }} />
+            <Btn kind="secondary" title={L(g('امسح الصورة دي', 'امسحي الصورة دي'), 'Delete this photo')} onPress={() => { savePhotos((photos ?? []).filter((x) => x.id !== del)); setDel(null); play('remove'); }} style={{ flex: 1 }} />
             <Btn kind="outline" title={L('لأ', 'No')} onPress={() => setDel(null)} />
           </View>
         ) : null}

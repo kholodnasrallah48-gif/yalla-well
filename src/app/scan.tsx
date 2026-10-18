@@ -58,7 +58,7 @@ export default function Scan() {
       {!perm ? null : !perm.granted ? (
         <Card>
           <T kind="body">{L('محتاجين إذن الكاميرا عشان نقرا الباركود.', 'We need camera access to read the barcode.')}</T>
-          <Btn title={L('اسمح بالكاميرا', 'Allow camera')} onPress={requestPerm} />
+          <Btn title={L(g('اسمح بالكاميرا', 'اسمحي بالكاميرا'), 'Allow camera')} onPress={requestPerm} />
         </Card>
       ) : state === 'scan' ? (
         <View style={{ flex: 1, borderRadius: 4, overflow: 'hidden' }}>
@@ -82,7 +82,7 @@ export default function Scan() {
       ) : (
         <Card>
           <T kind="body">{L(`${state === 'missing' ? 'المنتج ده مش موجود في قاعدة البيانات لسه.' : 'مقدرناش نوصل للإنترنت.'} ${g('ضيفه', 'ضيفيه')} كأكلة خاصة ${g('بيك', 'بيكي')} من صفحة الأكل بالأرقام اللي على العلبة.`, `${state === 'missing' ? "This product isn't in the database yet." : "We couldn't reach the internet."} Add it as your own food from the Food page, using the numbers on the pack.`)}</T>
-          <Btn title={L('جرب تاني', 'Try again')} onPress={again} />
+          <Btn title={L(g('جرب تاني', 'جربي تاني'), 'Try again')} onPress={again} />
           <Btn kind="outline" title={L('رجوع', 'Back')} onPress={() => router.back()} />
         </Card>
       )}

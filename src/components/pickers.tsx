@@ -42,10 +42,10 @@ function Field({ text, open, onPress, label, onRemove }: { text: string; open: b
       <Pressable onPress={() => { play('tap'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}: ${text}`} accessibilityState={{ expanded: open }}
         style={({ pressed }) => [{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: open ? c.petrol : c.line, backgroundColor: c.surface, borderRadius: RADIUS, paddingHorizontal: 12, minHeight: 44 }, pressed && styles.pressed]}>
         <Text style={{ fontFamily: fonts.displaySemi, fontSize: 16, color: c.ink }}>{text}</Text>
-        <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12.5, color: c.petrol }}>{open ? L('تمام', 'Done') : L('غير', 'Change')}</Text>
+        <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12.5, color: c.petrol }}>{open ? L('تمام', 'Done') : L('تغيير', 'Change')}</Text>
       </Pressable>
       {onRemove ? (
-        <Pressable onPress={() => { play('remove'); onRemove(); }} hitSlop={8} accessibilityRole="button" accessibilityLabel={L('شيل الميعاد', 'Remove time')}
+        <Pressable onPress={() => { play('remove'); onRemove(); }} hitSlop={8} accessibilityRole="button" accessibilityLabel={L('مسح الميعاد', 'Remove time')}
           style={({ pressed }) => [{ width: 44, minHeight: 44, borderRadius: RADIUS, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
           <Text style={{ color: c.bad, fontSize: 18, fontFamily: fonts.bodySemi }}>×</Text>
         </Pressable>

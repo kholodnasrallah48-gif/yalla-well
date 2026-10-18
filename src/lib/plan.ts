@@ -206,7 +206,7 @@ export function medical(p: Profile): { food: Note[]; train: Note[]; mod: Modifie
     train.push({ tone: 'info', title: L('بلاكونيل', 'Plaquenil'), text: L(`لو ${g('بتتمرن', 'بتتمرني')} برا ${g('استخدم', 'استخدمي')} صن بلوك لأن الدوا بيزود الحساسية للشمس.`, 'If you train outdoors, wear sunscreen: the medicine makes you more sensitive to the sun.') });
   }
   if (has('beta')) {
-    train.push({ tone: 'warn', title: L('حاصرات بيتا', 'Beta blockers'), text: L(`النبض هيبقى أقل من الطبيعي، ${g('فاستخدم', 'فاستخدمي')} إحساسك بالمجهود مش ساعة النبض: لازم ${g('تقدر تتكلم', 'تقدري تتكلمي')} وانت ${g('بتتمرن', 'بتتمرني')}.`, 'Your heart rate will run lower than usual, so go by how hard it feels, not by a heart-rate watch: you should be able to talk while training.') });
+    train.push({ tone: 'warn', title: L('حاصرات بيتا', 'Beta blockers'), text: L(`النبض هيبقى أقل من الطبيعي، ${g('فاستخدم', 'فاستخدمي')} إحساسك بالمجهود مش ساعة النبض: لازم ${g('تقدر تتكلم', 'تقدري تتكلمي')} وانت${g('', 'ي')} ${g('بتتمرن', 'بتتمرني')}.`, 'Your heart rate will run lower than usual, so go by how hard it feels, not by a heart-rate watch: you should be able to talk while training.') });
   }
   if (has('anticoag')) {
     mod.machines = true; mod.lowImpact = true;

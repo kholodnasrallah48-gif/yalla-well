@@ -368,6 +368,7 @@ export function doctorHTML(input: DoctorInput): string {
   const p = input.profile;
   const s = doctorSummary(input);
   const en = isEn();
+  const g = genderFor(p.sex);
   const lvl = (v: number | null, words: [string, string][]) => (v === null ? '—' : L(words[Math.min(2, Math.round(v))][0], words[Math.min(2, Math.round(v))][1]));
   const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? id)), p.otherCond ? ux(p, p.otherCond) : ''].filter(Boolean);
   const meds = medIds(p).map((id) => {
@@ -380,7 +381,7 @@ export function doctorHTML(input: DoctorInput): string {
   const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '—');
   const rows: [string, string][] = [
     [L('الأيام في التقرير', 'Days covered'), String(s.days)],
-    [L('أيام سجلت فيها حالتها', 'Days with a check-in'), String(s.checks)],
+    [L(g('أيام سجل فيها حالته', 'أيام سجلت فيها حالتها'), 'Days with a check-in'), String(s.checks)],
     [L('متوسط الطاقة', 'Average energy'), lvl(s.energy, CHECK_ITEMS[0].opts)],
     [L('متوسط الألم', 'Average pain'), lvl(s.pain, CHECK_ITEMS[1].opts)],
     [L('متوسط النوم', 'Average sleep'), lvl(s.sleep, CHECK_ITEMS[2].opts)],

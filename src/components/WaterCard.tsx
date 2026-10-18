@@ -36,7 +36,7 @@ export function WaterCard({ day, cups, update }: { day: DayLog; cups: number; up
         {day.water > 0 ? (
           <Pressable accessibilityRole="button" onPress={() => { play('remove'); update((d) => ({ ...d, water: 0 })); }}
             style={({ pressed }) => [styles.chip, { borderColor: 'transparent' }, pressed && styles.pressed]}>
-            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>{L('صفر', 'Reset')}</Text>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>{L('تصفير', 'Reset')}</Text>
           </Pressable>
         ) : null}
       </View>

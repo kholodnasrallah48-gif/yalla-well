@@ -90,7 +90,7 @@ export default function Me() {
 
       <Card>
         <T kind="h2">{L(g('سجل وزنك', 'سجلي وزنك'), 'Log your weight')}</T>
-        {W.diff !== 0 ? <T kind="small" color={W.diff < 0 ? c.ok : c.muted}>{L(`بدأت ${W.start} كجم، دلوقتي ${W.now} كجم (${W.diff > 0 ? '+' : ''}${W.diff} كجم)`, `Started ${W.start} kg, now ${W.now} kg (${W.diff > 0 ? '+' : ''}${W.diff} kg)`)}</T> : null}
+        {W.diff !== 0 ? <T kind="small" color={W.diff < 0 ? c.ok : c.muted}>{L(`${g('بدأت', 'بدأتي')} ${W.start} كجم، دلوقتي ${W.now} كجم (${W.diff > 0 ? '+' : ''}${W.diff} كجم)`, `Started ${W.start} kg, now ${W.now} kg (${W.diff > 0 ? '+' : ''}${W.diff} kg)`)}</T> : null}
         <View style={[styles.row, { gap: 8 }]}>
           <TextInput value={kg} onChangeText={setKg} keyboardType="decimal-pad" placeholder={String(p.weight)} placeholderTextColor={c.muted}
             style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, textAlign: 'center' }} />
@@ -172,7 +172,7 @@ export default function Me() {
         <Card>
           <T kind="body">{L(`${g('متأكد', 'متأكدة')}؟ هتتمسح كل بياناتك وأكلك.`, 'Are you sure? All your data and food logs will be deleted.')}</T>
           <View style={[styles.row, { gap: 10 }]}>
-            <Btn kind="secondary" title={L('أيوه امسح', 'Yes, delete')} onPress={async () => { await resetAll(); router.replace('/onboarding'); }} style={{ flex: 1 }} />
+            <Btn kind="secondary" title={L(g('أيوه امسح', 'أيوه امسحي'), 'Yes, delete')} onPress={async () => { await resetAll(); router.replace('/onboarding'); }} style={{ flex: 1 }} />
             <Btn kind="outline" title={L('لأ', 'No')} onPress={() => setConfirm(false)} style={{ flex: 1 }} />
           </View>
         </Card>

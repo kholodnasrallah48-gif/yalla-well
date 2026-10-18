@@ -148,8 +148,8 @@ export default function StoryCam() {
             : (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
                 <T kind="body" style={{ color: WHITE, textAlign: 'center' }}>{L('محتاجين إذن الكاميرا عشان الصورة تتاخد جوه الإطار.', 'We need camera access to take the photo inside the frame.')}</T>
-                {perm?.canAskAgain !== false ? <Btn title={L('اسمح بالكاميرا', 'Allow camera')} onPress={requestPerm} /> : null}
-                <Btn kind="outline" title={L('اختار صورة من الموبايل', 'Pick a photo instead')} onPress={pick} />
+                {perm?.canAskAgain !== false ? <Btn title={L(g('اسمح بالكاميرا', 'اسمحي بالكاميرا'), 'Allow camera')} onPress={requestPerm} /> : null}
+                <Btn kind="outline" title={L(g('اختار صورة من الموبايل', 'اختاري صورة من الموبايل'), 'Pick a photo instead')} onPress={pick} />
               </View>
             )}
         {wk.s && (photo || granted) ? <NumbersFrame w={w} s={wk.s} streak={wk.streak} from={wk.start} to={wk.end} /> : null}
@@ -165,12 +165,12 @@ export default function StoryCam() {
         </View>
       ) : granted ? (
         <View style={{ width: w, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          {round(L('اختار صورة من الموبايل', 'Pick from photos'), pick, L('صور', 'Photos'))}
-          <Pressable onPress={take} disabled={!ready || busy} accessibilityRole="button" accessibilityLabel={L('صور', 'Take photo')}
+          {round(L(g('اختار صورة من الموبايل', 'اختاري صورة من الموبايل'), 'Pick from photos'), pick, L('صور', 'Photos'))}
+          <Pressable onPress={take} disabled={!ready || busy} accessibilityRole="button" accessibilityLabel={L(g('صور', 'صوري'), 'Take photo')}
             style={{ width: 74, height: 74, borderRadius: 37, borderWidth: 4, borderColor: WHITE, alignItems: 'center', justifyContent: 'center', opacity: ready ? 1 : 0.5 }}>
             <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: busy ? GREEN : WHITE }} />
           </Pressable>
-          {round(L('لف الكاميرا', 'Flip camera'), () => { play('tap'); setReady(false); setFacing(facing === 'front' ? 'back' : 'front'); }, L('لف', 'Flip'))}
+          {round(L(g('لف الكاميرا', 'لفي الكاميرا'), 'Flip camera'), () => { play('tap'); setReady(false); setFacing(facing === 'front' ? 'back' : 'front'); }, L(g('لف', 'لفي'), 'Flip'))}
         </View>
       ) : null}
       {msg ? <T kind="small" style={{ color: msg.bad ? '#FF5C6C' : GREEN, width: w }}>{msg.text}</T> : null}

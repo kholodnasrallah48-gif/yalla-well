@@ -144,11 +144,11 @@ export default function Onboarding() {
       {st === 'lang' && <>
         <View style={{ alignItems: 'center', gap: 6, paddingTop: 32, paddingBottom: 16 }}>
           <T kind="h1" style={{ textAlign: 'center' }}>يلا ويل · Yalla Well</T>
-          <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>اختار لغتك · Choose your language</T>
+          <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>اختيار اللغة · Choose your language</T>
         </View>
         <Choice title="العربية" sub="التطبيق كله بالعربي" on={getLang() === 'ar'} onPress={() => setLang('ar')} />
         <Choice title="English" sub="The whole app in English" on={getLang() === 'en'} onPress={() => setLang('en')} />
-        <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L('تقدر تغيرها في أي وقت من الصفحة الرئيسية أو ملفي.', 'You can change it any time from Home or Me.')}</T>
+        <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L('ممكن تغييرها في أي وقت من الصفحة الرئيسية أو ملفي.', 'You can change it any time from Home or Me.')}</T>
       </>}
 
       {st === 'account' && <>
@@ -167,7 +167,7 @@ export default function Onboarding() {
         <T kind="h1">{profile ? L('تعديل بياناتك', 'Edit your details') : L(`أهلا ${g('بيك', 'بيكي')} في يلا ويل`, 'Welcome to Yalla Well')}</T>
         <T kind="body" color={c.muted}>{L(`محتاجين شوية بيانات عشان نحسب السعرات ونعمل خطة تمرين مناسبة ${g('ليك', 'ليكي')}.`, 'We need a few details to work out your calories and build a workout plan that fits you.')}</T>
         <PhotoPicker photo={d.photo} name={d.name} sex={d.sex} onChange={(photo) => set({ photo })} />
-        <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L('الصورة اختيارية، تقدر تضيفها بعدين من ملفي.', 'Photo is optional; you can add it later from Me.')}</T>
+        <T kind="small" color={c.muted} style={{ textAlign: 'center' }}>{L(`الصورة اختيارية، ${g('تقدر تضيفها', 'تقدري تضيفيها')} بعدين من ملفي.`, 'Photo is optional; you can add it later from Me.')}</T>
         <View style={{ gap: 4 }}><T kind="label">{L('الاسم', 'Name')}</T><TextInput value={d.name ?? ''} onChangeText={(name) => set({ name })} style={input} autoComplete="given-name" /></View>
         <View style={[styles.row, { gap: 8 }]}>
           <Choice title={L('أنثى', 'Female')} on={d.sex === 'f'} onPress={() => set({ sex: 'f' })} style={{ flex: 1 }} />
@@ -265,7 +265,7 @@ export default function Onboarding() {
             {d.schedule === rec.schedule ? <T kind="small" color={c.onPetrol} style={{ fontFamily: fonts.bodyMedium }}>{rec.why}</T> : null}
           </Card>
         ) : null}
-        {rec ? <Btn kind="text" title={more ? L('اقفل', 'Close') : L(`${g('عايز', 'عايزة')} نظام تاني؟`, 'Want a different plan?')} onPress={() => setMore(!more)} /> : null}
+        {rec ? <Btn kind="text" title={more ? L(g('اقفل', 'اقفلي'), 'Close') : L(`${g('عايز', 'عايزة')} نظام تاني؟`, 'Want a different plan?')} onPress={() => setMore(!more)} /> : null}
         {rec && more ? SCHEDULE_ORDER.map((k) => <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={d.schedule === k} onPress={() => pickSchedule(k)} />) : null}
       </>}
 

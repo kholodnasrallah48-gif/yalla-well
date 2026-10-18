@@ -57,7 +57,7 @@ export function RecipeFinder({ budgets, start, g }: {
 
   return (
     <Card>
-      <T kind="h2">{L('دور على وصفة', 'Find a recipe')}</T>
+      <T kind="h2">{L(g('دور على وصفة', 'دوري على وصفة'), 'Find a recipe')}</T>
       <T kind="small">{L(`${g('اكتب', 'اكتبي')} اسم الأكلة، وهنطلعلك المكونات والطريقة بالكمية اللي تناسب سعراتك.`, "Type a dish and we'll show the ingredients and steps in the amount that fits your calories.")}</T>
 
       <View style={[styles.row, { gap: 8, borderWidth: 1.5, borderColor: text ? c.petrol : c.line, backgroundColor: c.soft, borderRadius: 4, paddingHorizontal: 12 }]}>
@@ -66,7 +66,7 @@ export function RecipeFinder({ budgets, start, g }: {
           returnKeyType="search" onSubmitEditing={() => { if (text.length > 1 && !hits.length) online(); }}
           style={{ flex: 1, paddingVertical: 11, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() }} />
         {q ? (
-          <Pressable onPress={() => type('')} hitSlop={10} accessibilityRole="button" accessibilityLabel={L('امسح', 'Clear')}>
+          <Pressable onPress={() => type('')} hitSlop={10} accessibilityRole="button" accessibilityLabel={L(g('امسح', 'امسحي'), 'Clear')}>
             <Text style={{ color: c.muted, fontSize: 18 }}>×</Text>
           </Pressable>
         ) : null}
@@ -120,7 +120,7 @@ export function RecipeFinder({ budgets, start, g }: {
           {!hits.length && text.length > 1 && !net ? (
             <Pressable onPress={online} accessibilityRole="button"
               style={({ pressed }) => [{ alignItems: 'center', borderRadius: 4, paddingVertical: 10, borderWidth: 1.5, borderColor: c.petrol }, pressed && styles.pressed]}>
-              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: c.petrol }}>{L(`دور على "${text}" في وصفات النت`, `Search online recipes for "${text}"`)}</Text>
+              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: c.petrol }}>{L(`${g('دور', 'دوري')} على "${text}" في وصفات النت`, `Search online recipes for "${text}"`)}</Text>
             </Pressable>
           ) : null}
           {hits.length && text.length > 1 && !net ? (

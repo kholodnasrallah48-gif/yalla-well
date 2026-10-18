@@ -241,7 +241,7 @@ export default function ExerciseScreen() {
             </View>
           ) : null}
           {!done ? <Btn title={L(`سجل${g('', 'ي')} مجموعة ${ar(sets.length + 1)}`, `Log set ${ar(sets.length + 1)}`)} onPress={logSet} sound="add" /> : null}
-          {sets.length ? <Btn kind="text" title={L('امسح آخر مجموعة', 'Delete last set')} onPress={() => updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: (d.sets[id] ?? []).slice(0, -1) } }))} /> : null}
+          {sets.length ? <Btn kind="text" title={L(g('امسح آخر مجموعة', 'امسحي آخر مجموعة'), 'Delete last set')} onPress={() => updateDay((d) => ({ ...d, sets: { ...d.sets, [id]: (d.sets[id] ?? []).slice(0, -1) } }))} /> : null}
         </Card>
       ) : null}
 

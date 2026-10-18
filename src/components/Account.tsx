@@ -124,7 +124,7 @@ export function AccountCard({ g }: { g: (m: string, f: string) => string }) {
         <View style={{ gap: 10 }}>
           <T kind="body">{L(`${g('متأكد', 'متأكدة')}؟ الحساب والنسخة المحفوظة فيه هيتمسحوا. البيانات اللي على الموبايل ده هتفضل.`, 'Are you sure? Your account and the data saved in it will be deleted. The data on this phone stays.')}</T>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Btn kind="secondary" title={L('أيوه امسح الحساب', 'Yes, delete it')} disabled={busy} style={{ flex: 1 }} onPress={async () => {
+            <Btn kind="secondary" title={L(g('أيوه امسح الحساب', 'أيوه امسحي الحساب'), 'Yes, delete it')} disabled={busy} style={{ flex: 1 }} onPress={async () => {
               setBusy(true);
               const ok = await deleteAccount();
               setBusy(false); setSure(false);

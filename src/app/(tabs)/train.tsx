@@ -194,7 +194,7 @@ export default function Train() {
                 <Rise key={x.id} i={i + 2}>
                   <View style={[styles.row, { gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderColor: c.line }]}>
                     {editing
-                      ? <Pressable onPress={() => remove(x)} accessibilityRole="button" accessibilityLabel={L(`شيل ${tx(x.ex.n)}`, `Remove ${tx(x.ex.n)}`)} hitSlop={8}
+                      ? <Pressable onPress={() => remove(x)} accessibilityRole="button" accessibilityLabel={L(`${g('شيل', 'شيلي')} ${tx(x.ex.n)}`, `Remove ${tx(x.ex.n)}`)} hitSlop={8}
                           style={({ pressed }) => [{ width: 28, height: 28, borderRadius: 14, backgroundColor: c.bad, alignItems: 'center', justifyContent: 'center', marginHorizontal: 1 }, pressed && styles.pressed]}>
                           <View style={{ width: 12, height: 2.5, backgroundColor: '#FFFFFF', borderRadius: 1 }} />
                         </Pressable>

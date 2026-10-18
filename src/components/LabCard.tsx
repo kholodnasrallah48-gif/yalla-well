@@ -137,8 +137,8 @@ export function LabCard({ profile: p, onChange }: { profile: Profile; onChange: 
                           <T kind="body">{e.value !== undefined ? `${e.value} ${LABS[k].unit}` : L('اتعمل', 'Done')}</T>
                           <T kind="small">{dateLabel(e.date)}{e.next ? L(` · الجاي ${dateLabel(e.next)}`, ` · next ${dateLabel(e.next)}`) : ''}</T>
                         </View>
-                        <Pressable onPress={() => remove(e)} hitSlop={8} accessibilityRole="button" accessibilityLabel={L('امسح النتيجة دي', 'Delete this result')}>
-                          <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.bad }}>{L('امسح', 'Delete')}</Text>
+                        <Pressable onPress={() => remove(e)} hitSlop={8} accessibilityRole="button" accessibilityLabel={L(g('امسح النتيجة دي', 'امسحي النتيجة دي'), 'Delete this result')}>
+                          <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.bad }}>{L(g('امسح', 'امسحي'), 'Delete')}</Text>
                         </Pressable>
                       </View>
                     ))}
@@ -152,7 +152,7 @@ export function LabCard({ profile: p, onChange }: { profile: Profile; onChange: 
       <T kind="small" color={c.muted}>{L('الألوان تقريبية للتوضيح بس، ودكتورك هو اللي يقرر. الصور بتفضل على الموبايل بس.', 'Colours are only a rough guide; your doctor decides. Photos stay on your phone only.')}</T>
 
       <Modal visible={!!view} transparent animationType="fade" onRequestClose={() => setView(null)}>
-        <Pressable onPress={() => setView(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', padding: 16, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={L('اقفل', 'Close')}>
+        <Pressable onPress={() => setView(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', padding: 16, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={L(g('اقفل', 'اقفلي'), 'Close')}>
           {view ? <Image source={{ uri: view }} resizeMode="contain" style={{ width: '100%', height: '85%' }} /> : null}
           <Text style={{ color: '#fff', textAlign: 'center', fontFamily: fonts.bodyMedium, marginTop: 12 }}>{L(g('دوس في أي حتة عشان تقفل', 'دوسي في أي حتة عشان تقفلي'), 'Tap anywhere to close')}</Text>
         </Pressable>

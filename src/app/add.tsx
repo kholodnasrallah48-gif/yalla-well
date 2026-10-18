@@ -260,7 +260,7 @@ export default function AddFood() {
         <TextInput value={text} onChangeText={(v) => { setText(v); setParsed(null); setFound({}); }} multiline placeholder={L('مثلا: ٢ بيض وعيش بلدي وجبنة قريش وكوباية شاي بلبن', 'e.g. 2 eggs, baladi bread, cottage cheese and a cup of tea with milk')} placeholderTextColor={c.muted}
           style={[input, { minHeight: 64, textAlignVertical: 'top' }]} />
         <View style={[styles.row, { gap: 8 }]}>
-          <Btn kind="secondary" title={L('احسب', 'Calculate')} onPress={calc} disabled={!text.trim()} style={{ flex: 1 }} />
+          <Btn kind="secondary" title={L(g('احسب', 'احسبي'), 'Calculate')} onPress={calc} disabled={!text.trim()} style={{ flex: 1 }} />
           <Btn kind="outline" title={L(g('صور باركود', 'صوري باركود'), 'Scan barcode')} onPress={() => router.push({ pathname: '/scan', params: { meal: target } })} style={{ flex: 1 }} />
         </View>
         {parsed ? (
@@ -302,7 +302,7 @@ export default function AddFood() {
                     {adv ? <Dot level={adv.level} /> : null}
                     <View style={{ flex: 1 }}>
                       <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{u.text}</T>
-                      <T kind="small">{f ? L(`${f.u} · ${fmt(f.kcal)} سعرة`, `${showU(f.u)} · ${fmt(f.kcal)} kcal`) : L('اكتبي الوزن', 'Enter the weight')}</T>
+                      <T kind="small">{f ? L(`${f.u} · ${fmt(f.kcal)} سعرة`, `${showU(f.u)} · ${fmt(f.kcal)} kcal`) : L(g('اكتب الوزن', 'اكتبي الوزن'), 'Enter the weight')}</T>
                     </View>
                     <TextInput value={x.grams} onChangeText={(v) => set({ grams: latin(v).replace(/[^0-9.]/g, '') })} keyboardType="numeric" accessibilityLabel={L('الوزن بالجرام', 'Weight in grams')}
                       style={[input, { width: 64, textAlign: 'center', paddingHorizontal: 4 }]} />

@@ -8,7 +8,7 @@ import { FOODS } from './foods.ts';
 import { dayPlan, mealBudget } from './mealplan.ts';
 import { dishQuery, estimateKcal, fromMealDB, measureGrams, rankMeals, splitSteps, type OnlineRecipe } from './online-recipes.ts';
 import { targets, type Profile } from './plan.ts';
-import { portionFor, portionText, scaleLine, searchRecipes } from './recipe-search.ts';
+import { mascStep, portionFor, portionText, scaleLine, searchRecipes } from './recipe-search.ts';
 import { RECIPES } from './recipes-data.ts';
 
 const base: Profile = {
@@ -168,4 +168,13 @@ test('hiRes asks for sharper photos', async () => {
   assert.equal(hiRes('https://images.openfoodfacts.org/images/products/1/front_en.3.200.jpg'), 'https://images.openfoodfacts.org/images/products/1/front_en.3.400.jpg');
   assert.equal(hiRes('https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/Koshary.jpg/330px-Koshary.jpg?utm_source=x'), 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/Koshary.jpg/960px-Koshary.jpg');
   assert.equal(hiRes('https://example.com/a.png'), 'https://example.com/a.png');
+});
+
+test('mascStep turns the feminine recipe verbs masculine', () => {
+  assert.equal(mascStep('سخني الفول على نار هادية بشوية من مية السلق.'), 'سخن الفول على نار هادية بشوية من مية السلق.');
+  assert.equal(mascStep('رشي معلقة زيت الزيتون وقدميه مع نص الرغيف السن.'), 'رش معلقة زيت الزيتون وقدمه مع نص الرغيف السن.');
+  assert.equal(mascStep('حطي البيض في مية باردة وسيبيه يغلي.'), 'حط البيض في مية باردة وسيبه يغلي.');
+  assert.equal(mascStep('ضيفي التوابل ومية تغطيها.'), 'ضيف التوابل ومية تغطيها.');
+  assert.equal(mascStep('صبيه في بولة وضيفي العسل لو حابة.'), 'صبه في بولة وضيف العسل لو حابب.');
+  for (const r of RECIPES) for (const s of r.steps) assert.doesNotMatch(mascStep(s), /(^|\s)و?(ضيفي|قدميها|سيبيه|قطعي|رشي|حطي|قلبي)(\s|\.|$)/);
 });

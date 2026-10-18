@@ -231,7 +231,7 @@ function MedRow({ id, p, open, onToggle, setPlan, onRemove, watch, setWatch }: {
 
           <View style={[styles.row, { gap: 8 }]}>
             <Btn kind="dark" title={L('تمام', 'Done')} onPress={onToggle} style={{ flex: 1 }} />
-            <Btn kind="text" title={L('شيل', 'Remove')} onPress={onRemove} />
+            <Btn kind="text" title={L(g('شيل', 'شيلي'), 'Remove')} onPress={onRemove} />
           </View>
         </View>
       ) : null}
@@ -242,7 +242,7 @@ function MedRow({ id, p, open, onToggle, setPlan, onRemove, watch, setWatch }: {
 function Step({ label, onPress }: { label: string; onPress: () => void }) {
   const c = useColors();
   return (
-    <Pressable onPress={() => { play('pop'); onPress(); }} accessibilityRole="button" accessibilityLabel={label === '+' ? L('زود', 'More') : L('قلل', 'Less')}
+    <Pressable onPress={() => { play('pop'); onPress(); }} accessibilityRole="button" accessibilityLabel={label === '+' ? L('زيادة', 'More') : L('تقليل', 'Less')}
       style={({ pressed }) => [{ width: 44, height: 40, borderRadius: RADIUS, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center', backgroundColor: c.soft }, pressed && styles.pressed]}>
       <Text style={{ fontFamily: fonts.displaySemi, fontSize: 20, color: c.ink }}>{label}</Text>
     </Pressable>

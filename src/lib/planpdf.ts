@@ -4,7 +4,7 @@ import { bodyChanges, bodyFat, MEASURES, type Measure } from './body.ts';
 import { CONDITIONS, GEAR, PAINS, WEEK } from './data.ts';
 import { L, isEn, num, tx } from './i18n.ts';
 import { MEALS, MEAL_NAME, SHARE } from './mealplan.ts';
-import { macroName, medical, sessionFor, splitLabel, targets, type Profile } from './plan.ts';
+import { genderFor, macroName, medical, sessionFor, splitLabel, targets, type Profile } from './plan.ts';
 import type { LiftLog } from './progress.ts';
 import { ux } from './translate.ts';
 import { doseText, medIds, medName, medPlan } from './health.ts';
@@ -19,7 +19,8 @@ export function planHTML(p: Profile, lifts: Record<string, LiftLog>, opts: { hea
   const ch = bodyChanges(p);
   const latest = Object.fromEntries(Object.entries(ch).map(([k, v]) => [k, v!.now])) as Partial<Record<Measure, number>>;
   const fat = bodyFat(p.sex, p.height, latest);
-  const pct = (g: number, k: number) => Math.round((g * k * 100) / Math.max(T.kcal, 1));
+  const g = genderFor(p.sex);
+  const pct = (n: number, k: number) => Math.round((n * k * 100) / Math.max(T.kcal, 1));
 
   const meals = MEALS.map((m) => `<tr><td>${MEAL_NAME[m]}</td><td>${num(Math.round((T.kcal * SHARE[m]) / 10) * 10)}</td></tr>`).join('');
   const days = WEEK.map((w, i) => {
@@ -48,7 +49,7 @@ export function planHTML(p: Profile, lifts: Record<string, LiftLog>, opts: { hea
       ${L('الأدوية والفيتامينات:', 'Medicines and supplements:')} ${meds.length ? esc(meds.join(L('، ', ', '))) : L('مفيش', 'None')}<br>
       ${L('أماكن الألم:', 'Pain areas:')} ${pains.length ? esc(pains.join(L('، ', ', '))) : L('مفيش', 'None')}</p>
       ${notes ? `<ul>${notes}</ul>` : ''}
-      ${M.watch.length ? `<p class="bad">${L('يوقف التمرين فورا لو حس بـ:', 'Stop training right away with:')} ${esc(M.watch.join(L('، ', ', ')))}</p>` : ''}`;
+      ${M.watch.length ? `<p class="bad">${L(g('يوقف التمرين فورا لو حس بـ:', 'توقف التمرين فورا لو حست بـ:'), 'Stop training right away with:')} ${esc(M.watch.join(L('، ', ', ')))}</p>` : ''}`;
   }
 
   return `<!doctype html><html dir="${L('rtl', 'ltr')}" lang="${L('ar', 'en')}"><head><meta charset="utf-8"><style>
@@ -63,7 +64,7 @@ export function planHTML(p: Profile, lifts: Record<string, LiftLog>, opts: { hea
   <h2>${L('البيانات', 'Details')}</h2>
   <table class="grid"><tbody>
     <tr><td>${L('النوع والسن', 'Sex and age')}</td><td>${p.sex === 'm' ? L('ذكر', 'Male') : L('أنثى', 'Female')}، ${num(p.age)}</td></tr>
-    <tr><td>${L('الطول والوزن', 'Height and weight')}</td><td>${num(p.height)} ${L('سم', 'cm')}، ${p.weight} ${L('كجم', 'kg')}${W.diff ? L(` (بدأ ${W.start}، ${W.diff > 0 ? '+' : ''}${W.diff})`, ` (started ${W.start}, ${W.diff > 0 ? '+' : ''}${W.diff})`) : ''}</td></tr>
+    <tr><td>${L('الطول والوزن', 'Height and weight')}</td><td>${num(p.height)} ${L('سم', 'cm')}، ${p.weight} ${L('كجم', 'kg')}${W.diff ? L(` (${g('بدأ', 'بدأت')} ${W.start}، ${W.diff > 0 ? '+' : ''}${W.diff})`, ` (started ${W.start}, ${W.diff > 0 ? '+' : ''}${W.diff})`) : ''}</td></tr>
     <tr><td>${L('الهدف', 'Goal')}</td><td>${L(GOAL[p.goal][0], GOAL[p.goal][1])}</td></tr>
     ${fat != null ? `<tr><td>${L('نسبة الدهون (تقدير بالشريط)', 'Body fat (tape estimate)')}</td><td>${fat}%</td></tr>` : ''}
   </tbody></table>

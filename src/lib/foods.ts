@@ -79,7 +79,7 @@ function judge(p: Profile, f: Food): Note[] {
     else if (f.gi === 'low' && f.c > 5) out.push({ level: 'good', text: L('مناسب للسكر ومقاومة الإنسولين، بيرفع السكر ببطء.', 'Good for diabetes and insulin resistance: raises blood sugar slowly.') });
     if (t.has('sweetener')) out.push({ level: 'ok', text: L('من غير سكر وده أحسن، بس المحليات بتزود الرغبة في الحلو. المياه أحسن.', 'Sugar-free is better, but sweeteners feed sweet cravings. Water is best.') });
   }
-  if (has('steroids') && (t.has('salty') || t.has('sugary') || t.has('soda'))) out.push({ level: 'warn', text: L('مع الكورتيزون قللي الملح والسكر عشان الضغط والسكر والمياه في الجسم.', 'On steroids, cut back on salt and sugar for your blood pressure, blood sugar and water retention.'), salt: true });
+  if (has('steroids') && (t.has('salty') || t.has('sugary') || t.has('soda'))) out.push({ level: 'warn', text: L(`مع الكورتيزون ${g('قلل', 'قللي')} الملح والسكر عشان الضغط والسكر والمياه في الجسم.`, 'On steroids, cut back on salt and sugar for your blood pressure, blood sugar and water retention.'), salt: true });
   if (has('thyroxine') && t.has('caffeine')) out.push({ level: 'ok', text: L(`القهوة والشاي بعد دوا الغدة بساعة على الأقل.`, 'Coffee and tea at least an hour after your thyroid medicine.') });
   // What typed conditions (or the answers about them) ask to cut down on.
   const flagged = (fl: FoodFlag) => {

@@ -102,7 +102,7 @@ function Cropper({ pick, onDone, onCancel, sex }: { pick: Pick; onDone: (rect: R
 function ZoomBtn({ label, onPress }: { label: string; onPress: () => void }) {
   const c = useColors();
   return (
-    <Pressable onPress={() => { play('pop'); onPress(); }} accessibilityRole="button" accessibilityLabel={label === '+' ? L('كبري', 'Zoom in') : L('صغري', 'Zoom out')}
+    <Pressable onPress={() => { play('pop'); onPress(); }} accessibilityRole="button" accessibilityLabel={label === '+' ? L('تكبير', 'Zoom in') : L('تصغير', 'Zoom out')}
       style={({ pressed }) => [{ width: 48, height: 44, borderRadius: RADIUS, borderWidth: 1, borderColor: '#2A2E33', alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
       <Text style={{ fontFamily: fonts.displaySemi, fontSize: 22, color: c.petrol }}>{label}</Text>
     </Pressable>
@@ -133,6 +133,7 @@ export function PhotoPicker({ photo, name, onChange, size = 96, sex }: { photo?:
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [crop, setCrop] = useState<Pick | null>(null);
+  const g = genderFor(sex);
   const pick = async (camera: boolean) => {
     play('tap');
     setErr('');
@@ -151,7 +152,7 @@ export function PhotoPicker({ photo, name, onChange, size = 96, sex }: { photo?:
       onChange(await cut(a.uri, null));
       play('check');
     } catch {
-      setErr(L('مقدرناش نفتح الصورة، جربي تاني.', "Couldn't open the photo, try again."));
+      setErr(L(`مقدرناش نفتح الصورة، ${g('جرب', 'جربي')} تاني.`, "Couldn't open the photo, try again."));
     } finally {
       setBusy(false);
     }
@@ -167,7 +168,7 @@ export function PhotoPicker({ photo, name, onChange, size = 96, sex }: { photo?:
     setCrop(null);
     if (!p) return;
     setBusy(true);
-    try { onChange(await cut(p.uri, rect)); play('check'); } catch { setErr(L('مقدرناش نفتح الصورة، جربي تاني.', "Couldn't open the photo, try again.")); }
+    try { onChange(await cut(p.uri, rect)); play('check'); } catch { setErr(L(`مقدرناش نفتح الصورة، ${g('جرب', 'جربي')} تاني.`, "Couldn't open the photo, try again.")); }
     setBusy(false);
   };
   return (
@@ -180,9 +181,9 @@ export function PhotoPicker({ photo, name, onChange, size = 96, sex }: { photo?:
         {busy ? <View style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={c.petrol} /></View> : null}
       </Pressable>
       <View style={[styles.row, { gap: 8 }]}>
-        {link(photo ? L('غير الصورة', 'Change photo') : L('ضيف صورة', 'Add photo'), () => pick(false))}
+        {link(photo ? L('تغيير الصورة', 'Change photo') : L('إضافة صورة', 'Add photo'), () => pick(false))}
         {link(L('الكاميرا', 'Camera'), () => pick(true))}
-        {photo ? link(L('شيل', 'Remove'), () => { play('remove'); onChange(undefined); }) : null}
+        {photo ? link(L('مسح الصورة', 'Remove'), () => { play('remove'); onChange(undefined); }) : null}
       </View>
       {err ? <T kind="small" color={c.bad} style={{ textAlign: 'center' }}>{err}</T> : null}
     </View>

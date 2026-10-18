@@ -210,7 +210,7 @@ export const KB: KBItem[] = [
     rule: 'any', time: '10:00', form: 'inj', unit: 'mg', weekly: true, food: ['fat'], proteinMin: 1.8, watch: ['nausea', 'belly'],
     how: (g) => ['حقنة تحت الجلد في نفس اليوم كل أسبوع.', 'An injection under the skin on the same day each week.'],
     foodNote: (g) => [`الأكل هيقل، فخلي البروتين أول حاجة في كل وجبة عشان ${g('متخسرش', 'متخسريش')} عضل. وجبات صغيرة، وبلاش الدسم والمقلي عشان الغثيان.`, "You'll eat less, so put protein first in every meal to keep your muscle. Small meals, and skip greasy and fried food to avoid nausea."],
-    trainNote: (g) => ['تمارين الأوزان مهمة جدا مع الحقن دي عشان تحافظ على العضل.', 'Strength training matters a lot on these injections, to keep your muscle.'] },
+    trainNote: (g) => [`تمارين الأوزان مهمة جدا مع الحقن دي عشان ${g('تحافظ', 'تحافظي')} على العضل.`, 'Strength training matters a lot on these injections, to keep your muscle.'] },
   { id: 'm_statin', kind: 'med', n: ['دوا الكوليسترول', 'Statin'], words: ['ليبيتور', 'كريستور', 'اتورفاستاتين', 'روزوفاستاتين', 'سيمفاستاتين', 'روسوكارد', 'اتور', 'lipitor', 'crestor', 'atorvastatin', 'rosuvastatin', 'simvastatin'],
     implies: 'chol', rule: 'any', time: '21:00', form: 'pill', unit: 'mg', watch: ['cramps'],
     avoid: [{ re: /جريب ?فروت|grapefruit/, level: 'bad', text: (g) => ['الجريب فروت بيتعارض مع دوا الكوليسترول.', 'Grapefruit interacts with your cholesterol medicine.'] }],

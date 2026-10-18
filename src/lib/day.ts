@@ -27,6 +27,8 @@ export type DayLog = {
   trainEnd?: number;
   /** Last night's sleep: when the person went to bed and woke up ("HH:MM"). */
   sleep?: { bed: string; wake: string };
+  /** The person lit the day's flame by holding it (see lib/flame). */
+  lit?: boolean;
 };
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });

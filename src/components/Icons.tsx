@@ -45,3 +45,12 @@ export function Badge({ color, size = 40, children }: { color: string; size?: nu
   );
 }
 
+
+export function ShieldIcon({ size = 22, color = '#2E9BFF', on = true, check = '#04130B' }: { size?: number; color?: string; on?: boolean; check?: string }) {
+  return (
+    <Svg width={size} height={(size * 26) / 24} viewBox="0 0 24 26">
+      <Path d="M12 1l10 4v8c0 6-4 10-10 12C6 23 2 19 2 13V5z" fill={on ? color : 'none'} stroke={color} strokeWidth={on ? 0 : 1.6} strokeDasharray={on ? undefined : '3 2.5'} />
+      {on ? <Path d="M7.5 13l3 3 6-6" stroke={check} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : null}
+    </Svg>
+  );
+}

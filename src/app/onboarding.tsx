@@ -255,7 +255,7 @@ export default function Onboarding() {
           ))}
         </View>
         <T kind="label">{L(g('مستواك', 'مستواكي'), 'Your level')}</T>
-        <Segmented<'beg' | 'mid'> items={[['beg', L(g('مبتدئ', 'مبتدئة'), 'Beginner')], ['mid', L('بتمرن بانتظام', 'I train regularly')]]} value={d.level}
+        <Segmented<'beg' | 'mid'> items={[['beg', L(g('مبتدئ', 'مبتدئة'), 'Beginner')], ['mid', L(g('بتمرن بانتظام', 'بتتمرني بانتظام'), 'I train regularly')]]} value={d.level}
           onChange={(level) => { set({ level }); if (d.quiz?.days && d.quiz.where && d.quiz.focus) { const r = recommendPlan(d.quiz, level); set({ level, schedule: r.schedule, places: r.places, splits: undefined }); } }} />
         {rec && d.schedule ? (
           <Card tone="accent" style={{ marginTop: 6 }}>
@@ -276,7 +276,7 @@ export default function Onboarding() {
           <Choice key={k} title={tx(SCHEDULES[k].n)} sub={tx(SCHEDULES[k].d)} on={d.schedule === k} onPress={() => pickSchedule(k)} />
         ))}
         <T kind="label">{L(g('مستواك', 'مستواكي'), 'Your level')}</T>
-        <Segmented<'beg' | 'mid'> items={[['beg', L(g('مبتدئ', 'مبتدئة'), 'Beginner')], ['mid', L('بتمرن بانتظام', 'I train regularly')]]} value={d.level} onChange={(level) => set({ level })} />
+        <Segmented<'beg' | 'mid'> items={[['beg', L(g('مبتدئ', 'مبتدئة'), 'Beginner')], ['mid', L(g('بتمرن بانتظام', 'بتتمرني بانتظام'), 'I train regularly')]]} value={d.level} onChange={(level) => set({ level })} />
       </>}
 
       {st === 'week' && <>

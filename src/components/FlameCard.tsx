@@ -185,7 +185,9 @@ function FlameCalendar({ g, open, onClose, marks, best, n, shields, start }: {
   const arrow = (dir: -1 | 1, on: boolean) => (
     <Pressable disabled={!on} onPress={() => setBack((b) => b - dir)} hitSlop={10} accessibilityRole="button"
       accessibilityLabel={dir < 0 ? L('الشهر اللي فات', 'Previous month') : L('الشهر الجاي', 'Next month')} style={{ opacity: on ? 1 : 0.25, padding: 6 }}>
-      <Text style={{ fontFamily: fonts.displaySemi, fontSize: 20, color: c.ink, writingDirection: 'ltr' }}>{(dir < 0) === (isEn() || native) ? '‹' : '›'}</Text>
+      <Svg width={18} height={18} viewBox="0 0 24 24">
+        <Path d={(dir < 0) === (isEn() || native) ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} stroke={c.ink} strokeWidth={2.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
     </Pressable>
   );
   return (

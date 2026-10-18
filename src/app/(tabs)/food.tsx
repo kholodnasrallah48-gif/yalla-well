@@ -7,6 +7,7 @@ import { CaptainCard } from '../../components/match.tsx';
 import { TourTarget } from '../../components/TourTarget.tsx';
 import { foodLine } from '../../lib/captain.ts';
 import { MealIdea } from '../../components/MealIdea.tsx';
+import { OutsideButton, OutsideSheet } from '../../components/Outside.tsx';
 import { CalorieCheckCard } from '../../components/PlanSettings.tsx';
 import { RecipeFinder } from '../../components/RecipeFinder.tsx';
 import { WaterCard } from '../../components/WaterCard.tsx';
@@ -41,6 +42,7 @@ export default function FoodScreen() {
   const c = useColors();
   const { profile, day, today, custom, updateDay, saveProfile } = useStore();
   const [ideas, setIdeas] = useState<Meal | null>(null);
+  const [out, setOut] = useState(false);
   const all = useMemo(() => [...FOODS, ...custom.map((f) => ({ ...f, cat: MY_FOODS_CAT }))], [custom]);
   const byId = useMemo(() => new Map(all.map((f) => [f.id, f])), [all]);
   if (!profile) return null;
@@ -121,6 +123,9 @@ export default function FoodScreen() {
               </Pressable>
             ) : null}
           </CaptainCard>
+          <View style={{ marginTop: 10 }}>
+            <OutsideButton onPress={() => setOut(true)} />
+          </View>
         </Rise>
         <Rise i={1}>
           <View style={[styles.row, { gap: 6, alignItems: 'flex-end' }]}>
@@ -199,6 +204,9 @@ export default function FoodScreen() {
           {loose.map((f, k) => foodRow(f, k === loose.length - 1))}
         </Card>
       ) : null}
+
+      <OutsideSheet open={out} onClose={() => setOut(false)} profile={profile} kcalLeft={Math.round(left)} proteinLeft={Math.round(T0.protein - t.p)}
+        meal={nextMeal} update={updateDay} g={g} />
 
       <TourTarget id="food.finder">
         <RecipeFinder budgets={budgets} start={nextMeal} g={g} />

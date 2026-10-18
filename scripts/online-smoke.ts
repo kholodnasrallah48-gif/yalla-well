@@ -3,6 +3,7 @@
 import { hiRes, mealDBThumb, offImage, wikiThumb, foodImage } from '../src/lib/food-images.ts';
 import { lastError, searchOnline, toEnglish } from '../src/lib/online.ts';
 import { translate } from '../src/lib/translate.ts';
+import { nearby } from '../src/lib/outside.ts';
 import { dishQuery, estimateKcal, lookupMealDB, searchMealDB } from '../src/lib/online-recipes.ts';
 
 const args = process.argv.slice(2);
@@ -83,4 +84,12 @@ await check('en → ar "no heavy lifting"', () => translate('no heavy lifting'))
 
 console.log(`\n${ok}/${total} translation checks passed`);
 if (!ok) console.error('No translations came back');
+// Places near a point (OpenStreetMap Overpass), for "أنا برة البيت". Printed only: the public servers can be busy.
+console.log('\n— Places near a point (OpenStreetMap) —');
+for (const [label, lat, lon] of [['Cairo, Tahrir', 30.0444, 31.2357], ['Dubai Marina', 25.0805, 55.1403]] as const) {
+  const places = await nearby(lat, lon, true);
+  console.log(`${places?.length ? '✓' : '✗'} ${label}: ${places == null ? 'no answer' : places.length + ' places'}`);
+  for (const x of (places ?? []).slice(0, 6)) console.log(`  ${x.name} · ${x.kind} · ${x.m} m`);
+}
+
 process.exit(noCalories || !lookupsOk || !ok ? 1 : 0);

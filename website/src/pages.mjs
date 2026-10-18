@@ -591,7 +591,7 @@ const contactPage = {
 
 function legal(ctx, title, sections) {
   const { L } = ctx;
-  return `${pageHero(ctx, L('مسودة · آخر تحديث 15 أكتوبر 2026', 'Draft · last updated 15 October 2026'), title, '')}
+  return `${pageHero(ctx, L('مسودة · آخر تحديث 18 أكتوبر 2026', 'Draft · last updated 18 October 2026'), title, '')}
 <section class="section tight"><div class="wrap narrow prose">
 ${sections.map(([h, ps]) => `<h2 class="h3">${h}</h2>${ps.map((p) => Array.isArray(p) ? ticks(p) : `<p>${p}</p>`).join('')}`).join('\n')}
 </div></section>`;
@@ -610,6 +610,7 @@ const privacy = {
       [L('اللي بيخرج من الموبايل', 'What leaves your phone'), [[
         L('البحث عن أكلة مش موجودة في القائمة أو قراءة باركود: بيتبعت كلمة البحث أو رقم الباركود بس لقواعد بيانات أكل عامة (USDA FoodData Central وOpen Food Facts).', 'Searching for a food or scanning a barcode: only the search words or barcode number go to public food databases (USDA FoodData Central and Open Food Facts).'),
         L('الكلام اللي بيتكتب باليد، زي حالة أو دواء مش موجود في القائمة، بيتبعت لخدمة ترجمة (Google Translate أو MyMemory) علشان يظهر باللغة التانية.', 'Text you type yourself, such as a condition or medicine not on the list, is sent to a translation service (Google Translate or MyMemory) so it can be shown in the other language.'),
+        L('زرار "أنا برة البيت": وقت البحث عن الأماكن القريبة بس، الموبايل بيسأل عن إذن الموقع، وبيتبعت المكان التقريبي لخريطة OpenStreetMap علشان تجيب المطاعم والكافيهات القريبة. المكان مش بيتحفظ في أي حتة.', 'The "I\'m eating out" button: only when you ask for places near you, the phone asks for location access and sends your approximate position to OpenStreetMap to find nearby restaurants and cafes. Your location is never saved.'),
         L('صور الوصفات والتمارين بتتحمل من مواقع عامة (TheMealDB وWikimedia وGitHub)، وفيديوهات الشرح من يوتيوب. والمواقع دي بتشوف عنوان الإنترنت زي أي موقع.', 'Recipe and exercise pictures load from public sites (TheMealDB, Wikimedia and GitHub), and how-to videos from YouTube. Like any website, these see your internet address.'),
         L('تقرير الدكتور والتقرير الأسبوعي مش بيتبعتوا لحد، إلا لو اتبعتوا يدويا من الموبايل.', 'The doctor report and weekly report go nowhere unless you send them yourself.'),
       ]]],

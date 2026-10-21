@@ -1,9 +1,10 @@
-// Food photos without API keys: TheMealDB's dish photo when the dish matches, else the Wikipedia (English, then
-// Arabic) article thumbnail, else the Open Food Facts product image for packaged foods. Results (and misses) are
-// cached; lookups run a few at a time and never throw. The UI shows a drawn placeholder until (unless) one arrives.
+// Food photos: our own recipes and foods use checked photos (lib/food-photos), packaged foods the Open Food Facts
+// product image by barcode, and anything else a TheMealDB dish photo when the name matches. Results (and misses) are
+// cached; lookups run a few at a time and never throw. The UI shows a plain tile until (unless) one arrives.
 import { cacheGet, cachePeek, cacheSet } from './cache.ts';
 import { EN_DATA } from './en/index.ts';
-import { norm } from './foods.ts';
+import { FOOD_PHOTOS, RECIPE_PHOTOS } from './food-photos.ts';
+import { FOODS, norm } from './foods.ts';
 
 /** What a photo is looked up by. */
 export type ImageKey = {
@@ -191,21 +192,22 @@ export function hiRes(url: string): string {
 /** The barcode of a packaged food from its id ('bc<code>' from scanning, 'off<code>_<grams>' from online search). */
 export const barcodeOf = (id: string): string | null => id.match(/^(?:bc|off)(\d{6,14})(?:_\d+)?$/)?.[1] ?? null;
 
-/**
- * Titles that name an ingredient, plant or animal rather than a plated dish. Their article photo (a pea pod, a
- * date palm, a live fish) looks out of place next to dish photos, so recipes skip them and show the tile instead.
- */
-const NOT_DISH = new Set([
-  'Apple', 'Avocado', 'Banana', 'Brown rice', 'Buttermilk', 'Cauliflower', 'Chia seed', 'Chicken as food', 'Chickpea',
-  'Common sole', 'Cottage cheese', 'Cucumber', 'Date palm', 'Edible mushroom', 'Egg white', 'Fish as food',
-  'Flathead grey mullet', 'Flatbread', 'Freekeh', 'Green bean', 'Grouper', 'Lentil', 'Lettuce', 'Liver (food)',
-  'Lupin bean', 'Mackerel as food', 'Medjool', 'Nut (fruit)', 'Okra', 'Pea', 'Peanut butter', 'Quinoa', 'Salmon as food',
-  'Sardine', 'Sardines as food', 'Shrimp and prawn as food', 'Sole (fish)', 'Spinach', 'Squid as food', 'Stir frying',
-  'Strawberry', 'Sweet potato', 'Tilapia', 'Tilapia as food', 'Tofu', 'Vicia faba', 'Watermelon', 'Wheat berry', 'Zucchini',
-  'Arabic coffee', 'Areesh cheese', 'Pasta',
-]);
+const OUR_FOODS = new Set(FOODS.map((f) => f.n));
 
-/** Finds a photo for one item: null when none was found (or we're offline). Never throws. */
+/** A checked photo for our own recipes and foods: the URL, null for none, undefined when the item isn't ours. */
+function checked(k: ImageKey): string | null | undefined {
+  const rid = k.id.replace(/^r_/, '');
+  if (RECIPE_TITLES[rid]) return RECIPE_PHOTOS[rid] ?? null;
+  const n = k.n.trim();
+  if (OUR_FOODS.has(n)) return FOOD_PHOTOS[n] ?? null;
+  return undefined;
+}
+
+/**
+ * Finds a photo for one item: null when none was found (or we're offline). Never throws. Our own recipes and foods
+ * only use their checked photo; other foods (typed by the person) only take a TheMealDB dish whose name matches,
+ * since an encyclopedia lookup by name too often brought a plant, an animal or a different dish.
+ */
 async function find(k: ImageKey): Promise<{ url: string | null; sure: boolean }> {
   let sure = true;
   const take = (g: Got<string>) => { if (!g.ok) { sure = false; return null; } return g.data; };
@@ -213,21 +215,13 @@ async function find(k: ImageKey): Promise<{ url: string | null; sure: boolean }>
   if (code) {
     const u = take(await offImage(code));
     if (u) return { url: u, sure };
+    return { url: null, sure };
   }
-  const recipe = !!RECIPE_TITLES[k.id.replace(/^r_/, '')];
-  const titles = titlesFor(k).filter((t) => !recipe || !NOT_DISH.has(t));
-  if (titles.length && !code) {
-    const u = take(await mealDBThumb(titles[0]));
-    if (u) return { url: u, sure };
-  }
-  for (const t of titles.slice(0, 3)) {
-    const u = take(await wikiThumb(t, 'en'));
-    if (u) return { url: u, sure };
-  }
-  // Arabic article by the Arabic name ("فول مدمس", "كشري"); only short names can be an article title.
-  const ar = k.n.replace(/\([^)]*\)/g, '').trim();
-  if (!recipe && /[؀-ۿ]/.test(ar) && ar.split(/\s+/).length <= 3) {
-    const u = take(await wikiThumb(ar, 'ar'));
+  const own = checked(k);
+  if (own !== undefined) return { url: own, sure };
+  const title = titlesFor(k)[0];
+  if (title) {
+    const u = take(await mealDBThumb(title));
     if (u) return { url: u, sure };
   }
   return { url: null, sure };
@@ -236,8 +230,8 @@ async function find(k: ImageKey): Promise<{ url: string | null; sure: boolean }>
 /** Cache key: our recipes by id, everything else by its name (same name → same photo). */
 const keyOf = (k: ImageKey) => {
   const rid = k.id.replace(/^r_/, '');
-  // 'img2': photos picked after the sharper sizes and the dish-only rule (older cached picks are ignored).
-  return RECIPE_TITLES[rid] ? 'img2:r:' + rid : 'img2:n:' + norm(k.n).slice(0, 80);
+  // 'img3': photos picked under the checked-photos rule (older cached picks are ignored).
+  return RECIPE_TITLES[rid] ? 'img3:r:' + rid : 'img3:n:' + norm(k.n).slice(0, 80);
 };
 
 const running = new Map<string, Promise<string | null>>();
@@ -254,12 +248,14 @@ function slot<T>(job: () => Promise<T>): Promise<T> {
 /** A photo already known in memory (for the first render), undefined when it hasn't been looked up yet. */
 export function peekImage(k: ImageKey): string | null | undefined {
   if (k.img) return k.img;
+  if (!barcodeOf(k.id)) { const own = checked(k); if (own !== undefined) return own; }
   return cachePeek<string | null>(keyOf(k));
 }
 
 /** The photo URL for a food or dish, or null. Found photos are kept for 60 days, misses for 5 (not when offline). */
 export function foodImage(k: ImageKey): Promise<string | null> {
   if (k.img) return Promise.resolve(k.img);
+  if (!barcodeOf(k.id)) { const own = checked(k); if (own !== undefined) return Promise.resolve(own); }
   const key = keyOf(k);
   const busy = running.get(key);
   if (busy) return busy;

@@ -45,7 +45,7 @@ export function NumbersFrame({ w, s, streak, from, to }: { w: number; s: WeekSto
             <Path d="M28 36L50 58L72 36" stroke={WHITE} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" />
             <Circle cx={50} cy={24} r={9} fill={GREEN} />
           </Svg>
-          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12 * u, lineHeight: 16 * u, letterSpacing: 3.2 * u, color: BLUE, writingDirection: 'ltr', ...shadow }}>YALLA WELL</Text>
+          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12 * u, lineHeight: 16 * u, letterSpacing: 3.2 * u, color: '#19E68C', writingDirection: 'ltr', ...shadow }}>YALLA WELL</Text>
         </View>
         <Text style={t(11, fonts.bodyMedium, SOFT)}>{shortDate(from)} – {shortDate(to)}</Text>
       </LinearGradient>

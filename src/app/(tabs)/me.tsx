@@ -93,7 +93,7 @@ export default function Me() {
         {W.diff !== 0 ? <T kind="small" color={W.diff < 0 ? c.ok : c.muted}>{L(`${g('بدأت', 'بدأتي')} ${W.start} كجم، دلوقتي ${W.now} كجم (${W.diff > 0 ? '+' : ''}${W.diff} كجم)`, `Started ${W.start} kg, now ${W.now} kg (${W.diff > 0 ? '+' : ''}${W.diff} kg)`)}</T> : null}
         <View style={[styles.row, { gap: 8 }]}>
           <TextInput value={kg} onChangeText={setKg} keyboardType="decimal-pad" placeholder={String(p.weight)} placeholderTextColor={c.muted}
-            style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, textAlign: 'center' }} />
+            style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, textAlign: 'center' }} />
           <Btn title={L('حفظ', 'Save')} disabled={!okKg} onPress={() => { saveProfile(logWeight(p, toNum(kg))); setKg(''); }} />
         </View>
       </Card>

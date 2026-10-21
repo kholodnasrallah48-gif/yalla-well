@@ -24,7 +24,7 @@ function IconBtn({ label, a11y, onPress, silent }: { label: string; a11y: string
   const c = useColors();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={a11y} onPress={() => { if (!silent) play(label === '−' ? 'remove' : 'tap'); onPress(); }}
-      style={{ width: 36, height: 36, borderRadius: 4, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+      style={{ width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ fontSize: 20, lineHeight: 22, color: c.petrol, fontFamily: fonts.displaySemi }}>{label}</Text>
     </Pressable>
   );
@@ -115,7 +115,7 @@ export default function AddFood() {
   };
   const mealKcal = parsed ? parsed.items.reduce((a, it) => a + it.food.kcal * it.q, 0) + onlineFoods.reduce((a, f) => a + (f?.kcal ?? 0), 0) : 0;
   const anyToAdd = !!parsed && (parsed.items.length > 0 || onlineFoods.some(Boolean));
-  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
 
   const saveCustom = () => {
     if (!form.n.trim() || !form.kcal) return;
@@ -141,7 +141,7 @@ export default function AddFood() {
               <View style={[styles.row, { gap: 6, flexWrap: 'wrap' }]}>
                 <T kind="body" style={{ fontFamily: fonts.bodyMedium }}>{tx(f.n)}</T>
                 {used >= OFTEN ? (
-                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: c.onLime, backgroundColor: c.lime, borderRadius: 4, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 1 }}>
+                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: c.onLime, backgroundColor: c.lime, borderRadius: 12, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 1 }}>
                     {L(`متكررة · ${num(used)} ${used <= 10 ? 'أيام' : 'يوم'}`, `Often · ${num(used)} ${used === 1 ? 'day' : 'days'}`)}
                   </Text>
                 ) : null}
@@ -233,14 +233,14 @@ export default function AddFood() {
       <View style={[styles.row, { gap: 6 }]}>
         {MEALS.map((m) => (
           <Pressable key={m} onPress={() => { play('tap'); setTarget(m); }} accessibilityRole="radio" accessibilityState={{ selected: m === target }}
-            style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: m === target ? c.petrol : c.line, backgroundColor: m === target ? c.petrol : c.surface, borderRadius: 4, paddingVertical: 6 }}>
-            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: m === target ? c.onPetrol : c.ink }}>{tx(MEAL_NAME[m])}</Text>
+            style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: m === target ? c.ink : c.line, backgroundColor: m === target ? c.ink : c.surface, borderRadius: 999, paddingVertical: 6 }}>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: m === target ? c.onInk : c.ink }}>{tx(MEAL_NAME[m])}</Text>
           </Pressable>
         ))}
       </View>
       <T kind="small">{L(`في ${MEAL_NAME[target]} لحد دلوقتي: ${fmt(inMeal.kcal)} سعرة · فاضل في اليوم ${fmt(Math.max(0, remaining))}`, `In ${tx(MEAL_NAME[target])} so far: ${fmt(inMeal.kcal)} kcal · ${fmt(Math.max(0, remaining))} left today`)}</T>
       {added ? (
-        <View accessibilityLiveRegion="polite" style={{ backgroundColor: c.okBg, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 8 }}>
+        <View accessibilityLiveRegion="polite" style={{ backgroundColor: c.okBg, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 }}>
           <T kind="small" color={c.ok}>{L(`✓ اتضاف ${toMeal(target)}: ${added}`, `✓ Added to ${tx(MEAL_NAME[target])}: ${added}`)}</T>
         </View>
       ) : null}
@@ -314,8 +314,8 @@ export default function AddFood() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
                       {x.hits.slice(0, 8).map((h, k) => (
                         <Pressable key={h.id} onPress={() => set({ pick: k })} accessibilityRole="button" accessibilityState={{ selected: k === x.pick }}
-                          style={{ maxWidth: 220, borderWidth: 1, borderColor: k === x.pick ? c.petrol : c.line, backgroundColor: k === x.pick ? c.petrol : c.surface, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 4 }}>
-                          <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: k === x.pick ? c.onPetrol : c.ink }}>{h.name} · {fmt(h.per100.kcal)}</Text>
+                          style={{ maxWidth: 220, borderWidth: 1, borderColor: k === x.pick ? c.ink : c.line, backgroundColor: k === x.pick ? c.ink : c.surface, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                          <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: k === x.pick ? c.onInk : c.ink }}>{h.name} · {fmt(h.per100.kcal)}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -349,7 +349,7 @@ export default function AddFood() {
                 {often.map((f, i) => row(f, i < often.length - 1))}
               </View>
             ) : <T kind="small">{L(`الأكل اللي ${g('بتاكله', 'بتاكليه')} كتير هيظهر هنا فوق عشان ${g('تضيفه', 'تضيفيه')} بسرعة.`, 'Foods you eat often will show up here so you can add them quickly.')}</T>}
-            <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: 4, overflow: 'hidden' }}>
+            <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: 12, overflow: 'hidden' }}>
               {FOOD_CATS.filter((k) => k !== ALL_CAT).map((k, ci, cats) => {
                 const n = all.filter((f) => f.cat === k).length;
                 if (!n) return null;

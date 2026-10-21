@@ -31,7 +31,7 @@ export function LiftLogbook({ id, hist, profile, compact }: { id: string; hist?:
 
   return (
     <View style={{ gap: 14 }}>
-      <View style={[styles.row, { gap: 12, borderWidth: 1, borderColor: c.petrol, borderRadius: RADIUS, padding: 12, backgroundColor: c.okBg }]}>
+      <View style={[styles.row, { gap: 12, borderRadius: 16, padding: 14, backgroundColor: c.soft }]}>
         <Mascot pose="cheer" size={compact ? 44 : 56} color={c.ink} head={c.petrol} animate={false} />
         <View style={{ flex: 1, gap: 2 }}>
           <T kind="small">{L(g('أحسن رقم ليك', 'أحسن رقم ليكي'), 'Your best')} · {dateLabel(r.best.date)}</T>
@@ -75,7 +75,7 @@ export function LiftLogbook({ id, hist, profile, compact }: { id: string; hist?:
       <View style={[styles.rowBetween, { gap: 8, flexWrap: 'wrap' }]}>
         <T kind="small">{L(`آخر مرة: ${kg(r.last.w)} كجم × ${r.last.reps.join('، ')}`, `Last time: ${kg(r.last.w)} kg × ${r.last.reps.join(', ')}`)}</T>
         {r.change !== null ? (
-          <View style={[styles.row, { gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 3, backgroundColor: r.change > 0 ? c.okBg : r.change < 0 ? c.warnBg : c.soft }]}>
+          <View style={[styles.row, { gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: r.change > 0 ? c.okBg : r.change < 0 ? c.warnBg : c.soft }]}>
             {r.change !== 0 ? <Num size={14} color={r.change > 0 ? c.ok : c.warn} style={{ writingDirection: 'ltr' }}>{`\u200E${r.change > 0 ? '+' : '−'}${kg(Math.abs(r.change))}`}</Num> : null}
             <T kind="label" color={r.change > 0 ? c.ok : r.change < 0 ? c.warn : c.muted}>{r.change === 0 ? L('نفس وزن اللي قبلها', 'Same as the time before') : L('عن اللي قبلها', 'vs the time before')}</T>
           </View>

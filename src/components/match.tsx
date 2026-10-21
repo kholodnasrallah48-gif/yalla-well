@@ -1,33 +1,31 @@
-// Pieces of the "match" look shared by the screens: the captain's card, the day's meal bar and the scoreboard row.
+// Pieces shared by the screens: the captain's card, the day's meal bar and the row of numbers.
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
 
 import { fonts, useColors } from '../theme.ts';
-import { Mascot, type Pose } from './Mascot.tsx';
-import { Kicker, Num, RADIUS, T, styles } from './ui.tsx';
+import { type Pose } from './Mascot.tsx';
+import { CARD_R, Kicker, Num, T, styles } from './ui.tsx';
 import { L } from '../lib/i18n.ts';
 
-/** The captain's card: what he says on the start side, and him on a dark panel with a huge faded number behind. */
-export function CaptainCard({ head, body, pose, big, caption, height = 124, excited, children }: {
+/**
+ * The captain's card: what he says, on a rounded panel. In the calm look the champ stays in the logo, so the card is
+ * words only; `pose`, `big`, `caption` and `excited` are kept so the screens don't change. `big` shows as a small
+ * thin number at the end of the kicker line (day number, exercise number).
+ */
+export function CaptainCard({ head, body, big, caption, height = 0, children }: {
   head?: string; body?: string; pose: Pose;
-  /** Faded number behind the champ (day number, exercise number). */
   big?: string; caption?: string; height?: number; excited?: boolean; children?: ReactNode;
 }) {
   const c = useColors();
   return (
-    <View style={{ minHeight: height, flexDirection: 'row', borderWidth: 1, borderColor: c.line, borderRadius: RADIUS, overflow: 'hidden' }}>
-      <View style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 14, justifyContent: 'center', gap: 2 }}>
+    <View style={{ minHeight: Math.min(height, 96), backgroundColor: c.surface, borderRadius: CARD_R, paddingVertical: 14, paddingHorizontal: 16, gap: 4, justifyContent: 'center' }}>
+      <View style={styles.rowBetween}>
         <Kicker>{L('الكابتن بيقول', 'The Captain says')}</Kicker>
-        {head ? <T kind="h2" style={{ fontSize: 22, lineHeight: 34 }}>{head}</T> : null}
-        {body ? <T kind="body" color={c.muted} style={{ fontSize: 13.5, lineHeight: 21 }}>{body}</T> : null}
-        {children}
+        {big || caption ? <Text style={{ fontFamily: fonts.numSemi, fontSize: 13, lineHeight: 17, color: c.muted }}>{caption ?? big}</Text> : null}
       </View>
-      <View style={{ width: height - 2, backgroundColor: c.panel, alignItems: 'center', justifyContent: 'center' }}>
-        {big ? <Text numberOfLines={1} style={{ position: 'absolute', zIndex: 0, top: 2, left: 0, right: 0, textAlign: 'center', fontFamily: fonts.num, fontSize: height * 0.82, lineHeight: height * 0.9, color: c.faint }}>{big}</Text> : null}
-        {/* In its own layer so it stays in front of the faded number (absolute text paints on top on the web). */}
-        <View style={{ zIndex: 1 }}><Mascot pose={pose} size={Math.round(height * 0.74)} excited={excited} /></View>
-        {caption ? <Text style={{ position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', fontFamily: fonts.displaySemi, fontSize: 10.5, color: c.muted }}>{caption}</Text> : null}
-      </View>
+      {head ? <T kind="h2" style={{ fontSize: 19, lineHeight: 29 }}>{head}</T> : null}
+      {body ? <T kind="body" color={c.muted} style={{ fontSize: 14, lineHeight: 22 }}>{body}</T> : null}
+      {children}
     </View>
   );
 }
@@ -56,7 +54,7 @@ export function MealBar({ segs }: { segs: Seg[] }) {
         {shown.map((s, i) => (
           <Animated.View key={i} style={{ flexDirection: 'row', alignItems: 'center', flexGrow: knobAt === -1 ? s.kcal : flex(s), flexShrink: 1, flexBasis: 0, minWidth: 0 }}>
             {i === knobAt ? <Knob /> : null}
-            <View style={{ height: 10, flex: 1, marginStart: i ? 3 : 0, backgroundColor: color(s), borderRadius: 1,
+            <View style={{ height: 8, flex: 1, marginStart: i ? 3 : 0, backgroundColor: color(s), borderRadius: 12,
               borderWidth: s.kind === 'left' ? 1.5 : 0, borderStyle: 'dashed', borderColor: c.petrol }} />
           </Animated.View>
         ))}
@@ -77,18 +75,18 @@ function Knob() {
   const c = useColors();
   return (
     <View style={{ width: 0, height: 20, zIndex: 2, overflow: 'visible' }}>
-      <View style={{ position: 'absolute', left: -10, top: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: c.petrol, borderWidth: 4, borderColor: c.bg }} />
+      <View style={{ position: 'absolute', left: -9, top: 1, width: 18, height: 18, borderRadius: 9, backgroundColor: c.petrol, borderWidth: 4, borderColor: c.bg }} />
     </View>
   );
 }
 
-/** Numbers side by side between hairlines, like a scoreboard. */
+/** Numbers side by side on one panel, split by hairlines. */
 export function ScoreRow({ items }: { items: { value: string; label: string; color?: string }[] }) {
   const c = useColors();
   return (
-    <View style={{ flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.line }}>
+    <View style={{ flexDirection: 'row', backgroundColor: c.surface, borderRadius: CARD_R, paddingVertical: 6 }}>
       {items.map((x, i) => (
-        <View key={i} style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 6, borderStartWidth: i ? 1 : 0, borderColor: c.line, alignItems: 'center' }}>
+        <View key={i} style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 6, borderStartWidth: i ? 1 : 0, borderColor: c.line, alignItems: 'center', gap: 2 }}>
           <Num size={30} weight="black" color={x.color}>{x.value}</Num>
           <T kind="label" style={{ textAlign: 'center', fontSize: 11.5 }}>{x.label}</T>
         </View>

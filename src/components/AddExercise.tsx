@@ -47,7 +47,7 @@ export function AddExercise({ profile, sid, place, have, g, onSave, onClose }: {
   };
 
   return (
-    <Card style={{ borderColor: c.petrol, gap: 10 }}>
+    <Card style={{ gap: 10 }}>
       <View style={styles.rowBetween}>
         <T kind="h2" style={{ flex: 1 }}>{L(`${g('ضيف', 'ضيفي')} تمرين ليوم ${day}`, `Add an exercise to ${day} days`)}</T>
         <Pressable onPress={() => { play('tap'); onClose(); }} accessibilityRole="button" accessibilityLabel={L('قفل', 'Close')} hitSlop={10}>

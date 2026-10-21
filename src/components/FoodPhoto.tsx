@@ -68,8 +68,8 @@ export function FoodPhoto({ item, size = 52, height, radius = 12, kind = 'dish',
   const show = !!url;
   return (
     <View accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none"
-      style={[{ width: size, height: h, borderRadius: radius, overflow: 'hidden', backgroundColor: c.soft, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }, style]}>
-      <Icon kind={kind} size={Math.min(size, h) * 0.5} color={c.petrol} />
+      style={[{ width: size, height: h, borderRadius: radius, overflow: 'hidden', backgroundColor: c.soft, alignItems: 'center', justifyContent: 'center' }, style]}>
+      <Icon kind={kind} size={Math.min(size, h) * 0.42} color={c.dim} />
       {show ? (
         <Image source={{ uri: url }} resizeMode="cover" onError={() => setBroken((b) => [...b, url!])} accessibilityIgnoresInvertColors
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />

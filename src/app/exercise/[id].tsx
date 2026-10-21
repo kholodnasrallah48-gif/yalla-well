@@ -148,7 +148,7 @@ export default function ExerciseScreen() {
         </Pressable>
       </View>
       <T kind="small">{item.rx}</T>
-      {GEAR[item.id] || item.gear ? <T kind="label" color={c.lime}>{L('الأداة: ', 'Equipment: ')}{GEAR[item.id] ? L(GEAR[item.id].ar, GEAR[item.id].en) : item.gear}</T> : null}
+      {GEAR[item.id] || item.gear ? <T kind="label" color={c.titanium}>{L('الأداة: ', 'Equipment: ')}{GEAR[item.id] ? L(GEAR[item.id].ar, GEAR[item.id].en) : item.gear}</T> : null}
       {item.why ? <T kind="label" color={c.warn}>{L('اتبدل: ', 'Swapped: ')}{item.why}</T> : null}
 
       {media?.img.length ? (
@@ -187,7 +187,7 @@ export default function ExerciseScreen() {
           <T kind="h2">{L('خلي بالك من', 'Watch your form')}</T>
           {media.cues.map((cue, i) => (
             <View key={i} style={[styles.row, { gap: 8, alignItems: 'flex-start' }]}>
-              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.petrol, marginTop: 9 }} />
+              <View style={{ width: 7, height: 7, borderRadius: 12, backgroundColor: c.petrol, marginTop: 9 }} />
               <T kind="body" style={{ flex: 1 }}>{tx(cue)}</T>
             </View>
           ))}

@@ -61,10 +61,10 @@ export default function Scan() {
           <Btn title={L(g('اسمح بالكاميرا', 'اسمحي بالكاميرا'), 'Allow camera')} onPress={requestPerm} />
         </Card>
       ) : state === 'scan' ? (
-        <View style={{ flex: 1, borderRadius: 4, overflow: 'hidden' }}>
+        <View style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}>
           <CameraView style={{ flex: 1 }} facing="back" onBarcodeScanned={({ data }) => onScan(data)}
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }} />
-          <View pointerEvents="none" style={{ position: 'absolute', left: '12%', right: '12%', top: '38%', height: '22%', borderWidth: 3, borderColor: c.lime, borderRadius: 4 }} />
+          <View pointerEvents="none" style={{ position: 'absolute', left: '12%', right: '12%', top: '38%', height: '22%', borderWidth: 3, borderColor: c.lime, borderRadius: 12 }} />
           <T kind="small" color="#FFFFFF" style={{ position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center' }}>{L(`${g('قرب', 'قربي')} الباركود جوه المربع`, 'Bring the barcode inside the frame')}</T>
         </View>
       ) : state === 'loading' ? (

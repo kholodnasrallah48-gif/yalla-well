@@ -32,7 +32,7 @@ export function SignIn({ hasLocal, onDone }: { hasLocal: boolean; onDone: () => 
     const t = setTimeout(() => setWait((w) => w - 1), 1000);
     return () => clearTimeout(t);
   }, [wait]);
-  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 12, fontFamily: fonts.body, fontSize: 16, color: c.ink } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, fontFamily: fonts.body, fontSize: 16, color: c.ink } as const;
   const fail = (e: AuthErr) => setErr(L(...ERR[e]));
 
   const send = async () => {

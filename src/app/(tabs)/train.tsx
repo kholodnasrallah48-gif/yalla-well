@@ -34,7 +34,7 @@ function MatchClock({ start, end }: { start?: number; end?: number }) {
   return (
     <View style={{ alignItems: 'flex-end', marginTop: 10 }} accessibilityLabel={L('وقت التمرين', 'Workout time')}>
       <View style={[styles.row, { gap: 6 }]}>
-        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: end ? c.dim : c.petrol }} />
+        <View style={{ width: 6, height: 6, borderRadius: 999, backgroundColor: end ? c.dim : c.petrol }} />
         <T kind="label" style={{ fontSize: 11 }}>{end ? L('خلص في', 'Finished in') : L('وقت التمرين', 'Workout time')}</T>
       </View>
       <Num size={30}>{clock((end ?? now) - start)}</Num>
@@ -146,8 +146,8 @@ export default function Train() {
                   const on = split === k;
                   return (
                     <Pressable key={k} onPress={() => setSplit(k)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                      style={({ pressed }) => [{ minWidth: 56, alignItems: 'center', borderWidth: 1, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : 'transparent', borderRadius: RADIUS, paddingVertical: 8, paddingHorizontal: 12 }, pressed && styles.pressed]}>
-                      <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, lineHeight: 18, color: on ? c.onPetrol : c.ink }}>{splitLabel(k)}</Text>
+                      style={({ pressed }) => [{ minWidth: 56, alignItems: 'center', borderWidth: 1, borderColor: on ? c.ink : c.line, backgroundColor: on ? c.ink : 'transparent', borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12 }, pressed && styles.pressed]}>
+                      <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, lineHeight: 18, color: on ? c.onInk : c.ink }}>{splitLabel(k)}</Text>
                     </Pressable>
                   );
                 })}
@@ -204,7 +204,7 @@ export default function Train() {
                       <View style={{ flex: 1 }}>
                         <T kind="h3" style={on ? { textDecorationLine: 'line-through', opacity: 0.55 } : undefined}>{tx(x.ex.n)}</T>
                         <T kind="small" style={{ fontVariant: ['tabular-nums'] }}>{x.rx}{logged ? L(` · ${g('سجلت', 'سجلتي')} ${num(logged)} مجموعات`, ` · ${num(logged)} ${logged === 1 ? 'set' : 'sets'} logged`) : ''}</T>
-                        {gear ? <T kind="label" color={c.lime}>{L('الأداة: ', 'Equipment: ')}{gear}</T> : null}
+                        {gear ? <T kind="label" color={c.titanium}>{L('الأداة: ', 'Equipment: ')}{gear}</T> : null}
                         {x.own ? <T kind="label" color={c.petrol}>{L(g('إنت ضيفته', 'إنتي ضيفتيه'), 'Added by you')}</T> : null}
                         {x.why ? <T kind="label" color={c.warn}>{L('اتبدل:', 'Swapped:')} {x.why}</T> : null}
                       </View>
@@ -256,7 +256,7 @@ export default function Train() {
           <Kicker color={c.bad}>{L(`${g('وقف', 'وقفي')} التمرين فورا لو ${g('حسيت', 'حسيتي')} بـ`, 'Stop training right away if you feel')}</Kicker>
           {M.watch.map((w, i) => (
             <View key={i} style={[styles.row, { gap: 8 }]}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.bad }} />
+              <View style={{ width: 8, height: 8, borderRadius: 12, backgroundColor: c.bad }} />
               <T kind="body" style={{ flex: 1 }}>{w}</T>
             </View>
           ))}

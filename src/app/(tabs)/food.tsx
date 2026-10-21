@@ -132,8 +132,8 @@ export default function FoodScreen() {
             <CountUp value={t.kcal} format={fmt} size={64} weight="black" color={over ? c.bad : c.ink} style={{ lineHeight: 62 }} />
             <Num size={26} color={c.dim} style={{ paddingBottom: 6 }}>/ {fmt(T0.kcal)}</Num>
             <View style={{ flex: 1 }} />
-            <View style={{ marginBottom: 8, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 3, backgroundColor: over ? c.bad : c.petrol }}>
-              <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, lineHeight: 18, color: over ? '#FFFFFF' : c.onPetrol }}>
+            <View style={{ marginBottom: 8, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: over ? c.bad : c.soft }}>
+              <Text style={{ fontFamily: fonts.displaySemi, fontSize: 13, lineHeight: 18, color: over ? '#FFFFFF' : c.petrol }}>
                 {over ? L(`زيادة ${fmt(t.kcal - T0.kcal)}`, `${fmt(t.kcal - T0.kcal)} over`) : L(`فاضل ${fmt(T0.kcal - t.kcal)}`, `${fmt(T0.kcal - t.kcal)} left`)}
               </Text>
             </View>
@@ -169,8 +169,8 @@ export default function FoodScreen() {
                 {foods.length ? <Num size={24} color={done ? c.ink : c.dim}>{fmt(sum.kcal)}</Num> : null}
                 <Pressable onPress={() => { play('tap'); router.push({ pathname: '/add', params: { meal } }); }} accessibilityRole="button"
                   accessibilityLabel={L(`إضافة أكل ${toMeal(meal)}`, `Add food to ${tx(MEAL_NAME[meal])}`)}
-                  style={({ pressed }) => [{ minHeight: 36, minWidth: 36, borderRadius: 3, borderWidth: 1.5, borderColor: c.petrol, paddingHorizontal: foods.length ? 0 : 12, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
-                  <Text style={{ fontFamily: fonts.displaySemi, fontSize: foods.length ? 18 : 13, lineHeight: 20, color: c.petrol }}>{foods.length ? '+' : L(`+ ${g('ضيف', 'ضيفي')}`, '+ Add')}</Text>
+                  style={({ pressed }) => [{ minHeight: 36, minWidth: 36, borderRadius: 999, backgroundColor: c.soft, paddingHorizontal: foods.length ? 0 : 14, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
+                  <Text style={{ fontFamily: fonts.displaySemi, fontSize: foods.length ? 18 : 13, lineHeight: 20, color: c.ink }}>{foods.length ? '+' : L(`+ ${g('ضيف', 'ضيفي')}`, '+ Add')}</Text>
                 </Pressable>
               </View>
               {foods.length ? <View style={{ paddingStart: 36 }}>{foods.map((f, k) => foodRow(f, k === foods.length - 1))}</View> : null}

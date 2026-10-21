@@ -128,7 +128,7 @@ export function FlameCard({ profile, logs, update, g }: {
   return (
     <>
       <Pressable onPress={() => setCal(true)} accessibilityRole="button" accessibilityLabel={L('تاريخ الشعلة', 'Flame history')}
-        style={{ borderWidth: 1, borderColor: ready ? '#FF8A3D' : c.line, backgroundColor: c.surface, borderRadius: 4, padding: 14, overflow: 'hidden' }}>
+        style={{ borderWidth: 1, borderColor: ready ? '#FF8A3D' : c.surface, backgroundColor: c.surface, borderRadius: 20, padding: 16, overflow: 'hidden' }}>
         {burning || ready ? (
           <Animated.View pointerEvents="none" style={{ position: 'absolute', top: -60, [isEn() || native ? 'left' : 'right']: -40, width: 220, height: 220, borderRadius: 110, backgroundColor: '#FF8A3D', opacity: Animated.multiply(glow, 0.22) }} />
         ) : null}
@@ -140,8 +140,8 @@ export function FlameCard({ profile, logs, update, g }: {
               <Fire width={72} on={burning} />
             </Animated.View>
             {ready ? (
-              <View style={{ marginTop: 8, width: 72, height: 6, borderRadius: 3, backgroundColor: c.line, overflow: 'hidden' }}>
-                <Animated.View style={{ height: 6, borderRadius: 3, backgroundColor: '#FF8A3D', width: hold.interpolate({ inputRange: [0, 1], outputRange: [0, 72] }) }} />
+              <View style={{ marginTop: 8, width: 72, height: 6, borderRadius: 999, backgroundColor: c.line, overflow: 'hidden' }}>
+                <Animated.View style={{ height: 6, borderRadius: 999, backgroundColor: '#FF8A3D', width: hold.interpolate({ inputRange: [0, 1], outputRange: [0, 72] }) }} />
               </View>
             ) : null}
           </Pressable>
@@ -193,11 +193,11 @@ function FlameCalendar({ g, open, onClose, marks, best, n, shields, start }: {
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 18 }}>
-        <Pressable onPress={() => {}} style={{ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 6, padding: 16, gap: 12, maxWidth: 440, width: '100%', alignSelf: 'center' }}>
+        <Pressable onPress={() => {}} style={{ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 16, padding: 16, gap: 12, maxWidth: 440, width: '100%', alignSelf: 'center' }}>
           <T kind="h2">{L('تاريخ الشعلة', 'Flame history')}</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {[[String(n), L('دلوقتي', 'now')], [String(best), L('أطول سلسلة', 'longest')], [String(okN), L('يوم الشهر ده', 'days this month')]].map(([v, l]) => (
-              <View key={l} style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 4, paddingVertical: 8, alignItems: 'center' }}>
+              <View key={l} style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 12, paddingVertical: 8, alignItems: 'center' }}>
                 <Num size={26} weight="black" color="#FF8A3D">{v}</Num>
                 <T kind="label" style={{ textAlign: 'center', fontSize: 11.5 }}>{l}</T>
               </View>

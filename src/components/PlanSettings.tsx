@@ -65,7 +65,7 @@ export function OwnDietFields({ value, onChange, g }: { value?: OwnDiet; onChang
     setTxt(next);
     onChange({ kcal: Math.round(toNum(next.kcal)) || 0, p: Math.round(toNum(next.p)) || 0, c: Math.round(toNum(next.c)) || 0, f: Math.round(toNum(next.f)) || 0 });
   };
-  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 9, fontFamily: fonts.body, fontSize: 16, color: c.ink, textAlign: START() } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9, fontFamily: fonts.body, fontSize: 16, color: c.ink, textAlign: START() } as const;
   const field = (k: keyof typeof txt, label: string, ph: string) => (
     <View key={k} style={{ flex: 1, minWidth: 70, gap: 4 }}>
       <T kind="label">{label}</T>

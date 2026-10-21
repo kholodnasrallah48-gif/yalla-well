@@ -10,6 +10,8 @@ import { fonts } from '../theme.ts';
 const P = '#0B100E';
 const L = '#19E68C';
 const A = '#2E9BFF';
+/** The brand line, the same in both languages. */
+export const SLOGAN = 'Be well. Live more.';
 const AG = Animated.createAnimatedComponent(G);
 const ACircle = Animated.createAnimatedComponent(Circle);
 const CONFETTI: [number, number, string][] = [[-34, -30, L], [34, -34, A], [-44, 4, '#FFFFFF'], [44, 0, L], [-20, -46, A], [22, -48, '#FFFFFF'], [-40, -14, L], [40, -18, A]];
@@ -74,7 +76,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
 
   return (
     // Fixed right-to-left layout so the icon sits on the right and the name reads "يلا ويل" even before RTL is applied.
-    <Animated.View style={{ flex: 1, backgroundColor: P, alignItems: 'center', justifyContent: 'center', opacity: v.out, direction: 'rtl' }}>
+    <Animated.View style={{ flex: 1, backgroundColor: '#000000', alignItems: 'center', justifyContent: 'center', opacity: v.out, direction: 'rtl' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
         <Animated.View style={{ width: 96, height: 96, transform: [{ scale: v.pop }] }}>
           <Svg width={96} height={96} viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
@@ -89,9 +91,10 @@ export function Splash({ onDone }: { onDone: () => void }) {
             <Animated.Text style={[{ fontFamily: fonts.brand, fontSize: 50, lineHeight: 64, color: '#FFFFFF' }, up(v.w1)]}>يلا</Animated.Text>
             <Animated.Text style={[{ fontFamily: fonts.brand, fontSize: 50, lineHeight: 64, color: L }, up(v.w2)]}>ويل</Animated.Text>
           </View>
-          <Animated.Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, letterSpacing: 4, color: A, opacity: v.lat, writingDirection: 'ltr' }}>YALLA WELL</Animated.Text>
+          <Animated.Text style={{ fontFamily: fonts.displaySemi, fontSize: 12, letterSpacing: 4, color: L, opacity: v.lat, writingDirection: 'ltr' }}>YALLA WELL</Animated.Text>
         </View>
       </View>
+      <Animated.Text style={{ position: 'absolute', bottom: 72, fontFamily: fonts.body, fontSize: 14, letterSpacing: 1, color: '#A1A1A6', opacity: v.lat, writingDirection: 'ltr' }}>{SLOGAN}</Animated.Text>
       <Text accessibilityRole="header" style={{ position: 'absolute', opacity: 0 }}>{lang('يلا ويل', 'Yalla Well')}</Text>
     </Animated.View>
   );

@@ -38,7 +38,7 @@ export default function CycleScreen() {
   const color = (k: ReturnType<typeof dayKind>) => k === 'period' ? c.bad : k === 'expected' ? c.bad + '30' : k === 'ovulation' ? c.lime : k === 'fertile' ? c.lime + '38' : 'transparent';
   const todayKey = dayKey(now);
   const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
-  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START(), flex: 1 } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START(), flex: 1 } as const;
 
   return (
     <Bg><ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32, gap: 12 }}>

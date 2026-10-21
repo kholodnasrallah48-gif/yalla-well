@@ -156,7 +156,7 @@ export function Tour() {
             <T kind="body" color={c.ink}>{s.body}</T>
             <View style={[styles.rowBetween, { gap: 8 }]}>
               <View style={[styles.row, { gap: 4 }]} accessibilityLabel={L(`خطوة ${step + 1} من ${list.length}`, `Step ${step + 1} of ${list.length}`)}>
-                {list.map((_, i) => <View key={i} style={{ width: i === step ? 14 : 5, height: 5, borderRadius: 3, backgroundColor: i === step ? c.petrol : i < step ? c.muted : c.line }} />)}
+                {list.map((_, i) => <View key={i} style={{ width: i === step ? 14 : 5, height: 5, borderRadius: 999, backgroundColor: i === step ? c.petrol : i < step ? c.muted : c.line }} />)}
               </View>
               {!last ? (
                 <Pressable onPress={() => { play('tap'); close(); }} accessibilityRole="button" hitSlop={10}>

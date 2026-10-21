@@ -74,7 +74,7 @@ export function CheckInCard({ day, update, g }: { day: DayLog; update: (f: (d: D
               const tone = v === 0 ? c.ok : v === 1 ? c.warn : c.bad;
               return (
                 <Pressable key={v} onPress={() => set(it.k, v as Level)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                  style={{ flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 4, borderWidth: 1.5, borderColor: on ? tone : c.line, backgroundColor: on ? tone : c.surface }}>
+                  style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: on ? tone : c.soft, backgroundColor: on ? tone : c.soft }}>
                   <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: on ? (v === 0 ? c.onPetrol : '#0B0D0E') : c.ink }}>{L(ar, en)}</Text>
                 </Pressable>
               );
@@ -97,7 +97,7 @@ export function EasyBanner({ why, med, update, g }: { why: EasyWhy | null; med?:
   const c = useColors();
   if (why !== 'dose' && why !== 'check' && why !== 'period') return null;
   return (
-    <View style={{ backgroundColor: c.warnBg, borderRadius: 4, padding: 12, gap: 6 }}>
+    <View style={{ backgroundColor: c.warnBg, borderRadius: 12, padding: 12, gap: 6 }}>
       <T kind="small" color={c.warn} style={{ fontFamily: fonts.bodyMedium }}>
         {why === 'dose' ? L(`امبارح كان ميعاد ${med}، فخلينا النهارده يوم تعافي خفيف.`, `Yesterday was your ${med} dose, so today is an easy recovery day.`)
           : why === 'period' ? L('أول يومين في الدورة، فخلينا التمرين النهارده خفيف.', "It's the first days of your period, so today's workout is lighter.")

@@ -14,7 +14,6 @@ import { fonts, useColors } from '../theme.ts';
 import { useStill } from './Mascot.tsx';
 
 const native = Platform.OS !== 'web';
-const BLUE = '#2E9BFF';
 
 /** One piece of the ring, from angle a to b (degrees, 0 = top, clockwise). */
 function arc(cx: number, r: number, a: number, b: number) {
@@ -72,8 +71,8 @@ export function StoryRing({ profile, g, size = 62 }: { profile: Profile; g: (m: 
             : <Text style={{ fontFamily: fonts.display, fontSize: inner * 0.42, lineHeight: inner * 0.62, color: c.petrol }}>{(profile.name.trim()[0] ?? 'Y').toUpperCase()}</Text>}
         </Animated.View>
         {/* Camera badge: says what the ring does. */}
-        <View style={{ position: 'absolute', bottom: -2, end: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: BLUE, borderWidth: 2, borderColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
-          <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+        <View style={{ position: 'absolute', bottom: -2, end: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: c.ink, borderWidth: 2, borderColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={c.onInk} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
             <Path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.6-2.2h7.4L17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
             <Circle cx={12} cy={12.8} r={3.4} />
           </Svg>

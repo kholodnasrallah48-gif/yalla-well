@@ -38,7 +38,7 @@ export function LabCard({ profile: p, onChange }: { profile: Profile; onChange: 
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<string | null>(null);
-  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontFamily: fonts.body, fontSize: 15, color: c.ink, textAlign: START() } as const;
 
   const reset = (k: LabKind | null) => {
     // A photo taken but not saved with a result is dropped.
@@ -101,7 +101,7 @@ export function LabCard({ profile: p, onChange }: { profile: Profile; onChange: 
             </Pressable>
 
             {on ? (
-              <View style={{ gap: 10, backgroundColor: c.soft, borderRadius: 4, padding: 12, marginBottom: 10 }}>
+              <View style={{ gap: 10, backgroundColor: c.soft, borderRadius: 12, padding: 12, marginBottom: 10 }}>
                 <T kind="h3">{L('نتيجة جديدة', 'New result')}</T>
                 {!LABS[k].noValue ? (
                   <View style={{ gap: 4 }}>

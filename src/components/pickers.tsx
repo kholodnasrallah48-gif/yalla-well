@@ -25,8 +25,8 @@ function Grid({ items, value, onPick, cols }: { items: [number, string][]; value
         const on = v === value;
         return (
           <Pressable key={v} onPress={() => { play('tap'); onPick(v); }} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={label}
-            style={({ pressed }) => [{ flexBasis: `${100 / cols - 3}%`, flexGrow: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS, borderWidth: 1, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : c.surface }, pressed && styles.pressed]}>
-            <Text style={{ fontFamily: on ? fonts.displaySemi : fonts.body, fontSize: 14, color: on ? c.onPetrol : c.ink }}>{label}</Text>
+            style={({ pressed }) => [{ flexBasis: `${100 / cols - 3}%`, flexGrow: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: on ? c.ink : c.line, backgroundColor: on ? c.ink : c.surface }, pressed && styles.pressed]}>
+            <Text style={{ fontFamily: on ? fonts.displaySemi : fonts.body, fontSize: 14, color: on ? c.onInk : c.ink }}>{label}</Text>
           </Pressable>
         );
       })}

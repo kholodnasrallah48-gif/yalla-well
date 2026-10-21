@@ -1,7 +1,8 @@
 import { Redirect } from 'expo-router';
 import Tabs from 'expo-router/js-tabs';
 import { useEffect, useRef } from 'react';
-import { Animated, Text, View, type ColorValue } from 'react-native';
+import { Animated, Platform, Text, View, type ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Tour } from '../../components/Tour.tsx';
@@ -27,8 +28,8 @@ function Icon({ name, color, focused, initial }: { name: string; color: ColorVal
     );
   } else if (name === 'me') {
     icon = (
-      <View style={{ width: 24, height: 24, borderRadius: 4, backgroundColor: focused ? c.ink : c.soft, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontFamily: fonts.displaySemi, fontSize: 11, lineHeight: 15, color: focused ? c.bg : c.muted }}>{initial}</Text>
+      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: focused ? c.petrol : c.soft, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontFamily: fonts.displaySemi, fontSize: 11, lineHeight: 15, color: focused ? c.onPetrol : c.muted }}>{initial}</Text>
       </View>
     );
   } else if (name === 'health') {
@@ -48,8 +49,6 @@ function Icon({ name, color, focused, initial }: { name: string; color: ColorVal
   }
   return (
     <View style={{ alignItems: 'center' }}>
-      {/* The LED dot over the open tab, like a scoreboard light. */}
-      <View style={{ position: 'absolute', top: -9, width: 5, height: 5, borderRadius: 3, backgroundColor: focused ? c.petrol : 'transparent' }} />
       <Animated.View style={{ transform: [{ scale }] }}>{icon}</Animated.View>
     </View>
   );
@@ -57,6 +56,7 @@ function Icon({ name, color, focused, initial }: { name: string; color: ColorVal
 
 export default function TabsLayout() {
   const c = useColors();
+  const insets = useSafeAreaInsets();
   const { profile } = useStore();
   if (!profile) return <Redirect href="/onboarding" />;
   const initial = (profile.name.trim()[0] ?? L('أ', 'M')).toUpperCase();
@@ -64,12 +64,19 @@ export default function TabsLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         screenListeners={{ tabPress: () => play('tap') }}
+        // The bar floats as a rounded glass pill over the screen, clear of the home indicator.
+        safeAreaInsets={{ bottom: 0 }}
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarActiveTintColor: c.ink,
-          tabBarInactiveTintColor: c.dim,
-          tabBarStyle: { backgroundColor: c.bg, borderTopColor: c.line, borderTopWidth: 1 },
-          tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11.5, lineHeight: 16 },
+          tabBarActiveTintColor: c.petrol,
+          tabBarInactiveTintColor: c.muted,
+          tabBarStyle: {
+            position: 'absolute', left: 14, right: 14, bottom: Math.max(insets.bottom, 12) + (Platform.OS === 'web' ? 4 : 0), height: 72, borderRadius: 36,
+            backgroundColor: c.bar, borderTopWidth: 1, borderWidth: 1, borderColor: c.barLine, borderTopColor: c.barLine, paddingTop: 6, paddingBottom: 6,
+            elevation: 0, ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
+          },
+          tabBarItemStyle: { borderRadius: 28 },
+          tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 15 },
           tabBarIcon: ({ color, focused }) => <Icon name={route.name} color={color} focused={focused} initial={initial} />,
         })}
       >

@@ -39,7 +39,7 @@ export function OutsideButton({ onPress }: { onPress: () => void }) {
   const c = useColors();
   return (
     <Pressable onPress={() => { play('swoosh'); onPress(); }} accessibilityRole="button"
-      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.5, borderColor: c.petrol, borderRadius: 99, paddingVertical: 9, paddingHorizontal: 14, alignSelf: 'flex-start' }, pressed && styles.pressed]}>
+      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.soft, borderRadius: 99, paddingVertical: 10, paddingHorizontal: 14, alignSelf: 'flex-start' }, pressed && styles.pressed]}>
       <PinIcon color={c.petrol} />
       <View>
         <Text style={{ fontFamily: fonts.displaySemi, fontSize: 14.5, lineHeight: 20, color: c.ink }}>{L('أنا برة البيت', "I'm eating out")}</Text>
@@ -107,7 +107,7 @@ export function OutsideSheet({ open, onClose, profile, kcalLeft, proteinLeft, me
                   const on = place?.id === x.id;
                   return (
                     <Pressable key={x.id} onPress={() => { play('tap'); setPlace(x); setKind(x.kind); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: on ? c.petrol : c.line, borderRadius: RADIUS, paddingVertical: 9, paddingHorizontal: 12 }, pressed && styles.pressed]}>
+                      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: on ? c.ink : c.line, borderRadius: 16, paddingVertical: 9, paddingHorizontal: 12 }, pressed && styles.pressed]}>
                       <PinIcon size={16} color={on ? c.petrol : c.dim} />
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <T kind="h3" numberOfLines={1}>{x.name}</T>
@@ -151,8 +151,8 @@ export function OutsideSheet({ open, onClose, profile, kcalLeft, proteinLeft, me
                   </View>
                   <Pressable onPress={() => { play('add'); update((d) => addFood(d, food, meal)); setAdded(tx(food.n)); }} accessibilityRole="button"
                     accessibilityLabel={L(`إضافة ${food.n} ${toMeal(meal)}`, `Add ${tx(food.n)} to ${MEAL_NAME[meal].toLowerCase()}`)}
-                    style={({ pressed }) => [{ minHeight: 36, minWidth: 36, borderRadius: 3, borderWidth: 1.5, borderColor: c.petrol, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
-                    <Text style={{ fontFamily: fonts.displaySemi, fontSize: 18, lineHeight: 20, color: c.petrol }}>+</Text>
+                    style={({ pressed }) => [{ minHeight: 36, minWidth: 36, borderRadius: 999, backgroundColor: c.soft, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
+                    <Text style={{ fontFamily: fonts.displaySemi, fontSize: 18, lineHeight: 20, color: c.ink }}>+</Text>
                   </Pressable>
                 </View>
               );

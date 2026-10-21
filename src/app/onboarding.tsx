@@ -8,6 +8,7 @@ import { PhotoPicker } from '../components/Photo.tsx';
 import { KnownCard, TypedList, UnknownCard } from '../components/Extra.tsx';
 import { MedList, migrateMeds } from '../components/MedList.tsx';
 import { itemKey, matchItems, splitItems } from '../lib/kb.ts';
+import { Lockup } from '../components/Logo.tsx';
 import { Mascot } from '../components/Mascot.tsx';
 import { Bg, Btn, Card, Chip, Choice, Kicker, NoteView, RADIUS, Ring, START, Segmented, T, WeekStrip, styles } from '../components/ui.tsx';
 import { CONDITIONS, PAINS, SCHEDULES, SCHEDULE_ORDER, WEEK, type Hurt, type ScheduleId } from '../lib/data.ts';
@@ -55,7 +56,7 @@ export default function Onboarding() {
   const set = (patch: Partial<Draft>) => { setErr(''); setD((x) => ({ ...x, ...patch })); };
   const toggle = (key: 'conditions' | 'meds' | 'pains', id: string) =>
     setD((x) => { const a = x[key] as string[]; return { ...x, [key]: a.includes(id) ? a.filter((v) => v !== id) : [...a, id] }; });
-  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, textAlign: START() } as const;
+  const input = { borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 16, color: c.ink, textAlign: START() } as const;
 
   const validate = (): string | null => {
     if (st === 'basics') {
@@ -138,13 +139,13 @@ export default function Onboarding() {
     <Bg><ScrollView ref={scroll} style={{ flex: 1 }} keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ padding: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, gap: 16 }}>
       <View style={[styles.row, { gap: 4 }]}>
-        {flow.map((s, i) => <View key={s} style={{ flex: 1, height: 4, backgroundColor: i <= step ? c.petrol : c.line }} />)}
+        {flow.map((s, i) => <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? c.petrol : c.line }} />)}
       </View>
 
       {st === 'lang' && <>
         <View style={{ alignItems: 'center', gap: 6, paddingTop: 32, paddingBottom: 16 }}>
-          <T kind="h1" style={{ textAlign: 'center' }}>يلا ويل · Yalla Well</T>
-          <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>اختيار اللغة · Choose your language</T>
+          <Lockup size={84} slogan />
+          <T kind="body" color={c.muted} style={{ textAlign: 'center', marginTop: 20 }}>اختيار اللغة · Choose your language</T>
         </View>
         <Choice title="العربية" sub="التطبيق كله بالعربي" on={getLang() === 'ar'} onPress={() => setLang('ar')} />
         <Choice title="English" sub="The whole app in English" on={getLang() === 'en'} onPress={() => setLang('en')} />
@@ -154,8 +155,8 @@ export default function Onboarding() {
       {st === 'account' && <>
         <Segmented items={[['ar', 'العربية'], ['en', 'English']]} value={getLang()} onChange={(l) => setLang(l)} />
         <View style={{ alignItems: 'center', gap: 6, paddingTop: 16, paddingBottom: 8 }}>
-          <Mascot pose="point" size={88} />
-          <T kind="h1" style={{ textAlign: 'center' }}>{L('أهلا في يلا ويل', 'Welcome to Yalla Well')}</T>
+          <Lockup size={64} />
+          <T kind="h1" style={{ textAlign: 'center', marginTop: 8 }}>{L('أهلا في يلا ويل', 'Welcome to Yalla Well')}</T>
           <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>{L('الدخول بالإيميل وكود بيوصل عليه. بياناتك بتتحفظ في حسابك، ولو الموبايل اتغير ترجع زي ما هي.', 'Sign in with your email and a code we send to it. Your data is saved to your account and comes back if you change phones.')}</T>
         </View>
         {!acct.ready ? null : acct.email && !wasOut
@@ -301,8 +302,8 @@ export default function Onboarding() {
                       const on = sid === k;
                       return (
                         <Pressable key={k} onPress={() => setSplit(i, k)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                          style={{ borderWidth: 1, borderColor: on ? c.petrol : c.line, backgroundColor: on ? c.petrol : 'transparent', borderRadius: RADIUS, paddingVertical: 6, paddingHorizontal: 11 }}>
-                          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12.5, lineHeight: 18, color: on ? c.onPetrol : c.ink }}>{splitLabel(k)}</Text>
+                          style={{ borderWidth: 1, borderColor: on ? c.ink : c.line, backgroundColor: on ? c.ink : 'transparent', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 11 }}>
+                          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 12.5, lineHeight: 18, color: on ? c.onInk : c.ink }}>{splitLabel(k)}</Text>
                         </Pressable>
                       );
                     })}
@@ -324,7 +325,7 @@ export default function Onboarding() {
             return (
               <Pressable key={x.id} onPress={() => { play('tap'); toggle('conditions', x.id); }} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
                 style={[styles.row, { gap: 12, paddingHorizontal: 12, paddingVertical: 11, borderTopWidth: i ? 1 : 0, borderColor: c.line, backgroundColor: on ? c.okBg : c.surface }]}>
-                <View style={{ width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: on ? c.petrol : c.dim, backgroundColor: on ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 22, height: 22, borderRadius: 12, borderWidth: 2, borderColor: on ? c.petrol : c.dim, backgroundColor: on ? c.petrol : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
                   {on ? <Text style={{ color: c.onPetrol, fontFamily: fonts.displaySemi, fontSize: 14, lineHeight: 18 }}>✓</Text> : null}
                 </View>
                 <T kind="body" style={{ flex: 1 }}>{tx(x.n)}</T>

@@ -74,8 +74,16 @@ export const hasSocial = () => Object.values(SOCIAL).some(Boolean);
 export const contact = { email: EMAIL, whatsapp: WHATSAPP };
 export { SOCIAL_NAMES };
 
-/** The wordmark: Rakkas in Arabic, Almarai 800 caps in blue in English. */
-const wordmark = (ctx) => (ctx.en ? '<span class="wordmark wordmark-en">YALLA WELL</span>' : '<span class="wordmark">يلا ويل</span>');
+/** The app tile from the logo: the champ on a dark rounded square. */
+export const tile = (size = 40) => `<svg class="tile-mark" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><rect x="1" y="1" width="98" height="98" rx="24" fill="#0B100E" stroke="rgba(255,255,255,0.18)" stroke-width="2"/><g transform="translate(50 50) scale(0.78) translate(-50 -49.5)"><path d="M50 58V82" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M28 36L50 58L72 36" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="26" r="8" fill="#19E68C"/><path d="M20 28L16 22M24 22L22 15M80 28L84 22M76 22L78 15" fill="none" stroke="#19E68C" stroke-width="3.5" stroke-linecap="round"/></g></svg>`;
+
+/** The wordmark: Rakkas "يلا" in white and "ويل" in green over green YALLA WELL caps; English pages show the caps alone. */
+export const wordmark = (ctx) => (ctx.en
+  ? '<span class="wordmark is-en"><span class="wm-en">YALLA WELL</span></span>'
+  : '<span class="wordmark"><span class="wm-ar"><span>يلا</span> <span class="wm-g">ويل</span></span><span class="wm-en">YALLA WELL</span></span>');
+
+/** The full lockup: tile and wordmark. */
+export const lockup = (ctx, size = 40) => `${tile(size)}${wordmark(ctx)}`;
 
 const NAV = [
   ['features.html', ['المميزات', 'Features']],
@@ -91,7 +99,7 @@ function header(ctx, page) {
     `<a href="${href === 'index.html#how' ? './#how' : href}"${href === page.file ? ' aria-current="page"' : ''}>${L(ar, en)}</a>`).join('');
   return `<header class="hdr">
   <div class="wrap hdr-in">
-    <a class="brand" href="./" aria-label="${L('يلا ويل، الصفحة الرئيسية', 'Yalla Well home')}">${champ('logo', { size: 34 })}${wordmark(ctx)}</a>
+    <a class="brand" href="./" aria-label="${L('يلا ويل، الصفحة الرئيسية', 'Yalla Well home')}">${lockup(ctx, 40)}</a>
     <nav class="nav" id="nav" aria-label="${L('القائمة الرئيسية', 'Main menu')}">${links}
       <a class="nav-only-m" href="${ctx.other}" hreflang="${ctx.en ? 'ar' : 'en'}" lang="${ctx.en ? 'ar' : 'en'}">${ctx.en ? 'عربي' : 'English'}</a>
     </nav>
@@ -111,7 +119,7 @@ function footer(ctx) {
   <div class="wrap">
     <div class="ftr-top">
       <div class="ftr-brand">
-        <a class="brand" href="./">${champ('logo', { size: 30 })}${wordmark(ctx)}</a>
+        <a class="brand" href="./">${lockup(ctx, 36)}</a>
         <p class="muted">${L('خطة أكل وتمرين على حسب جسمك وصحتك، وتكمل سنين.', 'Food, training and health, planned around you and kept up for years.')}</p>
         ${social}
       </div>
@@ -157,8 +165,9 @@ export function layout(ctx, page) {
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="${ctx.root}static/img/favicon.png">
 <link rel="apple-touch-icon" href="${ctx.root}static/img/apple-touch-icon.png">
-<link rel="preload" href="${ctx.root}static/fonts/lalezar.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${ctx.root}static/fonts/alexandria-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${ctx.root}static/fonts/almarai-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${ctx.root}static/fonts/rakkas-logo.woff2" as="font" type="font/woff2" crossorigin>
 <script>(function(d){d.classList.add('js');if(!matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('motion');setTimeout(function(){if(!d.classList.contains('ready'))d.classList.remove('js','motion')},6000)})(document.documentElement)</script>
 <link rel="stylesheet" href="${ctx.root}static/site.css">
 <script src="${ctx.root}static/vendor/gsap.min.js" defer></script>

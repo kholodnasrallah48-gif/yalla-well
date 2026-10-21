@@ -2,7 +2,7 @@
 // Arabic copy: light Egyptian mixed with common colloquial Arabic any Arab reader understands (no heavy dialect words,
 // no formal fusha), gender neutral ("we", the app or nouns as the subject, no imperatives), no tashkeel. Use "دايت",
 // never "رجيم". No disease or medicine names outside the "try it" examples.
-import { SOCIAL_NAMES, champ, contact, hasSocial, icon, socialLinks, storeButtons } from './layout.mjs';
+import { SOCIAL_NAMES, champ, contact, hasSocial, icon, lockup, socialLinks, storeButtons } from './layout.mjs';
 import { SOCIAL, WAITLIST_URL, WHATSAPP_CHANNEL } from './config.mjs';
 
 // ---------- small pieces ----------
@@ -14,6 +14,14 @@ const phone = (ctx, img, alt, cls = '', eager = false) =>
 const ticks = (items) => `<ul class="ticks">${items.map((t) => `<li>${icon('check', 18)}<span>${t}</span></li>`).join('')}</ul>`;
 
 const kicker = (t) => `<p class="kicker">${t}</p>`;
+
+/** The app's slogan, always in Latin letters. */
+const slogan = (cls = '') => `<p class="slogan ${cls}" dir="ltr" lang="en">Be well. Live more.</p>`;
+
+/** The waitlist pill (or the download page while there is no waitlist). */
+const mainCta = (ctx, cls = '') => WAITLIST_URL
+  ? `<a class="btn btn-primary ${cls}" href="join.html">${ctx.L('قائمة الانتظار', 'Join waitlist')}</a>`
+  : `<a class="btn btn-primary ${cls}" href="download.html">${ctx.L('التحميل', 'Download')}</a>`;
 
 function pageHero(ctx, k, title, lead) {
   return `<section class="page-hero"><div class="wrap narrow reveal">${kicker(k)}<h1 class="h1" data-split>${title}</h1>${lead ? `<p class="lead">${lead}</p>` : ''}</div></section>`;
@@ -74,15 +82,12 @@ function faqGroups(ctx) {
 
 function downloadPanel(ctx) {
   const { L } = ctx;
-  return `<section class="cta-band" id="download"><div class="wrap">
-    <div class="cta reveal">
-      <div class="cta-text">
-        ${champ('cheer', { size: 96, cls: 'cta-champ' })}
-        <h2 class="h2">${L('يلا نبدأ.', "Let's start.")}</h2>
-        <p class="lead">${L('التطبيق جاي قريب على آيفون وأندرويد.', 'The app is coming soon to iPhone and Android.')}</p>
-        ${storeButtons(ctx)}
-      </div>
-    </div>
+  return `<section class="end" id="download"><div class="wrap narrow center reveal">
+    ${slogan('slogan-green')}
+    <h2 class="h2">${L('يلا نبدأ.', "Let's start.")}</h2>
+    <p class="lead">${L('التطبيق جاي قريب على آيفون وأندرويد.', 'The app is coming soon to iPhone and Android.')}</p>
+    <div class="end-ctas">${mainCta(ctx)}</div>
+    ${storeButtons(ctx)}
   </div></section>`;
 }
 
@@ -135,8 +140,7 @@ function oneApp(ctx) {
           ${apps.map(([ic, t, s]) => `<li class="app-card"><span class="app-ic">${icon(ic, 20)}</span><b>${t}</b><span>${s}</span></li>`).join('')}
         </ul>
         <div class="one-card" aria-hidden="true">
-          ${champ('logo', { size: 46 })}
-          <span class="one-wm">${L('<span class="wm-ar">يلا ويل</span><span class="wm-en">YALLA WELL</span>', '<span class="wm-en">YALLA WELL</span>')}</span>
+          ${lockup(ctx, 52)}
         </div>
       </div>
       <p class="one-note">${L('الأكل والتمرين والنوم والدورة والأدوية والتحاليل، كلهم في تطبيق واحد عارف حالتك.', 'Food, training, sleep, your cycle, medicines and lab results, in one app that knows your situation.')}</p>
@@ -317,28 +321,52 @@ const home = {
     return `
 <section class="hero">
   <div class="wrap hero-text">
-    <p class="pill reveal"><span class="dot" aria-hidden="true"></span>${L('قريبا على آيفون وأندرويد', 'Coming soon to iPhone and Android')}</p>
-    <h1 class="display reveal" data-split>${L('أكلك، تمرينك، وصحتك<br>أساس خطتك الشخصية.', 'Your food, your training, your health.<br>The base of your personal plan.')}</h1>
+    ${slogan('reveal')}
+    <h1 class="display reveal" data-split>${L('أكلك، تمرينك، وصحتك<br><span class="sub">أساس خطتك الشخصية.</span>', 'Your food, your training, your health.<br><span class="sub">The base of your personal plan.</span>')}</h1>
     <p class="lead reveal">${L('يلا ويل بيعملك خطة أكل وتمرين على حسب جسمك وهدفك وصحتك، وبنعدلها كل ما حياتك تتغير. أكل متنوع، وتمرين بجد، وأيام راحة، من غير قواعد صعبة ولا ملل.', 'Yalla Well builds your food and training plan from your body, your goal and your health, and keeps adjusting it with you over time. Varied food, real effort and proper rest, with no strict rules and no boredom, so healthy habits become part of your life for years.')}</p>
-    <div class="reveal">${storeButtons(ctx)}</div>
+    <div class="ctas reveal">${mainCta(ctx)}<a class="btn btn-dark" href="features.html">${L('المميزات', 'Features')}</a></div>
+    <p class="soon reveal"><span class="dot" aria-hidden="true"></span>${L('قريبا على آيفون وأندرويد', 'Coming soon to iPhone and Android')}</p>
   </div>
   <div class="hero-stage">
     <div class="glow" aria-hidden="true"></div>
     <div class="hero-phone">${trailer(ctx)}</div>
-    <div class="float float-a glass" aria-hidden="true">
-      <svg width="52" height="52" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" stroke="#2A2E33" stroke-width="6" fill="none"/><path d="M27 5A22 22 0 1 1 8 38" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" fill="none"/></svg>
-      <span><b class="num">1,420</b><small>${L('سعرة باقية اليوم', 'kcal left today')}</small></span>
-    </div>
-    <div class="float float-b glass" aria-hidden="true">
-      <span class="tick">${icon('check', 15)}</span>
-      <span><b>${L('رقم جديد: 32.5 كجم', 'New best: 32.5 kg')}</b><small>${L('2.5+ عن المرة اللي فاتت', '+2.5 since last time')}</small></span>
-    </div>
   </div>
 </section>
 
-<section class="stats" aria-label="${L('يلا ويل بالأرقام', 'Yalla Well in numbers')}">
-  <div class="wrap stats-in">
-    ${stats.map(([n, plus, t]) => `<div class="stat reveal"><span class="num" dir="ltr"><span data-count="${n}">${n}</span>${plus}</span><span>${t}</span></div>`).join('')}
+<section class="bento-sec" aria-label="${L('يلا ويل بالأرقام', 'Yalla Well in numbers')}">
+  <div class="wrap bento">
+    <div class="tile t-a reveal">
+      <div class="t-txt">
+        ${kicker(L('الأكل', 'Food'))}
+        <h3>${L('أكل متنوع، ومحسوب بالوزن.', 'Varied food, counted by weight.')}</h3>
+        <p>${L('سعرات وبروتين محسوبين بالوزن، ووصفات بكمية على قد الوجبة، ومن غير الأكل اللي عندك حساسية منه.', 'Calories and protein counted by weight, recipes sized to the meal, and nothing you are allergic to.')}</p>
+        <div class="stat"><span class="big num" dir="ltr"><span data-count="${stats[0][0]}">${stats[0][0]}</span></span><span>${stats[0][2]}</span></div>
+      </div>
+      <div class="crop" aria-hidden="true">${phone(ctx, 'food', '', 'phone-crop')}</div>
+    </div>
+    <div class="tile t-b reveal">
+      ${kicker(L('الوصفات', 'Recipes'))}
+      <div class="stat"><span class="big num" dir="ltr"><span data-count="${stats[1][0]}">${stats[1][0]}</span>+</span><span>${stats[1][2]}</span></div>
+    </div>
+    <div class="tile t-c reveal">
+      ${kicker(L('اليوم', 'Today'))}
+      <div class="ring" aria-hidden="true"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" stroke="#2C2C2E" stroke-width="10" fill="none"/><circle class="ring-arc" cx="60" cy="60" r="52" stroke="#19E68C" stroke-width="10" stroke-linecap="round" fill="none" pathLength="100" stroke-dasharray="68 100" transform="rotate(-90 60 60)"/></svg></div>
+      <p class="ring-n"><b class="num" dir="ltr">1,420</b><span>${L('سعرة باقية اليوم', 'kcal left today')}</span></p>
+    </div>
+    <div class="tile t-d reveal">
+      ${kicker(L('التمرين', 'Training'))}
+      <div class="pair">
+        <div class="stat"><span class="big num" dir="ltr"><span data-count="${stats[2][0]}">${stats[2][0]}</span></span><span>${stats[2][2]}</span></div>
+        <div class="stat"><span class="big num" dir="ltr"><span data-count="${stats[3][0]}">${stats[3][0]}</span></span><span>${stats[3][2]}</span></div>
+      </div>
+      <p class="best"><span class="tick">${icon('check', 14)}</span><span><b>${L('رقم جديد: 32.5 كجم', 'New best: 32.5 kg')}</b><small>${L('2.5+ عن المرة اللي فاتت', '+2.5 since last time')}</small></span></p>
+    </div>
+    <div class="tile t-e reveal">
+      ${kicker(L('الشعلة', 'The flame'))}
+      <h3>${L('نقاط وأيام متتالية', 'Points and streaks')}</h3>
+      <p>${L('لما السعرات تفضل بين 75% و110% من الهدف، ومع كل تمرين يكمل.', 'For staying between 75% and 110% of your calorie target, and for every finished workout.')}</p>
+      <svg class="flame" viewBox="0 0 24 30" aria-hidden="true"><defs><linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FF6A00"/><stop offset="1" stop-color="#FFC24A"/></linearGradient></defs><path d="M12 1c1 5 7 8 7 15a7 7 0 0 1-14 0c0-4 2-6 3-8 0 3 1 4 2 4 0-4 1-8 2-11z" fill="url(#fl)"/></svg>
+    </div>
   </div>
 </section>
 

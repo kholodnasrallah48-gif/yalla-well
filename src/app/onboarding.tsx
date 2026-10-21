@@ -155,7 +155,7 @@ export default function Onboarding() {
       {st === 'account' && <>
         <Segmented items={[['ar', 'العربية'], ['en', 'English']]} value={getLang()} onChange={(l) => setLang(l)} />
         <View style={{ alignItems: 'center', gap: 6, paddingTop: 16, paddingBottom: 8 }}>
-          <Lockup size={64} />
+          <Mascot pose="point" size={88} />
           <T kind="h1" style={{ textAlign: 'center', marginTop: 8 }}>{L('أهلا في يلا ويل', 'Welcome to Yalla Well')}</T>
           <T kind="body" color={c.muted} style={{ textAlign: 'center' }}>{L('الدخول بالإيميل وكود بيوصل عليه. بياناتك بتتحفظ في حسابك، ولو الموبايل اتغير ترجع زي ما هي.', 'Sign in with your email and a code we send to it. Your data is saved to your account and comes back if you change phones.')}</T>
         </View>
@@ -355,7 +355,7 @@ export default function Onboarding() {
               <T kind="h2">{tx(CONDITIONS.find((x) => x.id === id)?.n ?? id)}</T>
               <T kind="label">{L('الحالة دلوقتي', 'How is it right now?')}</T>
               <View style={styles.wrap}>
-                {([['stable', L('مستقرة ومتابعة', 'Stable and followed up')], ['active', L('فيها نشاط أو هجمة دلوقتي', 'Active or flaring now')], ['new', L('متشخصة جديد (أقل من ٦ شهور)', 'Newly diagnosed (under 6 months)')]] as const).map(([k, l]) => (
+                {([['stable', L('مستقرة ومتابعة', 'Stable and followed up')], ['active', L('نشطة', 'Active')], ['new', L('متشخصة جديد (أقل من ٦ شهور)', 'Newly diagnosed (under 6 months)')]] as const).map(([k, l]) => (
                   <Chip key={k} label={l} on={ci.status === k} onPress={() => setInfo(id, { status: ci.status === k ? undefined : k })} />
                 ))}
               </View>

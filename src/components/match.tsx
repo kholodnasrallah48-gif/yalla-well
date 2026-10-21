@@ -3,29 +3,35 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
 
 import { fonts, useColors } from '../theme.ts';
-import { type Pose } from './Mascot.tsx';
+import { Mascot, type Pose } from './Mascot.tsx';
 import { CARD_R, Kicker, Num, T, styles } from './ui.tsx';
 import { L } from '../lib/i18n.ts';
 
 /**
- * The captain's card: what he says, on a rounded panel. In the calm look the champ stays in the logo, so the card is
- * words only; `pose`, `big`, `caption` and `excited` are kept so the screens don't change. `big` shows as a small
- * thin number at the end of the kicker line (day number, exercise number).
+ * The captain's card: what he says on a rounded panel, with the champ in his own tile at the side (the day or
+ * exercise number faded behind him, and a caption under him).
  */
-export function CaptainCard({ head, body, big, caption, height = 0, children }: {
+export function CaptainCard({ head, body, pose, big, caption, height = 124, excited, children }: {
   head?: string; body?: string; pose: Pose;
+  /** Faded number behind the champ (day number, exercise number). */
   big?: string; caption?: string; height?: number; excited?: boolean; children?: ReactNode;
 }) {
   const c = useColors();
+  const side = Math.round(height * 0.86);
   return (
-    <View style={{ minHeight: Math.min(height, 96), backgroundColor: c.surface, borderRadius: CARD_R, paddingVertical: 14, paddingHorizontal: 16, gap: 4, justifyContent: 'center' }}>
-      <View style={styles.rowBetween}>
+    <View style={{ minHeight: height, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: c.surface, borderRadius: CARD_R, padding: 12, paddingStart: 16 }}>
+      <View style={{ flex: 1, gap: 4, justifyContent: 'center' }}>
         <Kicker>{L('الكابتن بيقول', 'The Captain says')}</Kicker>
-        {big || caption ? <Text style={{ fontFamily: fonts.numSemi, fontSize: 13, lineHeight: 17, color: c.muted }}>{caption ?? big}</Text> : null}
+        {head ? <T kind="h2" style={{ fontSize: 19, lineHeight: 29 }}>{head}</T> : null}
+        {body ? <T kind="body" color={c.muted} style={{ fontSize: 14, lineHeight: 22 }}>{body}</T> : null}
+        {children}
       </View>
-      {head ? <T kind="h2" style={{ fontSize: 19, lineHeight: 29 }}>{head}</T> : null}
-      {body ? <T kind="body" color={c.muted} style={{ fontSize: 14, lineHeight: 22 }}>{body}</T> : null}
-      {children}
+      <View style={{ width: side, alignSelf: 'stretch', minHeight: side, borderRadius: 16, backgroundColor: c.soft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        {big ? <Text numberOfLines={1} style={{ position: 'absolute', zIndex: 0, top: 0, left: 0, right: 0, textAlign: 'center', fontFamily: fonts.num, fontSize: side * 0.8, lineHeight: side * 0.92, color: c.line }}>{big}</Text> : null}
+        {/* In its own layer so it stays in front of the faded number (absolute text paints on top on the web). */}
+        <View style={{ zIndex: 1 }}><Mascot pose={pose} size={Math.round(side * 0.68)} excited={excited} /></View>
+        {caption ? <Text style={{ position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', fontFamily: fonts.displaySemi, fontSize: 10.5, lineHeight: 15, color: c.muted }}>{caption}</Text> : null}
+      </View>
     </View>
   );
 }

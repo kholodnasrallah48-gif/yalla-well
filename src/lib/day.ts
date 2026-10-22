@@ -64,6 +64,23 @@ export function addFood(day: DayLog, food: Food, meal?: Meal, q = 1): DayLog {
   return { ...day, foods: [...day.foods, { ref: id, n, u, kcal, p, c, f, q, gi, tags, ...(meal ? { meal } : {}) }] };
 }
 
+/** The meal eaten out, logged when it's ticked with nothing logged in it: the held calories, split as a usual
+ * restaurant meal (about 20% protein, 45% carbs, 35% fat). */
+export const OUT_REF = 'out_meal';
+export const outFood = (kcal: number, meal: Meal): LoggedFood => ({
+  ref: OUT_REF, n: 'وجبة برة البيت', u: 'محجوزة من أنا برة البيت', kcal: Math.round(kcal),
+  p: Math.round((kcal * 0.2) / 4), c: Math.round((kcal * 0.45) / 4), f: Math.round((kcal * 0.35) / 9), q: 1, meal,
+});
+
+/** Ticks a meal as eaten or not. A meal held for eating out with nothing logged in it counts its held calories. */
+export function tickMeal(day: DayLog, meal: Meal): DayLog {
+  const on = (day.meals ?? []).includes(meal);
+  const meals = on ? (day.meals ?? []).filter((m) => m !== meal) : [...(day.meals ?? []), meal];
+  let foods = day.foods.filter((x) => !(on && x.ref === OUT_REF && x.meal === meal));
+  if (!on && day.out?.meal === meal && !foods.some((x) => x.meal === meal)) foods = [...foods, outFood(day.out.kcal, meal)];
+  return { ...day, meals, foods };
+}
+
 /** Totals for the foods logged under one meal. */
 export const mealTotals = (day: DayLog, meal: Meal) => planned({ ...day, foods: day.foods.filter((x) => x.meal === meal) });
 

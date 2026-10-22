@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { CHAINS } from './chains-data.ts';
 import { EN_DATA } from './en/index.ts';
 import { dayPlan, outReserve, outSplit, SHARE } from './mealplan.ts';
-import { buildCombo, chainDishes, chainOf, dishesFor, fromPhoton, guessCuisine, KINDS, kindDishes, kindOf, menu, meters, picks, searchChains, toPlaces } from './outside.ts';
+import { buildCombo, chainDishes, chainOf, dishesFor, fromPhoton, guessCuisine, logoFor, mapLinks, servesMeal, KINDS, kindDishes, kindOf, menu, meters, picks, searchChains, toPlaces } from './outside.ts';
 import { targets } from './plan.ts';
 import type { Profile } from './plan.ts';
 
@@ -63,7 +63,7 @@ test('Photon places get a kind from their name when the map has no cuisine', () 
   const at = (name: string, v: string, lat: number) => ({ geometry: { coordinates: [31, lat] as [number, number] }, properties: { name, osm_value: v, osm_type: 'N', osm_id: lat * 1e6 } });
   const places = fromPhoton([at('كشري التحرير', 'fast_food', 30.001), at('Pizza Hut', 'restaurant', 30.002), at('Cilantro', 'cafe', 30.003), at('Rouh Beirut', 'restaurant', 30.004)], 30, 31);
   assert.deepEqual(places.map((x) => [x.name, x.kind, x.cuisine]), [
-    ['كشري التحرير', 'fast', 'koshari'], ['Pizza Hut', 'fast', 'pizza'], ['Cilantro', 'cafe', undefined], ['Rouh Beirut', 'lebanese', 'lebanese'],
+    ['كشري التحرير', 'fast', 'koshari'], ['Pizza Hut', 'fast', 'pizza'], ['Cilantro', 'cafe', 'coffee_shop'], ['Rouh Beirut', 'lebanese', 'lebanese'],
   ]);
 });
 
@@ -207,4 +207,24 @@ test('the day plan holds the meal out and makes the others lighter', () => {
   // Once the meal is ticked, the hold is over.
   const ticked = dayPlan(base, '2026-10-22', {}, [], 900, ['dinner'], [], { meal: 'dinner', kcal: 900 });
   assert.ok(!ticked.find((e) => e.meal === 'dinner')!.out);
+});
+
+test("Hardee's gets a burger place's menu, never home fries or a baladi salad", () => {
+  const [h] = fromPhoton([{ geometry: { coordinates: [31, 30] }, properties: { name: "Hardee's", osm_value: 'fast_food', osm_type: 'N', osm_id: 1 } }], 30, 31);
+  assert.equal(h.cuisine, 'burger');
+  const names = dishesFor(h).map((d) => d.food.n);
+  assert.ok(names.includes('بطاطس فرايز متوسطة') && names.includes('برجر لحمة'));
+  assert.ok(!names.some((n) => /بيتي|بلدي|بيج ماك/.test(n)), names.join());
+  assert.ok(logoFor(h)?.includes('hardees.com'));
+  const m = mapLinks(h);
+  assert.ok(m.google.includes('30,31') && m.apple.includes('ll=30,31'));
+});
+
+test('breakfast: a foul and taameya menu, and grills or burger places say they usually do not serve it', () => {
+  const bf = dishesFor({ kind: 'fast' }, 'breakfast').map((d) => d.food.n);
+  assert.ok(bf.includes('ساندوتش فول') && !bf.some((n) => /شيش|مشوي|برجر/.test(n)), bf.join());
+  assert.equal(servesMeal({ kind: 'grill' }, 'breakfast'), false);
+  assert.equal(servesMeal({ kind: 'fast', cuisine: 'burger' }, 'breakfast'), false);
+  assert.equal(servesMeal({ kind: 'cafe', chain: 'sbux' }, 'breakfast'), true);
+  assert.equal(servesMeal({ kind: 'grill' }, 'dinner'), true);
 });

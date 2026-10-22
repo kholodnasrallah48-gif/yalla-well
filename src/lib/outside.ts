@@ -5,6 +5,7 @@ import { CHAINS, itemName, type Chain, type ChainItem, type Kind, type Role } fr
 import { FOODS, foodLevel, norm, type Food } from './foods.ts';
 import { L } from './i18n.ts';
 import type { Profile } from './plan.ts';
+import type { Meal } from './recipes-data.ts';
 
 export type { Kind, Role } from './chains-data.ts';
 export const KINDS: Kind[] = ['grill', 'fast', 'healthy', 'cafe', 'lebanese', 'turkish', 'indian', 'asian', 'italian'];
@@ -23,8 +24,8 @@ const MENU: Record<Kind, Menu> = {
     side: ['رز أبيض', 'عيش بلدي', 'سلطة طحينة', 'سلطة خضرا بلدي'], drink: ['كوكاكولا', 'بيبسي دايت', 'شاي من غير سكر'],
   },
   fast: {
-    main: ['ساندوتش فراخ مشوية', 'شاورما فراخ', 'سلطة سيزر بالفراخ', 'ساندوتش تونة', 'تشيز برجر', 'بيتزا مارجريتا', 'قطعة فراخ كرسبي (كنتاكي)', 'سوشي', 'ساندوتش كفتة', 'ساندوتش فراخ كرسبي', 'بيج ماك', 'كشري'],
-    side: ['بطاطس محمرة بيتي', 'سلطة خضرا بلدي'], drink: ['كوكاكولا', 'بيبسي دايت'],
+    main: ['ساندوتش فراخ مشوية', 'شاورما فراخ', 'ساندوتش كفتة', 'ساندوتش تونة', 'برجر فراخ مشوية', 'تشيز برجر', 'ساندوتش فراخ كرسبي', 'برجر لحمة'],
+    side: ['بطاطس فرايز صغيرة', 'سلطة خضرا صغيرة'], drink: ['كوكاكولا', 'كوكاكولا زيرو'],
   },
   healthy: {
     main: ['سلطة تونة بالخضار', 'بول فراخ مشوية برز بني بالخضار', 'سلطة كينوا بالفراخ', 'راب فراخ مشوية بالخضار', 'سلمون مشوي بالخضار السوتيه'],
@@ -67,7 +68,36 @@ const LIGHTER: Record<string, string> = {
   'فراخ سويت أند ساور': 'فراخ بالخضار صيني', 'نودلز بالفراخ': 'فراخ بالخضار صيني', 'رز مقلي بالخضار': 'رز أبيض',
   'مكرونة ألفريدو بالفراخ': 'بيني أرابياتا', 'لازانيا': 'سباجيتي بولونيز', 'سلطة كابريزي': 'سلطة خضرا بلدي',
   'كوكاكولا': 'بيبسي دايت', 'عصير برتقان فريش': 'شاي أخضر',
+  'بطاطس فرايز متوسطة': 'بطاطس فرايز صغيرة', 'بطاطس فرايز صغيرة': 'سلطة خضرا صغيرة', 'كول سلو': 'سلطة خضرا صغيرة',
+  'دبل برجر لحمة': 'برجر لحمة', 'برجر لحمة': 'تشيز برجر', 'قطعتين فراخ كرسبي': 'قطعة فراخ كرسبي (كنتاكي)',
+  'شريحتين بيتزا بيبروني': 'شريحتين بيتزا مارجريتا', 'شريحتين بيتزا مارجريتا': 'شريحتين بيتزا خضار', 'شاورما لحمة': 'شاورما فراخ',
+  'منقوشة جبنة': 'منقوشة زعتر', 'ساندوتش طعمية': 'ساندوتش فول', 'فول بالطحينة': 'فول مدمس',
 };
+
+// Places that serve one kind of food (a burger place, a pizzeria, a fried chicken shop) get that food's own menu, so
+// Hardee's or Pizza Hut never offer home fries or a baladi salad. Keyed by the cuisine (OpenStreetMap's tag or our guess).
+const COLA = ['كوكاكولا', 'كوكاكولا زيرو'];
+const STYLES: [RegExp, Menu][] = [
+  [/koshar/, { main: ['كشري'], side: [], drink: COLA }],
+  [/pizza/, { main: ['شريحتين بيتزا مارجريتا', 'شريحتين بيتزا خضار', 'شريحتين بيتزا بيبروني'], side: ['سلطة خضرا صغيرة'], drink: COLA }],
+  [/burger/, { main: ['برجر لحمة', 'تشيز برجر', 'دبل برجر لحمة', 'ساندوتش فراخ كرسبي', 'برجر فراخ مشوية', 'ناجتس'], side: ['بطاطس فرايز متوسطة', 'بطاطس فرايز صغيرة', 'كول سلو', 'سلطة خضرا صغيرة'], drink: COLA }],
+  [/fried_chicken|chicken_wings/, { main: ['قطعتين فراخ كرسبي', 'قطعة فراخ كرسبي (كنتاكي)', 'ساندوتش فراخ كرسبي', 'ناجتس', 'برجر فراخ مشوية'], side: ['بطاطس فرايز متوسطة', 'بطاطس فرايز صغيرة', 'كول سلو'], drink: COLA }],
+  [/shawarma/, { main: ['شاورما فراخ', 'شاورما لحمة', 'ساندوتش فراخ مشوية'], side: ['بطاطس فرايز صغيرة', 'سلطة خضرا صغيرة'], drink: [...COLA, 'عيران'] }],
+  [/sandwich/, { main: ['ساندوتش فراخ بالخضار', 'ساندوتش تركي بالجبنة', 'ساندوتش تونة', 'ساندوتش فراخ مشوية'], side: ['سلطة خضرا صغيرة'], drink: COLA }],
+  [/sushi/, { main: ['سوشي', 'جمبري مشوي', 'فراخ بالخضار صيني'], side: ['رز أبيض'], drink: ['شاي أخضر', ...COLA] }],
+  [/fish|seafood/, { main: ['سمك بلطي مشوي', 'جمبري مشوي', 'سلمون مشوي بالخضار السوتيه'], side: ['رز أبيض', 'سلطة خضرا بلدي', 'سلطة طحينة'], drink: COLA }],
+];
+const styleOf = (cuisine?: string): Menu | null => (cuisine ? STYLES.find(([re]) => re.test(cuisine.toLowerCase()))?.[1] ?? null : null);
+
+// What a kind of place serves for breakfast; null where it usually doesn't (a grill, an Indian or Italian restaurant).
+const BREAKFAST: Partial<Record<Kind, Menu>> = {
+  fast: { main: ['ساندوتش فول', 'ساندوتش طعمية', 'ساندوتش بيض', 'فول مدمس', 'أومليت بالخضار'], side: ['سلطة خضرا بلدي'], drink: ['شاي من غير سكر'] },
+  lebanese: { main: ['منقوشة زعتر', 'منقوشة جبنة', 'فول بالطحينة', 'أومليت بالخضار', 'حمص بالطحينة'], side: ['لبنة'], drink: ['شاي من غير سكر', 'عصير برتقان فريش'] },
+  turkish: { main: ['أومليت بالخضار', 'منقوشة جبنة', 'بيدا بالجبنة'], side: ['جبنة فيتا'], drink: ['شاي من غير سكر'] },
+  healthy: { main: ['زبادي جرانولا بالفاكهة', 'شوفان باللبن', 'أومليت بالخضار', 'زبادي يوناني لايت'], side: [], drink: ['عصير برتقان فريش', 'شاي أخضر'] },
+};
+/** The kinds of place that usually serve breakfast. */
+export const BREAKFAST_KINDS: Kind[] = ['cafe', ...(Object.keys(BREAKFAST) as Kind[])];
 
 /** One dish on a menu: the food it logs as, its part in a meal, and where its calories come from. */
 export type Dish = {
@@ -91,27 +121,12 @@ const generic = (n: string, role: Role, usual = false): Dish | null => {
 };
 const real = <T,>(x: T | null | undefined): x is T => x != null;
 
-// A place that serves one kind of dish (a koshari shop, a pizzeria) gets those dishes, not the whole kind's menu.
-const CUISINE_DISHES: [RegExp, string[]][] = [
-  [/koshar/, ['كشري']], [/pizza/, ['بيتزا']], [/burger/, ['تشيز برجر', 'بيج ماك']], [/shawarma/, ['شاورما']],
-  [/fried_chicken|chicken_wings/, ['كرسبي', 'ناجتس']], [/sushi/, ['سوشي']], [/kebab|kofta/, ['كباب', 'كفتة', 'شيش طاووق']],
-  [/fish|seafood/, ['سمك', 'سلمون']], [/crepe/, ['كريب']], [/mandi|yemeni|kabsa/, ['مندي', 'كبسة']],
-];
-/** The dishes a specific cuisine (OpenStreetMap's cuisine tag) points to, or null for a general place. */
-export function cuisineDishes(cuisine: string | undefined): Food[] | null {
-  if (!cuisine) return null;
-  const words = CUISINE_DISHES.filter(([re]) => re.test(cuisine.toLowerCase())).flatMap(([, w]) => w);
-  if (!words.length) return null;
-  const out = FOODS.filter((f) => words.some((w) => f.n.includes(w)));
-  return out.length ? out : null;
-}
-
-/** A kind of place's dishes from our food list (approximate calories); a specific cuisine narrows the mains. */
-export function kindDishes(kind: Kind, cuisine?: string): Dish[] {
-  const m = MENU[kind];
-  const only = cuisineDishes(cuisine);
-  const mains = only ? only.map((f) => generic(f.n, 'main')) : m.main.map((n) => generic(n, 'main'));
-  return [...mains, ...m.side.map((n, i) => generic(n, 'side', i === 0)), ...m.drink.map((n, i) => generic(n, 'drink', i === 0))].filter(real);
+/** A kind of place's dishes from our food list (approximate calories). A place that serves one kind of food uses that
+ * food's menu, and breakfast uses the breakfast menu where the place has one. */
+export function kindDishes(kind: Kind, cuisine?: string, meal?: Meal): Dish[] {
+  const style = styleOf(cuisine);
+  const m = (meal === 'breakfast' && !style && BREAKFAST[kind]) || style || MENU[kind];
+  return [...m.main.map((n) => generic(n, 'main')), ...m.side.map((n, i) => generic(n, 'side', i === 0)), ...m.drink.map((n, i) => generic(n, 'drink', i === 0))].filter(real);
 }
 /** The foods on a kind's menu. */
 export const menu = (k: Kind): Food[] => kindDishes(k).map((d) => d.food);
@@ -136,7 +151,14 @@ export function chainDishes(ch: Chain): Dish[] {
 
 /** What a chosen place offers: a chain's own menu, or its kind of food. */
 export type Source = { kind: Kind; cuisine?: string; chain?: string };
-export const dishesFor = (s: Source): Dish[] => { const ch = chainById(s.chain); return ch ? chainDishes(ch) : kindDishes(s.kind, s.cuisine); };
+export const dishesFor = (s: Source, meal?: Meal): Dish[] => { const ch = chainById(s.chain); return ch ? chainDishes(ch) : kindDishes(s.kind, s.cuisine, meal); };
+/** Whether this place usually serves this meal: breakfast only at cafes and places with a breakfast menu. */
+export function servesMeal(s: Source, meal: Meal): boolean {
+  if (meal !== 'breakfast') return true;
+  const ch = chainById(s.chain);
+  if (ch) return ch.kind === 'cafe' || ch.id === 'zwz';
+  return s.kind === 'cafe' || (!styleOf(s.cuisine) && !!BREAKFAST[s.kind]);
+}
 
 /** Allergens this person can't have: their allergies, plus nuts with a nut allergy condition and wheat with celiac. */
 function blocked(p: Profile): Set<string> {
@@ -155,8 +177,8 @@ export type Pick = { food: Food; fits: boolean; dish: Dish };
  * dropped, ones that fit the calories come first (most protein per calorie first). When nothing fits, the lightest
  * ones are shown, marked as over. Mains only, plus drinks at a cafe (or a chain that only has drinks).
  */
-export function picks(p: Profile, kind: Kind, kcalLeft: number, n = 4, cuisine?: string, chain?: string): Pick[] {
-  const all = dishesFor({ kind, cuisine, chain }).filter((d) => canEat(p, d));
+export function picks(p: Profile, kind: Kind, kcalLeft: number, n = 4, cuisine?: string, chain?: string, meal?: Meal): Pick[] {
+  const all = dishesFor({ kind, cuisine, chain }, meal).filter((d) => canEat(p, d));
   const cafe = (chainById(chain)?.kind ?? kind) === 'cafe';
   let ok = all.filter((d) => d.role === 'main' || (cafe && d.role === 'drink' && !!d.chain === !!chain));
   if (!ok.length) ok = all;
@@ -285,9 +307,10 @@ export function toPlaces(els: OsmEl[], lat: number | undefined, lon: number | un
     if (seen.has(key)) continue;
     seen.add(key);
     const ch = chainOf(name) ?? (t.name ? chainOf(t.name) : undefined);
+    const br = ch ? undefined : brandOf(name) ?? (t.name ? brandOf(t.name) : undefined);
     out.push({
-      id: `${e.type}/${e.id}`, name: name.trim(), kind: ch?.kind ?? kindOf(t), m: lat != null && lon != null ? meters(lat, lon, pLat, pLon) : NaN, lat: pLat, lon: pLon,
-      cuisine: t.cuisine ?? guessCuisine(name), ...(ch ? { chain: ch.id } : {}), ...(e.area ? { area: e.area } : {}),
+      id: `${e.type}/${e.id}`, name: name.trim(), kind: ch?.kind ?? br?.kind ?? kindOf(t), m: lat != null && lon != null ? meters(lat, lon, pLat, pLon) : NaN, lat: pLat, lon: pLon,
+      cuisine: br?.cuisine ?? t.cuisine ?? guessCuisine(name), ...(ch ? { chain: ch.id } : {}), ...(e.area ? { area: e.area } : {}),
     });
   }
   return lat != null ? out.sort((a, b) => a.m - b.m) : out;
@@ -373,4 +396,51 @@ export async function searchPlaces(q: string, near?: { lat: number; lon: number 
   const bias = near ? `&lat=${near.lat.toFixed(3)}&lon=${near.lon.toFixed(3)}` : '';
   const j = await getJSON<{ features?: PhotonFeature[] }>(`https://photon.komoot.io/api/?q=${encodeURIComponent(text)}&limit=12${AMENITIES}${bias}`);
   return j ? fromPhoton(j.features ?? [], near?.lat, near?.lon).slice(0, 8) : null;
+}
+
+// ---- Brands, logos and maps ----
+
+/** Big chains we have no published numbers for: their kind of food (so the menu fits the place) and their website. */
+export type Brand = { id: string; ar: string; en: string; re: RegExp; kind: Kind; cuisine: string; site?: string };
+export const BRANDS: Brand[] = [
+  { id: 'hardees', ar: 'هارديز', en: "Hardee's", re: /hardee|هارديز|هارديس/, kind: 'fast', cuisine: 'burger', site: 'hardees.com' },
+  { id: 'bk', ar: 'برجر كينج', en: 'Burger King', re: /burger ?king|برجر ?كينج|برجر ?كنج/, kind: 'fast', cuisine: 'burger', site: 'bk.com' },
+  { id: 'buffalo', ar: 'بافلو برجر', en: 'Buffalo Burger', re: /buffalo|بافلو/, kind: 'fast', cuisine: 'burger', site: 'buffaloburger.com' },
+  { id: 'kudu', ar: 'كودو', en: 'Kudu', re: /kudu|كودو/, kind: 'fast', cuisine: 'burger', site: 'kudu.com.sa' },
+  { id: 'momen', ar: 'مؤمن', en: "Mo'men", re: /mo.?men|مؤمن|مومن/, kind: 'fast', cuisine: 'burger' },
+  { id: 'cookdoor', ar: 'كوك دور', en: 'Cook Door', re: /cook ?door|كوك ?دور/, kind: 'fast', cuisine: 'sandwich' },
+  { id: 'subway', ar: 'صب واي', en: 'Subway', re: /subway|صب ?واي/, kind: 'fast', cuisine: 'sandwich', site: 'subway.com' },
+  { id: 'dominos', ar: 'دومينوز', en: "Domino's", re: /domino|دومينوز/, kind: 'fast', cuisine: 'pizza', site: 'dominos.com' },
+  { id: 'pizzahut', ar: 'بيتزا هت', en: 'Pizza Hut', re: /pizza ?hut|بيتزا ?هت/, kind: 'fast', cuisine: 'pizza', site: 'pizzahut.com' },
+  { id: 'papajohns', ar: 'بابا جونز', en: "Papa John's", re: /papa ?john|بابا ?جونز/, kind: 'fast', cuisine: 'pizza', site: 'papajohns.com' },
+  { id: 'popeyes', ar: 'بوبايز', en: 'Popeyes', re: /popeye|بوبايز/, kind: 'fast', cuisine: 'fried_chicken', site: 'popeyes.com' },
+  { id: 'albaik', ar: 'البيك', en: 'Al Baik', re: /al ?baik|البيك/, kind: 'fast', cuisine: 'fried_chicken', site: 'albaik.com' },
+  { id: 'texas', ar: 'تكساس تشيكن', en: 'Texas Chicken', re: /texas chicken|تكساس/, kind: 'fast', cuisine: 'fried_chicken', site: 'texaschicken.com' },
+  { id: 'costa', ar: 'كوستا', en: 'Costa Coffee', re: /costa|كوستا/, kind: 'cafe', cuisine: 'coffee_shop', site: 'costa.co.uk' },
+  { id: 'dunkin', ar: 'دانكن', en: "Dunkin'", re: /dunkin|دانكن/, kind: 'cafe', cuisine: 'coffee_shop', site: 'dunkindonuts.com' },
+  { id: 'cilantro', ar: 'سيلانترو', en: 'Cilantro', re: /cilantro|سيلانترو/, kind: 'cafe', cuisine: 'coffee_shop', site: 'cilantrocafe.net' },
+  { id: 'tahrir', ar: 'كشري التحرير', en: 'Koshary El Tahrir', re: /koshar\S* ?el ?tahrir|كشري ?التحرير/, kind: 'fast', cuisine: 'koshari' },
+  { id: 'aboutarek', ar: 'أبو طارق', en: 'Abou Tarek', re: /abou ?tarek|ابو ?طارق/, kind: 'fast', cuisine: 'koshari' },
+];
+const CHAIN_SITE: Record<string, string> = { mcd: 'mcdonalds.eg', kfc: 'kfc.com', sbux: 'starbucks.com', tims: 'timhortons.com', zwz: 'zaatarwzeit.net', shawarmer: 'shawarmer.com' };
+export const brandOf = (name: string): Brand | undefined => { const t = norm(name).replace(/['’]/g, ''); return BRANDS.find((b) => b.re.test(t)); };
+export function searchBrands(q: string): Brand[] {
+  const t = norm(q).replace(/['’.]/g, '');
+  if (t.length < 2) return [];
+  return BRANDS.filter((b) => b.re.test(t) || norm(b.ar).includes(t) || b.en.toLowerCase().replace(/['’.]/g, '').includes(t));
+}
+/** A logo for a known chain or brand (its site's icon), or null for other places. */
+export function logoFor(x: { chain?: string; name: string }): string | null {
+  const site = (x.chain && CHAIN_SITE[x.chain]) || brandOf(x.name)?.site;
+  return site ? `https://www.google.com/s2/favicons?domain=${site}&sz=128` : null;
+}
+/** Links that open a place in Google Maps and Apple Maps: its pin when we know where it is, else a search by name. */
+export function mapLinks(x: { name: string; lat: number; lon: number }, near?: { lat: number; lon: number } | null) {
+  const pin = !!(x.lat || x.lon);
+  const q = encodeURIComponent(x.name);
+  const at = pin ? `${x.lat},${x.lon}` : near ? `${near.lat},${near.lon}` : '';
+  return {
+    google: pin ? `https://www.google.com/maps/search/?api=1&query=${at}` : `https://www.google.com/maps/search/?api=1&query=${q}`,
+    apple: `https://maps.apple.com/?q=${q}${pin ? `&ll=${at}` : at ? `&sll=${at}` : ''}`,
+  };
 }

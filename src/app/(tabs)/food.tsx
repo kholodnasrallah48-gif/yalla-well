@@ -12,7 +12,7 @@ import { CalorieCheckCard } from '../../components/PlanSettings.tsx';
 import { RecipeFinder } from '../../components/RecipeFinder.tsx';
 import { WaterCard } from '../../components/WaterCard.tsx';
 import { Card, CountUp, MacroBar, NoteView, Num, RADIUS, RoundCheck, Rise, Screen, T, styles } from '../../components/ui.tsx';
-import { changePortion, fmt, mealTotals, planned, totals, type LoggedFood } from '../../lib/day.ts';
+import { changePortion, fmt, tickMeal, mealTotals, planned, totals, type LoggedFood } from '../../lib/day.ts';
 import { FOODS, MY_FOODS_CAT, itemAlerts, type Food } from '../../lib/foods.ts';
 import { L, isEn, tx } from '../../lib/i18n.ts';
 import { MEALS, MEAL_NAME, SHARE, dayPlan, mealBudget, toMeal } from '../../lib/mealplan.ts';
@@ -63,7 +63,7 @@ export default function FoodScreen() {
   const tick = (meal: Meal) => {
     const on = ticked.includes(meal);
     play(on ? 'remove' : ticked.length === MEALS.length - 1 ? 'win' : 'check');
-    updateDay((d) => ({ ...d, meals: on ? (d.meals ?? []).filter((m) => m !== meal) : [...(d.meals ?? []), meal] }));
+    updateDay((d) => tickMeal(d, meal));
   };
 
   const foodRow = (f: LoggedFood, last: boolean) => {

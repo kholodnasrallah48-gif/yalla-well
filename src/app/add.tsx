@@ -159,7 +159,7 @@ export default function AddFood() {
   const inMeal = mealTotals(day, target);
   // A dish for this meal, sized to what's left: today's plan pick while the meal is open, else the best fits now.
   const refs = day.foods.map((x) => x.ref);
-  const plan = dayPlan(profile, today, day.shuffle, refs, t.kcal, day.meals ?? [], MEALS.filter((m) => day.foods.some((x) => x.meal === m)));
+  const plan = dayPlan(profile, today, day.shuffle, refs, t.kcal, day.meals ?? [], MEALS.filter((m) => day.foods.some((x) => x.meal === m)), day.out);
   const budget = mealBudget(profile, plan, target, inMeal.kcal, remaining);
   const entry = plan.find((e) => e.meal === target);
   let idea = entry && !entry.eaten && entry.recipe ? entry.recipe : null;

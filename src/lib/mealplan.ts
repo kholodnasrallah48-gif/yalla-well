@@ -72,14 +72,39 @@ export type PlanEntry = {
   why: string[];
   /** Even the lightest fitting dish is more than the budget: eat this part of it (e.g. 0.5 = half). */
   portion: number;
+  /** The person is eating this meal out today: its budget is held for it and no dish is suggested. */
+  out: boolean;
 };
+
+/** How big the meal out will likely be. */
+export type OutSize = 'light' | 'usual' | 'big';
+const OUT_SIZE: Record<OutSize, number> = { light: 1, usual: 1.25, big: 1.5 };
+
+/** Calories to hold for a meal eaten out: the meal's usual share, more for a usual or big restaurant meal. */
+export function outReserve(p: Profile, meal: Meal, size: OutSize = 'usual'): number {
+  return Math.round((targets(p).kcal * SHARE[meal] * OUT_SIZE[size]) / 10) * 10;
+}
+
+/**
+ * Splits the calories left today over the open meals. A meal eaten out gets its held calories first (never more
+ * than what's left), and the other meals share the rest by their usual share, so they get lighter.
+ */
+export function outSplit(left: number, openMeals: Meal[], out?: { meal: Meal; kcal: number } | null): Partial<Record<Meal, number>> {
+  const res: Partial<Record<Meal, number>> = {};
+  left = Math.max(0, left);
+  const outMeal = out && openMeals.includes(out.meal) ? out.meal : null;
+  const held = outMeal && out ? Math.min(Math.max(out.kcal, 0), left) : 0;
+  const share = openMeals.filter((m) => m !== outMeal).reduce((a, m) => a + SHARE[m], 0) || 1;
+  for (const m of openMeals) res[m] = m === outMeal ? held : ((left - held) * SHARE[m]) / share;
+  return res;
+}
 
 /**
  * The plan for a day. Meals the person ticked (`doneMeals`) or whose suggested dish they logged count as eaten;
  * the calories left today are split over the meals not ticked or started yet by their usual share.
  * `shuffle[meal]` moves that meal to the next option.
  */
-export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, number>> = {}, loggedRefs: string[] = [], eatenKcal = 0, doneMeals: Meal[] = [], startedMeals: Meal[] = []): PlanEntry[] {
+export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, number>> = {}, loggedRefs: string[] = [], eatenKcal = 0, doneMeals: Meal[] = [], startedMeals: Meal[] = [], out?: { meal: Meal; kcal: number } | null): PlanEntry[] {
   const target = targets(p).kcal;
   const used = new Set<string>();
   // The day's dish for each meal from the best-suited few, so it changes daily but stays a good fit.
@@ -99,15 +124,16 @@ export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, 
   const eaten = (m: Meal) => doneMeals.includes(m) || !!loggedDish(m);
   // Meals with food logged already are being eaten: the calories left go to the meals not started yet.
   const open = (m: Meal) => !eaten(m) && !startedMeals.includes(m);
-  const leftShare = MEALS.filter(open).reduce((a, m) => a + SHARE[m], 0) || 1;
   const left = Math.max(0, target - eatenKcal);
+  const split = outSplit(left, MEALS.filter(open), out);
   return MEALS.map((meal) => {
     const done = eaten(meal);
-    const budget = open(meal) ? (left * SHARE[meal]) / leftShare : 0;
+    const isOut = !!out && out.meal === meal && open(meal);
+    const budget = split[meal] ?? 0;
     let recipe: Recipe | null = null;
     let portion = 1;
     if (done) recipe = loggedDish(meal);
-    else if (open(meal) && left >= 80) {
+    else if (open(meal) && !isOut && left >= 80) {
       recipe = pick(meal, budget);
       if (!recipe) {
         recipe = lightest(meal);
@@ -115,7 +141,7 @@ export function dayPlan(p: Profile, date: string, shuffle: Partial<Record<Meal, 
       }
     }
     if (recipe) used.add(recipe.n);
-    return { meal, recipe, budget: Math.round(budget), eaten: done, portion, why: recipe ? suitability(p, recipe).why : [] };
+    return { meal, recipe, budget: Math.round(budget), eaten: done, portion, out: isOut, why: recipe ? suitability(p, recipe).why : [] };
   });
 }
 

@@ -33,13 +33,18 @@ export function homeLine(o: {
 }
 
 /** Food: what the next meal can take, with an idea when there is one. `left` is the whole day's, `budget` the meal's. */
-export function foodLine(o: { g: Gender; left: number; budget: number; meal: string | null; idea?: { name: string; kcal: number } | null; pending?: string | null }): string {
+export function foodLine(o: { g: Gender; left: number; budget: number; meal: string | null; idea?: { name: string; kcal: number } | null; pending?: string | null;
+  /** A meal the person is eating out today ("للعشا"), the calories held for it, and whether it's the next meal. */
+  out?: { meal: string; kcal: number; next: boolean } | null }): string {
   const { g } = o;
   const tick = o.pending ? L(` ${g('علم', 'علمي')} على ${o.pending} لما ${g('تخلصه', 'تخلصيه')} عشان يتحسب.`, ` Tick ${o.pending} when you finish it so it counts.`) : '';
   if (o.left < 0) return L(`${g('عديت', 'عديتي')} بـ${fmt(-o.left)} سعرة. خلي الوجبة الجاية خفيفة، خضار وبروتين.`, `${fmt(-o.left)} kcal over. Keep the next meal light: veg and protein.`);
   if (!o.meal) return o.pending ? tick.trim() : L(`${g('قفلت', 'قفلتي')} وجبات النهارده. فاضل ${fmt(o.left)} سعرة لو ${g('جعت', 'جعتي')}.`, `All meals done. ${fmt(o.left)} kcal left if you get hungry.`);
   const idea = o.idea ? L(` ${o.idea.name} بـ${fmt(o.idea.kcal)} ${g('وتقفل', 'وتقفلي')} اليوم صح.`, ` ${o.idea.name} for ${fmt(o.idea.kcal)} closes the day right.`) : '';
-  return L(`عندك ${fmt(o.budget)} سعرة ${o.meal}.`, `You have ${fmt(o.budget)} kcal for ${o.meal}.`) + idea + tick;
+  if (o.out?.next) return L(`محجوزلك ${fmt(o.out.kcal)} سعرة ${o.out.meal} برة البيت. ${g('افتح', 'افتحي')} "أنا برة البيت" ${g('تختار', 'تختاري')} وجبة على قدها.`,
+    `${fmt(o.out.kcal)} kcal held for eating out at ${o.out.meal}. Open "Eating out" to pick a meal that fits.`) + tick;
+  const held = o.out ? L(` حاجزينلك ${fmt(o.out.kcal)} سعرة ${o.out.meal} برة البيت، عشان كده الوجبة دي أخف.`, ` ${fmt(o.out.kcal)} kcal are held for eating out at ${o.out.meal}, so this meal is lighter.`) : '';
+  return L(`عندك ${fmt(o.budget)} سعرة ${o.meal}.`, `You have ${fmt(o.budget)} kcal for ${o.meal}.`) + held + idea + tick;
 }
 
 /** Train: cheers that follow the workout from warm-up to the final whistle. */

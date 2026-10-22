@@ -53,7 +53,7 @@ export default function FoodScreen() {
   const waiting = planned(day).kcal - t.kcal;
   const ticked = day.meals ?? [];
   const started = MEALS.filter((m) => day.foods.some((x) => x.meal === m));
-  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), t.kcal + waiting, ticked, started);
+  const plan = dayPlan(profile, today, day.shuffle, day.foods.map((x) => x.ref), t.kcal + waiting, ticked, started, day.out);
   const loose = day.foods.filter((x) => !x.meal);
   // What each meal can still take, for the recipe finder's portions.
   const left = T0.kcal - t.kcal - waiting;
@@ -98,8 +98,11 @@ export default function FoodScreen() {
   const pending = MEALS.find((m) => !ticked.includes(m) && day.foods.some((x) => x.meal === m));
   const nextEntry = empty ? plan.find((e) => e.meal === empty) : undefined;
   const idea = nextEntry?.recipe ? { name: tx(nextEntry.recipe.n), kcal: nextEntry.recipe.kcal * Math.min(nextEntry.portion, portionFor(nextEntry.recipe.kcal, nextEntry.budget, 1).factor) } : null;
+  // A meal held for eating out (still open): the captain says so, or says the next meal is lighter because of it.
+  const outEntry = plan.find((e) => e.out);
   const say = foodLine({ g, left, budget: empty ? budgets[empty] : 0, meal: empty ? L(toMeal(empty), tx(MEAL_NAME[empty]).toLowerCase()) : null, idea,
-    pending: pending ? L(MEAL_NAME[pending], tx(MEAL_NAME[pending]).toLowerCase()) : null });
+    pending: pending ? L(MEAL_NAME[pending], tx(MEAL_NAME[pending]).toLowerCase()) : null,
+    out: outEntry ? { meal: L(toMeal(outEntry.meal), tx(MEAL_NAME[outEntry.meal]).toLowerCase()), kcal: outEntry.budget, next: outEntry.meal === empty } : null });
   const over = t.kcal > T0.kcal;
   // A ticked meal that went well over its usual share: say so, and where the rest of the day's calories went.
   const big = MEALS.filter((m) => ticked.includes(m)).map((m) => ({ m, extra: Math.round(mealTotals(day, m).kcal - T0.kcal * SHARE[m]) }))
@@ -124,7 +127,7 @@ export default function FoodScreen() {
             ) : null}
           </CaptainCard>
           <View style={{ marginTop: 10 }}>
-            <OutsideButton onPress={() => setOut(true)} />
+            <OutsideButton onPress={() => setOut(true)} out={outEntry ? { meal: outEntry.meal, kcal: outEntry.budget } : null} />
           </View>
         </Rise>
         <Rise i={1}>
@@ -163,7 +166,8 @@ export default function FoodScreen() {
                 <View style={{ flex: 1 }}>
                   <T kind="h2" style={{ fontSize: 19, lineHeight: 28 }}>{tx(MEAL_NAME[meal])}</T>
                   <T kind="small" numberOfLines={1} color={done ? c.ok : undefined}>
-                    {foods.length ? (done ? names : L(`${names} · ${g('علم', 'علمي')} لما ${g('تخلص', 'تخلصي')}`, `${names} · tick when done`)) : done ? L('اتعلمت', 'Ticked') : L('لسه', 'Nothing yet')}
+                    {foods.length ? (done ? names : L(`${names} · ${g('علم', 'علمي')} لما ${g('تخلص', 'تخلصي')}`, `${names} · tick when done`)) : done ? L('اتعلمت', 'Ticked')
+                      : entry.out ? L(`برة البيت · محجوز ${fmt(entry.budget)} سعرة`, `Eating out · ${fmt(entry.budget)} kcal held`) : L('لسه', 'Nothing yet')}
                   </T>
                 </View>
                 {foods.length ? <Num size={24} color={done ? c.ink : c.dim}>{fmt(sum.kcal)}</Num> : null}
@@ -206,7 +210,7 @@ export default function FoodScreen() {
       ) : null}
 
       <OutsideSheet open={out} onClose={() => setOut(false)} profile={profile} kcalLeft={Math.round(left)} proteinLeft={Math.round(T0.protein - t.p)}
-        meal={nextMeal} update={updateDay} g={g} />
+        meal={nextMeal} budgets={budgets} day={day} update={updateDay} g={g} />
 
       <TourTarget id="food.finder">
         <RecipeFinder budgets={budgets} start={nextMeal} g={g} />

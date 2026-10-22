@@ -30,7 +30,7 @@ export type DayLog = {
   /** The person lit the day's flame by holding it (see lib/flame). */
   lit?: boolean;
   /** The person is eating this meal out today: calories held for it, the other meals get lighter (see lib/mealplan). */
-  out?: { meal: Meal; kcal: number };
+  out?: { meal: Meal; kcal: number; refs?: string[] };
 };
 
 export const blankDay = (): DayLog => ({ foods: [], water: 0, flare: false, done: [], sets: {} });

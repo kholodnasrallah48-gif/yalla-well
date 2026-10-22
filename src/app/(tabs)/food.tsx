@@ -127,7 +127,7 @@ export default function FoodScreen() {
             ) : null}
           </CaptainCard>
           <View style={{ marginTop: 10 }}>
-            <OutsideButton onPress={() => setOut(true)} out={outEntry ? { meal: outEntry.meal, kcal: outEntry.budget } : null} />
+            <OutsideButton onPress={() => setOut(true)} out={day.out && !ticked.includes(day.out.meal) ? day.out : null} />
           </View>
         </Rise>
         <Rise i={1}>

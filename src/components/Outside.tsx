@@ -8,10 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { CHAINS } from '../lib/chains-data.ts';
-import { addFood, fmt, type DayLog } from '../lib/day.ts';
-import { foodLevel } from '../lib/foods.ts';
+import { addFood, fmt, mealTotals, type DayLog } from '../lib/day.ts';
+import { foodLevel, type Food } from '../lib/foods.ts';
 import { isEn, L, tx } from '../lib/i18n.ts';
-import { MEAL_NAME, MEALS, outReserve, toMeal } from '../lib/mealplan.ts';
+import { MEAL_NAME, MEALS, toMeal } from '../lib/mealplan.ts';
 import { BREAKFAST_KINDS, brandOf, buildCombo, chainById, dishesFor, KINDS, kindName, logoFor, mapLinks, nearby, picks, searchBrands, searchChains, searchPlaces, servesMeal, type Dish, type Kind, type Place } from '../lib/outside.ts';
 import type { Gender, Profile } from '../lib/plan.ts';
 import type { Meal } from '../lib/recipes-data.ts';
@@ -151,9 +151,8 @@ export function OutsideSheet({ open, onClose, profile, kcalLeft, proteinLeft, me
   const chainHits = searchChains(q);
   const brandHits = searchBrands(q).filter((b) => !chainHits.length || !chainHits.some((ch) => ch.re.test(b.en.toLowerCase())));
   const held = day.out;
-  const heldHere = held?.meal === meal;
-  const reserve = outReserve(profile, meal, 'usual');
-  const done = ticked.includes(meal);
+  /** This meal is already held: show what was picked instead of new picks (its budget now counts the picks). */
+  const heldHere = !!held && held.meal === meal && !ticked.includes(meal);
   const mealName = (m: Meal) => tx(MEAL_NAME[m]).toLowerCase();
 
   const msg: Partial<Record<Status, string>> = {
@@ -178,6 +177,22 @@ export function OutsideSheet({ open, onClose, profile, kcalLeft, proteinLeft, me
     </Pressable>
   );
   const links = place && !generic ? mapLinks(place, here) : null;
+  // Picking from a place holds exactly what was picked: it's logged in the meal (so the other meals share what's left)
+  // and counts once the meal is ticked. Cancelling takes those picks out again.
+  const hold = (foods: Food[], names: string) => {
+    play('add');
+    update((d) => {
+      const n = foods.reduce((acc, f) => addFood(acc, f, meal), d);
+      const refs = [...(d.out?.meal === meal ? d.out.refs ?? [] : []), ...foods.map((f) => f.id)];
+      return { ...n, out: { meal, kcal: Math.round(mealTotals(n, meal).kcal), refs } };
+    });
+    setAdded(names);
+  };
+  const unhold = (d: DayLog): DayLog => {
+    const { out, ...rest } = d;
+    if (!out) return d;
+    return { ...rest, foods: d.foods.filter((x) => !(x.meal === out.meal && (out.refs ?? []).includes(x.ref))) };
+  };
   const ios = Platform.OS === 'ios';
 
   return (
@@ -196,24 +211,20 @@ export function OutsideSheet({ open, onClose, profile, kcalLeft, proteinLeft, me
             {/* 1. Which meal, and holding its calories. */}
             <View style={{ gap: 8 }}>
               <Segmented<Meal> items={MEALS.map((m) => [m, tx(MEAL_NAME[m])] as [Meal, string])} value={meal} onChange={(m) => { setMeal(m); setAdded(''); }} />
-              <T kind="small" color={c.muted}>
+              {heldHere ? null : <T kind="small" color={c.muted}>
                 {kcalLeft > 0
                   ? L(`${tx(MEAL_NAME[meal])} على قد ${fmt(budget)} سعرة${proteinLeft > 0 ? `، وفاضلك ${fmt(proteinLeft)} جم بروتين النهارده` : ''}.`, `${tx(MEAL_NAME[meal])} within ${fmt(budget)} kcal${proteinLeft > 0 ? `, with ${fmt(proteinLeft)} g protein left today` : ''}.`)
                   : L('سعرات النهارده خلصت، فهنوريك أخف حاجات.', "Today's calories are used up, so here are the lightest options.")}
-              </T>
+              </T>}
               {held ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.soft, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12 }}>
                   <View style={{ flex: 1, gap: 2 }}>
                     <T kind="h3">{L(`محجوز ${fmt(held.kcal)} سعرة ${toMeal(held.meal)}`, `${fmt(held.kcal)} kcal held for ${mealName(held.meal)}`)}</T>
-                    <T kind="label">{L(`لما ${g('تعلم', 'تعلمي')} على ${tx(MEAL_NAME[held.meal])} إنه خلص، السعرات دي بتتحسب لو مفيش أكل متسجل فيه.`, `When you tick ${mealName(held.meal)}, these calories count if nothing is logged in it.`)}</T>
+                    <T kind="label">{L(`باقي وجبات النهارده اتظبطت على كده. ${g('علم', 'علمي')} على ${tx(MEAL_NAME[held.meal])} لما ${g('تخلصه', 'تخلصيه')} علشان يتحسب.`, `Today's other meals are adjusted for it. Tick ${mealName(held.meal)} when you finish so it counts.`)}</T>
                   </View>
-                  <Btn kind="text" title={L('إلغاء', 'Cancel')} onPress={() => update((d) => { const { out: _o, ...rest } = d; return rest; })} />
+                  {!ticked.includes(held.meal) ? <Btn kind="text" title={L('إلغاء', 'Cancel')} onPress={() => { setAdded(''); update(unhold); }} /> : null}
                 </View>
-              ) : !done ? (
-                <Btn kind="secondary" title={L(`${g('احجز', 'احجزي')} ${fmt(reserve)} سعرة ${toMeal(meal)}`, `Hold ${fmt(reserve)} kcal for ${mealName(meal)}`)}
-                  onPress={() => { play('check'); update((d) => ({ ...d, out: { meal, kcal: reserve } })); }} />
               ) : null}
-              {!held && !done ? <T kind="label">{L('الحجز بيخلي باقي وجبات النهارده أخف علشان السعرات تكفي. للنهارده بس.', "Holding makes today's other meals lighter so the calories last. Today only.")}</T> : null}
             </View>
 
             {!place ? (
@@ -281,54 +292,73 @@ export function OutsideSheet({ open, onClose, profile, kcalLeft, proteinLeft, me
                   ) : !generic ? <T kind="small" color={c.muted}>{L('المحل مش بينشر سعراته، فدي سعرات تقريبية لأصناف زي اللي عنده.', "This place doesn't publish its calories, so these are approximate for dishes like its own.")}</T> : null}
                 </View>
 
-                {/* A whole meal that fits this meal's calories. */}
-                {combo ? (
-                  <Card style={{ gap: 8 }}>
-                    <Kicker>{L(`وجبة كاملة على قد ${fmt(budget)} سعرة`, `A whole meal within ${fmt(budget)} kcal`)}</Kicker>
-                    {combo.items.map((d) => (
-                      <View key={d.food.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <T kind="body" style={{ flex: 1 }}>{dishName(d)}</T>
-                        <T kind="small" color={c.muted}>{fmt(d.food.kcal)}</T>
+                {heldHere && held ? (
+                  <Card style={{ gap: 6 }}>
+                    <Kicker>{L(`محجوز ${toMeal(meal)}`, `Held for ${mealName(meal)}`)}</Kicker>
+                    {day.foods.filter((x) => x.meal === meal).map((x) => (
+                      <View key={x.ref} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <T kind="body" style={{ flex: 1 }}>{`${tx(x.n).replace(/\s*\([^)]*\)$/, '')}${x.q !== 1 ? ` ×${x.q}` : ''}`}</T>
+                        <T kind="small" color={c.muted}>{fmt(x.kcal * x.q)}</T>
                       </View>
                     ))}
                     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: 2 }}>
-                      <Num size={28} weight="black">{fmt(combo.kcal)}</Num>
-                      <T kind="small" color={c.muted} style={{ paddingBottom: 4, flex: 1 }}>
-                        {L(`سعرة${combo.items.some((d) => !d.chain) ? ' تقريبا' : ''}${combo.p > 0 ? ` · ${fmt(combo.p)} جم بروتين` : ''}`, `kcal${combo.items.some((d) => !d.chain) ? ' approx.' : ''}${combo.p > 0 ? ` · ${fmt(combo.p)} g protein` : ''}`)}
-                      </T>
+                      <Num size={28} weight="black">{fmt(held.kcal)}</Num>
+                      <T kind="small" color={c.muted} style={{ paddingBottom: 4 }}>{L('سعرة', 'kcal')}</T>
                     </View>
-                    {combo.swaps.length ? (
-                      <T kind="small" color={c.petrol}>{L(`أخف من الطلب العادي (${fmt(combo.usual)} سعرة): `, `Lighter than the usual order (${fmt(combo.usual)} kcal): `) + combo.swaps.map((s) => (s.to ? L(`${dishName(s.to)} بدل ${dishName(s.from)}`, `${dishName(s.to)} instead of ${dishName(s.from)}`) : L(`من غير ${dishName(s.from)}`, `no ${dishName(s.from)}`))).join(L('، ', ', '))}</T>
-                    ) : null}
-                    {!combo.fits ? <T kind="small" color={c.warn}>{L('دي أخف وجبة هنا، وبرضه أكتر من اللي فاضل. خلي الوجبة الجاية خفيفة.', "This is the lightest meal here and it's still over. Keep the next meal light.")}</T> : null}
-                    <Btn title={L(`${g('ضيف', 'ضيفي')} الوجبة ${toMeal(meal)}`, `Add it to ${mealName(meal)}`)}
-                      onPress={() => { play('add'); update((d) => combo.items.reduce((acc, it) => addFood(acc, it.food, meal), d)); setAdded(combo.items.map(dishName).join(L('، ', ', '))); }} />
+                    <T kind="small" color={c.muted}>{L(`${g('عايز', 'عايزة')} ${g('تغير', 'تغيري')}؟ ${g('الغي', 'الغي')} الحجز من فوق و${g('اختار', 'اختاري')} تاني.`, 'Want to change it? Cancel the hold above and pick again.')}</T>
                   </Card>
-                ) : null}
-
-                <View style={{ gap: 0 }}>
-                  <T kind="label">{L('أو طبق لوحده', 'Or one dish')}</T>
-                  {list.map(({ food, fits, dish }) => {
-                    const warn = foodLevel(profile, food) === 'warn';
-                    return (
-                      <View key={food.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderColor: c.line, paddingVertical: 10 }}>
-                        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                          <T kind="body">{dishName(dish)}</T>
-                          <T kind="label">{`${fmt(food.kcal)} ${kcalNote(dish)}${food.p > 0 ? L(` · ${fmt(food.p)} جم بروتين`, ` · ${fmt(food.p)} g protein`) : ''}`}</T>
-                          {!fits ? <T kind="label" color={c.warn}>{L('أكتر من اللي فاضل، بس دي أخف حاجة هنا.', "More than you have left, but it's the lightest here.")}</T> : null}
-                          {warn ? <T kind="label" color={c.warn}>{L('مش أحسن اختيار لحالتك، لو فيه بديل يبقى أحسن.', 'Not the best for your health; pick another if you can.')}</T> : null}
+                ) : (
+                  <>
+                  {/* A whole meal that fits this meal's calories. */}
+                  {combo ? (
+                    <Card style={{ gap: 8 }}>
+                      <Kicker>{L(`وجبة كاملة على قد ${fmt(budget)} سعرة`, `A whole meal within ${fmt(budget)} kcal`)}</Kicker>
+                      {combo.items.map((d) => (
+                        <View key={d.food.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <T kind="body" style={{ flex: 1 }}>{dishName(d)}</T>
+                          <T kind="small" color={c.muted}>{fmt(d.food.kcal)}</T>
                         </View>
-                        <Pressable onPress={() => { play('add'); update((d) => addFood(d, food, meal)); setAdded(dishName(dish)); }} accessibilityRole="button"
-                          accessibilityLabel={L(`إضافة ${dishName(dish)} ${toMeal(meal)}`, `Add ${dishName(dish)} to ${mealName(meal)}`)}
-                          style={({ pressed }) => [{ minHeight: 36, minWidth: 36, borderRadius: 999, backgroundColor: c.soft, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
-                          <Text style={{ fontFamily: fonts.displaySemi, fontSize: 18, lineHeight: 20, color: c.ink }}>+</Text>
-                        </Pressable>
+                      ))}
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: 2 }}>
+                        <Num size={28} weight="black">{fmt(combo.kcal)}</Num>
+                        <T kind="small" color={c.muted} style={{ paddingBottom: 4, flex: 1 }}>
+                          {L(`سعرة${combo.items.some((d) => !d.chain) ? ' تقريبا' : ''}${combo.p > 0 ? ` · ${fmt(combo.p)} جم بروتين` : ''}`, `kcal${combo.items.some((d) => !d.chain) ? ' approx.' : ''}${combo.p > 0 ? ` · ${fmt(combo.p)} g protein` : ''}`)}
+                        </T>
                       </View>
-                    );
-                  })}
-                  {!more && dishes.filter((d) => d.role === 'main' || cafe).length > 3 ? <Btn kind="text" title={L('أطباق أكتر', 'More dishes')} onPress={() => setMore(true)} /> : null}
-                </View>
-                {added ? <T kind="small" color={c.petrol}>{L(`اتضاف ${added} ${toMeal(meal)}. ${g('علم', 'علمي')} على الوجبة لما ${g('تخلصها', 'تخلصيها')} علشان تتحسب.`, `${added} added to ${mealName(meal)}. Tick the meal when you finish it so it counts.`)}</T> : null}
+                      {combo.swaps.length ? (
+                        <T kind="small" color={c.petrol}>{L(`أخف من الطلب العادي (${fmt(combo.usual)} سعرة): `, `Lighter than the usual order (${fmt(combo.usual)} kcal): `) + combo.swaps.map((s) => (s.to ? L(`${dishName(s.to)} بدل ${dishName(s.from)}`, `${dishName(s.to)} instead of ${dishName(s.from)}`) : L(`من غير ${dishName(s.from)}`, `no ${dishName(s.from)}`))).join(L('، ', ', '))}</T>
+                      ) : null}
+                      {!combo.fits ? <T kind="small" color={c.warn}>{L('دي أخف وجبة هنا، وبرضه أكتر من اللي فاضل. خلي الوجبة الجاية خفيفة.', "This is the lightest meal here and it's still over. Keep the next meal light.")}</T> : null}
+                      <Btn title={L(`${g('احجز', 'احجزي')} الوجبة دي ${toMeal(meal)}`, `Hold this meal for ${mealName(meal)}`)}
+                        onPress={() => hold(combo.items.map((d) => d.food), combo.items.map(dishName).join(L('، ', ', ')))} />
+                    </Card>
+                  ) : null}
+
+                  <View style={{ gap: 0 }}>
+                    <T kind="label">{L('أو طبق لوحده', 'Or one dish')}</T>
+                    {list.map(({ food, fits, dish }) => {
+                      const warn = foodLevel(profile, food) === 'warn';
+                      return (
+                        <View key={food.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderColor: c.line, paddingVertical: 10 }}>
+                          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                            <T kind="body">{dishName(dish)}</T>
+                            <T kind="label">{`${fmt(food.kcal)} ${kcalNote(dish)}${food.p > 0 ? L(` · ${fmt(food.p)} جم بروتين`, ` · ${fmt(food.p)} g protein`) : ''}`}</T>
+                            {!fits ? <T kind="label" color={c.warn}>{L('أكتر من اللي فاضل، بس دي أخف حاجة هنا.', "More than you have left, but it's the lightest here.")}</T> : null}
+                            {warn ? <T kind="label" color={c.warn}>{L('مش أحسن اختيار لحالتك، لو فيه بديل يبقى أحسن.', 'Not the best for your health; pick another if you can.')}</T> : null}
+                          </View>
+                          <Pressable onPress={() => hold([food], dishName(dish))} accessibilityRole="button"
+                            accessibilityLabel={L(`حجز ${dishName(dish)} ${toMeal(meal)}`, `Hold ${dishName(dish)} for ${mealName(meal)}`)}
+                            style={({ pressed }) => [{ minHeight: 36, minWidth: 36, borderRadius: 999, backgroundColor: c.soft, alignItems: 'center', justifyContent: 'center' }, pressed && styles.pressed]}>
+                            <Text style={{ fontFamily: fonts.displaySemi, fontSize: 18, lineHeight: 20, color: c.ink }}>+</Text>
+                          </Pressable>
+                        </View>
+                      );
+                    })}
+                    {!more && dishes.filter((d) => d.role === 'main' || cafe).length > 3 ? <Btn kind="text" title={L('أطباق أكتر', 'More dishes')} onPress={() => setMore(true)} /> : null}
+                  </View>
+                  </>
+                )}
+                {added && !heldHere ? <T kind="small" color={c.petrol}>{L(`اتحجز ${added} ${toMeal(meal)}${held ? ` (${fmt(held.kcal)} سعرة)` : ''}، وباقي وجبات النهارده اتظبطت على كده.`, `${added} held for ${mealName(meal)}${held ? ` (${fmt(held.kcal)} kcal)` : ''}; today's other meals are adjusted for it.`)}</T> : null}
                 <T kind="small" color={c.dim}>{L(...TIP[place.kind](g))}</T>
               </View>
             )}

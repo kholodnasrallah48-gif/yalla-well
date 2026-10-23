@@ -220,25 +220,6 @@
     });
   };
 
-  // A day with us: the step in the middle of the screen picks the phone's screen and the clock.
-  const day = document.querySelector('[data-day]');
-  if (day) {
-    const steps = [...day.querySelectorAll('.m-step')];
-    const stackEl = day.querySelector('.m-stack');
-    const clock = day.querySelector('.m-clock');
-    let cur = 0;
-    const set = (i) => {
-      if (i === cur) return;
-      cur = i;
-      steps.forEach((s, k) => s.classList.toggle('on', k === i));
-      showScreen(stackEl, i);
-      const tn = steps[i].querySelector('.m-tn'), tw = steps[i].querySelector('.m-tw');
-      clock.children[0].textContent = tn ? tn.textContent : '';
-      clock.children[1].textContent = tw ? tw.textContent : '';
-    };
-    io(steps, (e) => { if (e.isIntersecting) set(steps.indexOf(e.target)); }, { rootMargin: '-45% 0px -45% 0px' });
-  }
-
   // The plan example: each answer rebuilds the example plan.
   const plan = document.querySelector('[data-plan]');
   if (plan) {

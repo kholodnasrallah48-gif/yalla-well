@@ -27,37 +27,36 @@ const json = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 
 // ---------- home ----------
 
-/** 1. A day with the app: the steps scroll by while one sticky phone changes its screen. */
+/** 1. A day with the app, in 3D: five rooms on an arc, and the camera flies from one to the next as the steps scroll
+ * by (static/world.js). Without the 3D the same steps show as a plain list of cards with their screens. */
 export function dayModule(ctx) {
   const { L } = ctx;
-  const steps = [
-    ['7:30', L('الصبح', 'Morning'), L('صباح الخير', 'Good morning'), L('اليوم بيفتح بجملة من الكابتن، وعدد الأيام اللي ورا بعض، والفريز اللي فاضل.', 'The day opens with a line from the Captain, your streak and the freezes you have left.'),
-      'day-morning', L('صفحة اليوم الصبح: صباح الخير، والستريك، وجملة الكابتن', 'Today in the morning: good morning, the streak and a line from the Captain')],
-    ['7:40', L('الصبح', 'Morning'), L('سؤال الصبح', 'Morning check-in'), L('الطاقة والألم والنوم في ٣ ضغطات. ولو الإجابات بتقول إن اليوم صعب، التمرين بيخف لوحده.', 'Energy, pain and sleep in three taps. If the answers point to a rough day, the workout gets lighter on its own.'),
-      'day-checkin', L('سؤال الصبح عن الطاقة والألم والنوم', 'The morning check-in on energy, pain and sleep')],
-    ['8:30', L('الفطار', 'Breakfast'), L('فطار على قد السعرات', 'A breakfast that fits'), L('اقتراح على قد اللي فاضل في اليوم، والوجبة بتدخل الحساب لما يتحط عليها علامة صح.', "An idea sized to what's left of your day, and the meal counts once it's ticked."),
+  const rooms = [
+    ['8:30', L('الصبح · المطبخ', 'Morning · Kitchen'), L('الفطار محسوب قبل ما يتاكل.', "Breakfast, counted before it's eaten."),
+      L('اقتراح فطار على قد السعرات اللي فاضلة، وكل أكلة بوزنها والبروتين والكارب والدهون. والوجبة بتدخل الحساب لما يتحط عليها علامة صح.', "A breakfast idea sized to the calories left, every food with its weight, protein, carbs and fat. The meal counts once it's ticked."),
       'day-breakfast', L('صفحة الأكل والفطار متسجل', 'The Food page with breakfast logged')],
-    ['2:00', L('الضهر', 'Afternoon'), L('الدوا في ميعاده', 'Medicine on time'), L('تذكير على الموبايل في الميعاد، ومعاه مكانه من الأكل. وعلامة صح على اللي اتاخد.', "A reminder on your phone at the right time, with where it fits around your meals. Tick it once it's taken."),
-      'day-meds', L('أدوية وفيتامينات النهارده بمواعيدها', "Today's medicines and supplements with their times")],
-    ['6:00', L('بالليل', 'Evening'), L('تمرين النهارده', "Today's workout"), L('جيم أو بيت، والتمارين جاهزة بمجموعاتها وعداتها والوزن المقترح.', 'Gym or home, with every exercise ready: sets, reps and a suggested weight.'),
+    ['10:00', L('الصبح · المعمل', 'Morning · Lab'), L('التحاليل في ميعادها.', 'Lab tests, on time.'),
+      L('نتيجة كل تحليل بتتسجل بتاريخها، والتطبيق بيفكر بميعاد التحليل الجاي، وبيطلع تقرير يقارن النتايج ببعض.', 'Each result is saved with its date, the app reminds you when the next test is due, and a report compares your results over time.'),
+      'health-labs', L('كارت التحاليل في صفحة الصحة', 'The lab tests card on the Health page')],
+    ['1:30', L('الضهر · برة البيت', 'Afternoon · Eating out'), L('غدا برة، واليوم ماشي.', 'Lunch out, and the day still works.'),
+      L('اختيار المطعم والأكل اللي هيتطلب، والسعرات بتتحجز للوجبة دي، وباقي اليوم بيتظبط عليها.', "Pick the place and what you'll order, the calories are held for that meal, and the rest of the day adjusts around it."),
+      'out-held', L('وجبة محجوزة من أنا برة البيت', 'A meal held from Eating out')],
+    ['7:30', L('بالليل · الجيم', 'Evening · Gym'), L('تمرين النهارده جاهز.', "Today's workout is ready."),
+      L('جيم أو بيت، والمجموعات والعدات والراحة لكل تمرين. والوزن المقترح بيزيد لما العدات تكمل.', 'Gym or home, with sets, reps and rest for every exercise. The suggested weight goes up once you hit all your reps.'),
       'train-day', L('تمرين النهارده في الجيم', "Today's gym workout")],
-    [L('طول اليوم', 'All day'), '', L('المياه', 'Water'), L('كوبايات بتتملي بضغطة، والهدف محسوب على جسمك ونشاطك.', 'Cups fill with a tap, and the goal is worked out from your body and activity.'),
-      'day-water', L('كارت المياه بالكوبايات', 'The water card with its cups')],
-    ['11:00', L('بالليل', 'Night'), L('النوم', 'Sleep'), L('ميعاد النوم والصحيان، وعدد الساعات على مدار الأسبوع. والساعة ١٢ اليوم بيتقفل ويدخل في تقرير الأسبوع.', 'Bed and wake times, and your hours across the week. At midnight the day locks and goes into your weekly report.'),
+    ['11:00', L('بالليل · النوم', 'Night · Sleep'), L('اليوم بيتقفل.', 'The day closes.'),
+      L('ميعاد النوم والصحيان وعدد الساعات على مدار الأسبوع. والساعة ١٢ اليوم بيتقفل ويدخل في تقرير الأسبوع.', 'Bed and wake times and your hours across the week. At midnight the day locks and goes into your weekly report.'),
       'day-sleep', L('صفحة الصحة: النوم وعدد الساعات', 'The Health page: sleep and hours')],
   ];
-  return `<section class="m-mod" id="day" aria-labelledby="day-title">
-  <div class="wrap">
-    ${head(L('يومك معانا', 'A day with us'), L('من أول الصبح لحد النوم.', 'From morning to bedtime.'), L('ده شكل يوم عادي مع يلا ويل. كل لحظة ليها شاشتها، وكلهم عارفين بعض.', 'Here is an ordinary day with Yalla Well. Each moment has its own screen, and they all know about each other.'), 'day-title')}
-    <div class="m-day" data-day>
-      <ol class="m-steps m-rail">
-        ${steps.map(([t, w, h, p], i) => `<li class="m-step${i === 0 ? ' on' : ''}" data-i="${i}"><div class="m-t"><span class="m-tn" dir="ltr">${t}</span>${w ? `<span class="m-tw">${w}</span>` : ''}</div><h3 class="h3">${h}</h3><p>${p}</p></li>`).join('')}
-      </ol>
-      <div class="m-day-phone">
-        ${stackPhone(ctx, 'dayStack', steps.map((s) => [s[4], s[5]]))}
-        <div class="m-clock" aria-hidden="true"><span class="num" dir="ltr">${steps[0][0]}</span><span>${steps[0][1]}</span></div>
-      </div>
-    </div>
+  return `<section class="w3d" id="day" aria-labelledby="day-title" data-world>
+  <div class="w3d-stage" aria-hidden="true"><canvas></canvas></div>
+  <div class="w3d-steps">
+    <div class="w3d-step w3d-intro"><div class="wrap">${head(L('يومك معانا', 'A day with us'), L('يوم كامل، على مقاسك.', 'A whole day, made to fit you.'), L('من الفطار لحد النوم، التطبيق ماشي جنبك في كل محطة.', 'From breakfast to bedtime, the app is with you at every stop.'), 'day-title')}</div></div>
+    ${rooms.map(([t, w, h, p, img, alt]) => `<article class="w3d-step w3d-room"><div class="wrap"><div class="w3d-card">
+      <figure class="phone w3d-ph"><img src="${shot(ctx, img)}" alt="${alt}" width="600" height="1298" loading="lazy" decoding="async"></figure>
+      <div class="w3d-copy"><p class="w3d-when"><span class="num" dir="ltr">${t}</span>${w}</p><h3 class="h3">${h}</h3><p>${p}</p></div>
+    </div></div></article>`).join('\n    ')}
+    <div class="w3d-step w3d-outro"><div class="wrap"><p class="w3d-slogan" dir="ltr">Be well. Live more.</p><p class="lead">${L('كل محطة ليها شاشتها، وكلهم عارفين بعض.', 'Each stop has its own screen, and they all know about each other.')}</p></div></div>
   </div>
 </section>`;
 }

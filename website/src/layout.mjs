@@ -175,6 +175,7 @@ export function layout(ctx, page) {
 <script src="${ctx.root}static/vendor/ScrollTrigger.min.js" defer></script>
 <script src="${ctx.root}static/vendor/lenis.min.js" defer></script>
 <script src="${ctx.root}static/site.js" defer></script>
+<script type="module" src="${ctx.root}static/world.js"></script>
 </head>
 <body class="${ctx.en ? 'is-en' : 'is-ar'}${page.file === 'index.html' ? ' is-home' : ''}">
 <a class="skip" href="#main">${L('انتقال للمحتوى', 'Skip to content')}</a>

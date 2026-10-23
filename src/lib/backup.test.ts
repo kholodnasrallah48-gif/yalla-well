@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { MAX_BYTES, backupKey, backupSig, hasProfile, makeBackup } from './backup.ts';
+import { backupKey, backupSig, hasProfile, makeBackup, restoreRows } from './backup.ts';
 
 test('keeps app data and leaves out the lookup cache and other apps', () => {
   assert.equal(backupKey('yallawell:profile'), true);
@@ -16,10 +16,11 @@ test('keeps app data and leaves out the lookup cache and other apps', () => {
   assert.equal(hasProfile(makeBackup([])), false);
 });
 
-test('drops lab photos when the copy is too big, keeps everything else', () => {
-  const big = 'x'.repeat(MAX_BYTES);
-  const b = makeBackup([['yallawell:labphoto:1', big], ['yallawell:profile', '{}']]);
+test('lab photos from older versions are left out of the copy and not written back', () => {
+  const b = makeBackup([['yallawell:labphoto:1', 'data:image/jpeg;base64,xx'], ['yallawell:profile', '{}']]);
   assert.deepEqual(Object.keys(b.items), ['yallawell:profile']);
+  const old = { v: 1 as const, at: 't', items: { 'yallawell:labphoto:1': 'x', 'yallawell:profile': '{}' } };
+  assert.deepEqual(restoreRows(old), [['yallawell:profile', '{}']]);
 });
 
 test('signature ignores the time and key order', () => {

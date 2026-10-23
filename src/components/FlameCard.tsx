@@ -1,5 +1,6 @@
-// The flame streak on Today: days in a row on calorie target, lit by holding the flame once the day is done, with
-// shields that cover a missed day. Tapping the card opens the month calendar. See lib/flame for the rules.
+// The streak on Today: days in a row on calorie target, added by holding the flame once the day is done, with
+// streak freezes that cover a missed day. Tapping the card opens the month calendar. See lib/flame for the rules
+// (the code still calls a freeze a "shield").
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Platform, Pressable, Text, View } from 'react-native';
@@ -7,16 +8,17 @@ import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { dayKey, weekIndex, type DayLog } from '../lib/day.ts';
 import { flame, MAX_SHIELDS, type FlameEvent, type FlameMark } from '../lib/flame.ts';
-import { isEn, L } from '../lib/i18n.ts';
+import { isEn, L, num } from '../lib/i18n.ts';
 import type { Gender, Profile } from '../lib/plan.ts';
 import { play } from '../lib/sound.ts';
 import { fonts, useColors } from '../theme.ts';
-import { FlameIcon, ShieldIcon } from './Icons.tsx';
+import { FlameIcon, FreezeIcon } from './Icons.tsx';
 import { Btn, Num, START, T } from './ui.tsx';
 
 const native = Platform.OS !== 'web';
 const SEEN = 'yallawell:flameSeen';
 const HOLD_MS = 900;
+/** Ice blue for the streak freeze. */
 const SHIELD = '#2E9BFF';
 const COLORS = { on: ['#FFD60A', '#FF8A3D', '#FF3D3D'], off: ['#D9D9D9', '#8A8A8A', '#4A4A4A'] } as const;
 
@@ -68,7 +70,7 @@ export function FlameCard({ profile, logs, update, g }: {
     return () => loop.stop();
   }, [ready, flick]);
 
-  // A shield earned, a shield used or a streak lost since yesterday shows once, after the new-day flame.
+  // A freeze earned, a freeze used or a streak lost since yesterday shows once, after the new-day flame.
   const evKey = f.events.map((e) => `${e.key}:${e.kind}`).join(',');
   useEffect(() => {
     const y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
@@ -113,28 +115,28 @@ export function FlameCard({ profile, logs, update, g }: {
   const scaleX = flick.interpolate({ inputRange: [0, 1], outputRange: [1, 0.96] });
   const glow = flick.interpolate({ inputRange: [0, 1], outputRange: ready ? [0.2, 0.55] : [0.35, 0.6] });
 
-  const head = f.n > 0 ? dayWord(f.n) + L(' ورا بعض', ' in a row') : L(g('ابدأ سلسلتك', 'ابدئي سلسلتك'), 'Start your streak');
+  const head = f.n > 0 ? dayWord(f.n) + L(' ورا بعض', ' in a row') : L('يلا نبدأ الستريك', "Let's start your streak");
   const sub = ready
-    ? L(g('خلصت السعرات. دوس على الشعلة وسيب صباعك لحد ما تولع.', 'خلصتي السعرات. دوسي على الشعلة وسيبي صباعك لحد ما تولع.'), 'Calories done. Press and hold the flame to light it.')
+    ? L(g('خلصت السعرات. دوس مطول على النار عشان النهارده يدخل الستريك.', 'خلصتي السعرات. دوسي مطول على النار عشان النهارده يدخل الستريك.'), 'Calories done. Press and hold the flame to add today to your streak.')
     : f.lit
-      ? L(`أيام التزام ورا بعض، ${g('كمل يا بطل', 'كملي يا بطلة')}.`, 'Days in a row on target. Keep going, champ.')
+      ? L(`النهارده دخل الستريك، ${g('كمل يا بطل', 'كملي يا بطلة')}.`, 'Today is in your streak. Keep going, champ.')
       : f.n > 0
-        ? L(`${g('خلص', 'خلصي')} سعرات النهارده ${g('وولع', 'وولعي')} يوم ${f.n + 1}.`, `Hit today's calories to light day ${f.n + 1}.`)
-        : L('أول يوم في السعرات بيولع أول شرارة.', 'Your first day on target lights the first spark.');
+        ? L(`${g('خلص', 'خلصي')} سعرات النهارده وهيبقى يوم ${num(f.n + 1)} في الستريك.`, `Hit today's calories to make it day ${f.n + 1}.`)
+        : L(`أول يوم ${g('تخلصه', 'تخلصيه')} في حدود سعراتك هو يوم ١.`, 'Your first day within your calories is day 1.');
   const shieldLine = f.shields >= MAX_SHIELDS
-    ? L(`${g('معاك', 'معاكي')} درعين، ده الأقصى.`, 'Two shields, the most you can hold.')
-    : L(`باقي ${f.toShield} ${dayWord(f.toShield)} على الدرع الجاي`, `${f.toShield} ${f.toShield === 1 ? 'day' : 'days'} to your next shield`);
+    ? L(`${g('معاك', 'معاكي')} ٢ فريز، ده الأقصى.`, 'Two freezes, the most you can hold.')
+    : L(`باقي ${f.toShield === 1 ? 'يوم واحد' : f.toShield === 2 ? 'يومين' : `${num(f.toShield)} ${dayWord(f.toShield)}`} على فريز جديد`, `${f.toShield} ${f.toShield === 1 ? 'day' : 'days'} to a new freeze`);
 
   return (
     <>
-      <Pressable onPress={() => setCal(true)} accessibilityRole="button" accessibilityLabel={L('تاريخ الشعلة', 'Flame history')}
+      <Pressable onPress={() => setCal(true)} accessibilityRole="button" accessibilityLabel={L('تاريخ الستريك', 'Streak history')}
         style={{ borderWidth: 1, borderColor: ready ? '#FF8A3D' : c.surface, backgroundColor: c.surface, borderRadius: 20, padding: 16, overflow: 'hidden' }}>
         {burning || ready ? (
           <Animated.View pointerEvents="none" style={{ position: 'absolute', top: -60, [isEn() || native ? 'left' : 'right']: -40, width: 220, height: 220, borderRadius: 110, backgroundColor: '#FF8A3D', opacity: Animated.multiply(glow, 0.22) }} />
         ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <Pressable onPressIn={startHold} onPressOut={stopHold} onPress={() => { if (justLit.current) justLit.current = false; else if (!ready) setCal(true); }}
-            accessibilityRole="button" accessibilityLabel={ready ? L(g('دوس مطولا علشان الشعلة تولع', 'دوسي مطولا علشان الشعلة تولع'), 'Press and hold to light the flame') : L('تاريخ الشعلة', 'Flame history')}
+            accessibilityRole="button" accessibilityLabel={ready ? L(g('دوس مطول عشان النهارده يدخل الستريك', 'دوسي مطول عشان النهارده يدخل الستريك'), 'Press and hold to add today to your streak') : L('تاريخ الستريك', 'Streak history')}
             style={{ width: 84, alignItems: 'center' }}>
             <Animated.View style={{ transform: [{ scale: pop }, { translateY: 18 }, { scaleY }, { scaleX }, { translateY: -18 }], opacity: ready ? 0.9 : 1 }}>
               <Fire width={72} on={burning} />
@@ -152,7 +154,7 @@ export function FlameCard({ profile, logs, update, g }: {
             </View>
             <T kind="small" color={ready ? c.ink : c.muted}>{sub}</T>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-              {Array.from({ length: MAX_SHIELDS }, (_, i) => <ShieldIcon key={i} size={18} color={SHIELD} on={i < f.shields} />)}
+              {Array.from({ length: MAX_SHIELDS }, (_, i) => <FreezeIcon key={i} size={18} color={SHIELD} on={i < f.shields} />)}
               <T kind="label" style={{ flexShrink: 1 }}>{shieldLine}</T>
             </View>
           </View>
@@ -194,9 +196,9 @@ function FlameCalendar({ g, open, onClose, marks, best, n, shields, start }: {
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 18 }}>
         <Pressable onPress={() => {}} style={{ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: 16, padding: 16, gap: 12, maxWidth: 440, width: '100%', alignSelf: 'center' }}>
-          <T kind="h2">{L('تاريخ الشعلة', 'Flame history')}</T>
+          <T kind="h2">{L('تاريخ الستريك', 'Streak history')}</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {[[String(n), L('دلوقتي', 'now')], [String(best), L('أطول سلسلة', 'longest')], [String(okN), L('يوم الشهر ده', 'days this month')]].map(([v, l]) => (
+            {[[String(n), L('دلوقتي', 'now')], [String(best), L('أطول ستريك', 'longest')], [String(okN), L('يوم الشهر ده', 'days this month')]].map(([v, l]) => (
               <View key={l} style={{ flex: 1, borderWidth: 1, borderColor: c.line, borderRadius: 12, paddingVertical: 8, alignItems: 'center' }}>
                 <Num size={26} weight="black" color="#FF8A3D">{v}</Num>
                 <T kind="label" style={{ textAlign: 'center', fontSize: 11.5 }}>{l}</T>
@@ -221,7 +223,7 @@ function FlameCalendar({ g, open, onClose, marks, best, n, shields, start }: {
                 <View key={i} style={{ width: `${100 / 7}%`, height: 42, alignItems: 'center', justifyContent: 'center' }}>
                   <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
                     borderWidth: isToday ? 1.5 : 0, borderColor: c.ink, backgroundColor: m === 'ok' ? '#FF8A3D22' : 'transparent' }}>
-                    {m === 'ok' ? <FlameIcon size={20} /> : m === 'shield' ? <ShieldIcon size={18} color={SHIELD} /> : (
+                    {m === 'ok' ? <FlameIcon size={20} /> : m === 'shield' ? <FreezeIcon size={20} color={SHIELD} /> : (
                       <Text style={{ fontFamily: fonts.numSemi, fontSize: 15, color: key > todayKey ? c.dim : m === 'miss' ? c.dim : c.muted }}>{d}</Text>
                     )}
                   </View>
@@ -231,11 +233,11 @@ function FlameCalendar({ g, open, onClose, marks, best, n, shields, start }: {
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><FlameIcon size={16} /><T kind="label">{L('يوم في السعرات', 'On target')}</T></View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><ShieldIcon size={14} color={SHIELD} /><T kind="label">{L('الدرع حماه', 'Shield used')}</T></View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><FreezeIcon size={15} color={SHIELD} /><T kind="label">{L('الفريز غطاه', 'Covered by a freeze')}</T></View>
           </View>
           <T kind="small" style={{ textAlign: START() }}>
-            {L(`كل ٧ أيام ورا بعض ${g('بتكسب', 'بتكسبي')} درع (أقصى حاجة ٢). لو يوم فات من غير ما السعرات تكمل، الدرع بيحمي السلسلة. ${g('معاك', 'معاكي')} دلوقتي ${shields === 0 ? 'صفر' : shields === 1 ? 'درع واحد' : 'درعين'}.`,
-              `Every 7 days in a row earns a shield (2 at most). If a day misses the target, a shield keeps the streak alive. You have ${shields} now.`)}
+            {L(`كل ٧ أيام ورا بعض ${g('بتكسب', 'بتكسبي')} ستريك فريز (أقصى حاجة ٢). لو يوم فات من غير ما السعرات تكمل، الفريز بيغطيه والستريك يفضل شغال. ${g('معاك', 'معاكي')} دلوقتي ${shields === 0 ? 'ولا فريز' : shields === 1 ? 'فريز واحد' : '٢ فريز'}.`,
+              `Every 7 days in a row earns a streak freeze (2 at most). If a day misses your calories, a freeze covers it and your streak keeps going. You have ${shields} now.`)}
           </T>
           <Btn kind="outline" title={L('قفل', 'Close')} onPress={onClose} />
         </Pressable>
@@ -250,14 +252,14 @@ function FlameEventSheet({ event, g, onClose }: { event: FlameEvent | null; g: G
   const n = event.n;
   const run = `${n} ${dayWord(n)}`;
   const [head, body, btn] = event.kind === 'earn'
-    ? [g('كسبت درع', 'كسبتي درع'), L(`${run} ورا بعض. لو يوم فات منك، الدرع هيحمي الشعلة.`, `${n} days in a row. If you miss a day, the shield keeps your flame alive.`), L('تمام', 'Nice')]
+    ? [L(g('كسبت فريز', 'كسبتي فريز'), 'You earned a freeze'), L(`${run} ورا بعض. لو يوم فات منك، الفريز هيغطيه والستريك هيفضل شغال.`, `${n} days in a row. If you miss a day, the freeze covers it and your streak keeps going.`), L('تمام', 'Nice')]
     : event.kind === 'save'
-      ? [L('الدرع حمى الشعلة', 'Your shield saved the flame'), L(`يوم فات من غير ما السعرات تكمل، بس سلسلة الـ${run} لسه موجودة.`, `A day missed the target, but your ${n}-day streak is still alive.`), g('كمل', 'كملي')]
-      : [L('الشعلة طفت', 'The flame went out'), L(`سلسلة الـ${run} وقفت ومكانش فيه درع. ${g('ابدأ', 'ابدئي')} من جديد النهارده.`, `Your ${n}-day streak ended with no shield left. Start again today.`), L('يلا', "Let's go")];
+      ? [L('الفريز غطى اليوم', 'A freeze covered the day'), L(`يوم فات من غير ما السعرات تكمل، بس ستريك الـ${run} لسه شغال.`, `A day missed your calories, but your ${n}-day streak is still on.`), L(g('كمل', 'كملي'), 'Keep going')]
+      : [L('الستريك وقف', 'Your streak ended'), L(`ستريك الـ${run} وقف ومكانش فيه فريز. ${g('ابدأ', 'ابدئي')} من جديد النهارده.`, `Your ${n}-day streak ended with no freeze left. Start again today.`), L('يلا', "Let's go")];
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.78)', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 }}>
-        {event.kind === 'lost' ? <Fire width={96} on={false} /> : <ShieldIcon size={104} color={SHIELD} />}
+        {event.kind === 'lost' ? <Fire width={96} on={false} /> : <FreezeIcon size={104} color={SHIELD} />}
         <Text style={{ fontFamily: fonts.display, fontSize: 30, lineHeight: 44, color: '#FFFFFF', textAlign: 'center' }}>{head}</Text>
         <Text style={{ fontFamily: fonts.body, fontSize: 15, lineHeight: 24, color: '#FFFFFF', opacity: 0.85, textAlign: 'center', maxWidth: 320 }}>{body}</Text>
         <View style={{ marginTop: 6, paddingHorizontal: 22, paddingVertical: 9, borderRadius: 99, backgroundColor: c.petrol }}>

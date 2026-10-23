@@ -8,6 +8,7 @@ import { KB_BY_ID, effective, matchItems, type DoseForm, type DoseUnit, type KBI
 import { genderFor, type Profile } from './plan.ts';
 import { cycleInfo } from './women.ts';
 import { ux } from './translate.ts';
+import { ad, clinicalCSS, clinicalHead, dmy, esc, infoBox, n, page, pill, secNo } from './printkit.ts';
 
 /* ---------- Medicines ---------- */
 
@@ -273,9 +274,9 @@ export const checkDone = (c: CheckIn | undefined) => !!c && c.energy !== undefin
 /* ---------- Lab results ---------- */
 
 export type LabKind = 'hba1c' | 'tsh' | 'vitd' | 'ferritin' | 'b12' | 'eye' | 'lipids' | 'cbc';
-/** One test: the result, the day it was done, the next date when the person set one, and the id of a photo of the
- * lab paper kept on the phone (see ./labPhotos.ts). */
-export type LabEntry = { kind: LabKind; value?: number; date: string; next?: string; photo?: string };
+/** One test: the result, the day it was done, and the next date when the person set one. (Entries saved by older
+ * versions may also carry a `photo` id; it is no longer used and is ignored.) */
+export type LabEntry = { kind: LabKind; value?: number; date: string; next?: string };
 
 type LabInfo = { n: [string, string]; unit: string; months: number; when: (p: Profile) => boolean; hint?: (v: number) => 'ok' | 'warn' | 'bad'; noValue?: boolean };
 const has = (p: Profile, ...ids: string[]) => { const e = effective(p).ids; return ids.some((id) => e.has(id)); };
@@ -328,9 +329,46 @@ export function addLab(p: Profile, e: LabEntry): Profile {
   return { ...p, labs: [...rest, e].sort((a, b) => a.date.localeCompare(b.date)) };
 }
 
-/* ---------- Report for the doctor ---------- */
+/** The usual normal range of each test with a number (lo and hi; one side open for "below" ranges). */
+export const RANGES: Partial<Record<LabKind, { lo?: number; hi?: number }>> = {
+  hba1c: { hi: 5.7 },
+  tsh: { lo: 0.4, hi: 4.5 },
+  vitd: { lo: 30, hi: 100 },
+  ferritin: { lo: 30, hi: 150 },
+  b12: { lo: 200, hi: 900 },
+  lipids: { hi: 200 },
+};
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
+/** "أقل من 5.7" / "Below 5.7", "من 0.4 لـ 4.5" / "0.4 to 4.5". Numbers stay Western and left-to-right. */
+export function rangeText(k: LabKind): string {
+  const r = RANGES[k];
+  if (!r) return '—';
+  if (r.lo === undefined) return L(`أقل من ${n(r.hi!)}`, `Below ${n(r.hi!)}`);
+  if (r.hi === undefined) return L(`أكتر من ${n(r.lo)}`, `Above ${n(r.lo)}`);
+  return L(`من ${n(r.lo)} لـ ${n(r.hi)}`, `${n(r.lo)} to ${n(r.hi)}`);
+}
+
+/** How far a value is outside the range (0 inside it). */
+export const rangeDist = (k: LabKind, v: number) => { const r = RANGES[k] ?? {}; return r.lo !== undefined && v < r.lo ? r.lo - v : r.hi !== undefined && v > r.hi ? v - r.hi : 0; };
+/** Which side of the range a value is on. */
+export const rangeSide = (k: LabKind, v: number): 'low' | 'high' | 'in' => { const r = RANGES[k] ?? {}; return r.lo !== undefined && v < r.lo ? 'low' : r.hi !== undefined && v > r.hi ? 'high' : 'in'; };
+
+export type LabStatus = 'ok' | 'warn' | 'bad';
+/** The status of a result: far off (the test's own hint says bad), outside the usual range, or in it. */
+export function labStatus(k: LabKind, v: number): LabStatus {
+  if (LABS[k].hint?.(v) === 'bad') return 'bad';
+  if (rangeSide(k, v) !== 'in' || LABS[k].hint?.(v) === 'warn') return 'warn';
+  return 'ok';
+}
+export const labStatusWord = (k: LabKind, v: number) => {
+  const s = labStatus(k, v);
+  if (s === 'ok') return L('في المعدل', 'In range');
+  if (s === 'bad') return L('برة المعدل', 'Out of range');
+  return rangeSide(k, v) === 'high' ? L('أعلى شوية', 'A bit high') : L('على الحد', 'Borderline');
+};
+
+
+/* ---------- Report for the doctor ---------- */
 
 export type DoctorInput = {
   profile: Profile;
@@ -363,48 +401,81 @@ export function doctorSummary({ profile: p, days, planned }: DoctorInput) {
   return { days: days.length, checks: checks.length, energy: avg('energy'), pain: avg('pain'), sleep: avg('sleep'), rough, flares, dosesDue, dosesTaken, workoutsPlanned, workoutsDone };
 }
 
-/** Printable HTML (Arabic or English, by the app language) for the doctor. */
+/** Printable HTML (Arabic or English, by the app language) for the doctor, in the clinical look. */
 export function doctorHTML(input: DoctorInput): string {
   const p = input.profile;
   const s = doctorSummary(input);
-  const en = isEn();
   const g = genderFor(p.sex);
-  const lvl = (v: number | null, words: [string, string][]) => (v === null ? '—' : L(words[Math.min(2, Math.round(v))][0], words[Math.min(2, Math.round(v))][1]));
+  // 0 good, 1 so-so, 2 bad: the word and its pill.
+  const lvl = (v: number | null, words: [string, string][]): [string, string] => {
+    if (v === null) return ['—', ''];
+    const i = Math.min(2, Math.round(v));
+    return [esc(L(words[i][0], words[i][1])), pill(i === 0 ? 'ok' : i === 1 ? 'warn' : 'bad', L(words[i][0], words[i][1]))];
+  };
   const conds = [...p.conditions.map((id) => tx(CONDITIONS.find((x) => x.id === id)?.n ?? id)), p.otherCond ? ux(p, p.otherCond) : ''].filter(Boolean);
   const meds = medIds(p).map((id) => {
     const pl = medPlan(p, id);
-    return `<tr><td>${esc(id.startsWith('x:') ? ux(p, pl.name ?? id.slice(2)) : medName(id, pl))}</td><td>${esc(doseText(pl) || '—')}</td><td>${esc(repeatText(pl))}</td><td>${esc(pl.times.map(timeText).join(L('، ', ', ')))}</td></tr>`;
+    return `<tr><td><b>${esc(id.startsWith('x:') ? ux(p, pl.name ?? id.slice(2)) : medName(id, pl))}</b></td><td>${esc(doseText(pl) || '—')}</td><td>${esc(repeatText(pl))}</td><td>${esc(pl.times.map(timeText).join(L('، ', ', ')))}</td></tr>`;
   });
-  if (p.otherMeds?.trim()) meds.push(`<tr><td>${esc(ux(p, p.otherMeds))}</td><td>—</td><td>—</td><td>—</td></tr>`);
-  const labs = [...(p.labs ?? [])].sort((a, b) => b.date.localeCompare(a.date)).map((x) =>
-    `<tr><td>${esc(labName(x.kind))}</td><td>${x.value !== undefined ? `${x.value} ${LABS[x.kind].unit}` : L('اتعمل', 'done')}</td><td>${x.date}</td></tr>`);
-  const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '—');
-  const rows: [string, string][] = [
-    [L('الأيام في التقرير', 'Days covered'), String(s.days)],
-    [L(g('أيام سجل فيها حالته', 'أيام سجلت فيها حالتها'), 'Days with a check-in'), String(s.checks)],
-    [L('متوسط الطاقة', 'Average energy'), lvl(s.energy, CHECK_ITEMS[0].opts)],
-    [L('متوسط الألم', 'Average pain'), lvl(s.pain, CHECK_ITEMS[1].opts)],
-    [L('متوسط النوم', 'Average sleep'), lvl(s.sleep, CHECK_ITEMS[2].opts)],
-    [L('أيام صعبة أو نشاط للمرض', 'Rough or flare days'), String(Math.max(s.rough, s.flares))],
-    [L('الالتزام بالأدوية (حسب التسجيل)', 'Medicine doses ticked'), s.dosesDue ? `${s.dosesTaken} / ${s.dosesDue} (${pct(s.dosesTaken, s.dosesDue)})` : '—'],
-    [L('التمرين', 'Workouts done'), s.workoutsPlanned ? `${s.workoutsDone} / ${s.workoutsPlanned}` : '—'],
+  if (p.otherMeds?.trim()) meds.push(`<tr><td><b>${esc(ux(p, p.otherMeds))}</b></td><td>—</td><td>—</td><td>—</td></tr>`);
+  // One row per test: the latest result with its range and status, and the earlier ones beside it.
+  const withUnit = (v: number, k: LabKind) => (LABS[k].unit === '%' ? `${v}%` : `${v} ${LABS[k].unit}`);
+  const labs = (Object.keys(LABS) as LabKind[]).flatMap((k) => {
+    const all = labHistory(p, k);
+    if (!all.length) return [];
+    const [x, ...older] = all;
+    const st = x.value !== undefined ? pill(labStatus(k, x.value), labStatusWord(k, x.value)) : '';
+    const earlier = older.map((e) => `<span class="n">${e.value !== undefined ? withUnit(e.value, k) : '✓'} · ${dmy(e.date).slice(0, 5)}/${e.date.slice(2, 4)}</span>`).join('<br>');
+    return [`<tr><td>${esc(labName(k))}</td><td>${x.value !== undefined ? `<b>${n(withUnit(x.value, k))}</b>` : L('اتعمل', 'done')}</td><td class="mut">${x.value !== undefined ? rangeText(k) : '—'}</td><td>${n(dmy(x.date))}</td><td>${st}</td><td class="mut" style="font-size:10px">${earlier || '—'}</td></tr>`];
+  });
+  const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
+  const ratePill = (a: number, b: number, okAt: number, warnAt: number, words: [string, string, string]) => {
+    if (!b) return '';
+    const r = a / b;
+    return r >= okAt ? pill('ok', words[0]) : r >= warnAt ? pill('warn', words[1]) : pill('bad', words[2]);
+  };
+  const hard = Math.max(s.rough, s.flares);
+  const [en0, enP] = lvl(s.energy, CHECK_ITEMS[0].opts);
+  const [pa0, paP] = lvl(s.pain, CHECK_ITEMS[1].opts);
+  const [sl0, slP] = lvl(s.sleep, CHECK_ITEMS[2].opts);
+  const rows: [string, string, string][] = [
+    [L('الأيام في التقرير', 'Days covered'), n(s.days), ''],
+    [L(g('أيام سجل فيها حالته', 'أيام سجلت فيها حالتها'), 'Days with a check-in'), n(s.checks), ''],
+    [L('متوسط الطاقة', 'Average energy'), en0, enP],
+    [L('متوسط الألم', 'Average pain'), pa0, paP],
+    [L('متوسط النوم', 'Average sleep'), sl0, slP],
+    [L('أيام صعبة أو نشاط للمرض', 'Rough or flare days'), n(hard), s.checks || s.flares ? (hard ? pill('warn', L(`${ad(hard)} من ${ad(s.days)}`, `${hard} of ${s.days}`)) : pill('ok', L('مفيش', 'None'))) : ''],
+    [L('الالتزام بالأدوية (حسب التسجيل)', 'Medicine doses ticked'), s.dosesDue ? n(`${s.dosesTaken} / ${s.dosesDue} (${pct(s.dosesTaken, s.dosesDue)}%)`) : '—', ratePill(s.dosesTaken, s.dosesDue, 0.9, 0.7, [L('منتظم', 'Regular'), L('فيه جرعات فاتت', 'Some missed'), L('جرعات كتير فاتت', 'Many missed')])],
+    [L('التمرين', 'Workouts done'), s.workoutsPlanned ? n(`${s.workoutsDone} / ${s.workoutsPlanned}`) : '—', ratePill(s.workoutsDone, s.workoutsPlanned, 0.75, 0.4, [L('منتظم', 'Regular'), L('نص الخطة تقريبا', 'About half'), L('قليل', 'Few')])],
   ];
   const w = p.weights ?? [];
-  const wLine = w.length > 1 ? `${w[0].kg} → ${w[w.length - 1].kg} ${L('كجم', 'kg')}` : `${p.weight} ${L('كجم', 'kg')}`;
-  const doctor = p.doctorSaid?.trim() ? `<h2>${L('ملاحظات الدكتور السابقة', "Doctor's earlier advice")}</h2><p>${esc(ux(p, p.doctorSaid))}</p>` : '';
-  return `<!doctype html><html dir="${en ? 'ltr' : 'rtl'}" lang="${en ? 'en' : 'ar'}"><head><meta charset="utf-8">
-<style>body{font-family:-apple-system,'Segoe UI',Tahoma,sans-serif;color:#111;padding:24px;font-size:13px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}
-table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:6px 8px;text-align:${en ? 'left' : 'right'}}th{background:#f3f4f5}.m{color:#666}</style></head><body>
-<h1>${L('تقرير للدكتور', 'Report for my doctor')}</h1>
-<div class="m">${esc(p.name || '')} · ${p.sex === 'f' ? L('أنثى', 'Female') : L('ذكر', 'Male')} · ${p.age} ${L('سنة', 'yrs')} · ${p.height} ${L('سم', 'cm')} · ${esc(wLine)}</div>
-<div class="m">${L('من', 'From')} ${input.days[0]?.key ?? ''} ${L('لـ', 'to')} ${input.days[input.days.length - 1]?.key ?? ''}</div>
-<h2>${L('الأمراض', 'Conditions')}</h2><p>${conds.length ? conds.map(esc).join(L('، ', ', ')) : L('مفيش', 'None')}</p>
-<h2>${L('الأدوية ومواعيدها', 'Medicines and times')}</h2>${meds.length ? `<table><tr><th>${L('الدوا', 'Medicine')}</th><th>${L('الجرعة', 'Dose')}</th><th>${L('كل قد إيه', 'How often')}</th><th>${L('الميعاد', 'Time')}</th></tr>${meds.join('')}</table>` : `<p>${L('مفيش', 'None')}</p>`}
-<h2>${L('آخر شهر', 'Last month')}</h2><table>${rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</table>
-<h2>${L('التحاليل', 'Lab results')}</h2>${labs.length ? `<table><tr><th>${L('التحليل', 'Test')}</th><th>${L('النتيجة', 'Result')}</th><th>${L('التاريخ', 'Date')}</th></tr>${labs.join('')}</table>` : `<p>${L('لسه مفيش تحاليل متسجلة', 'No results logged yet')}</p>`}
-${doctor}
-<p class="m" style="margin-top:24px">${L('التقرير ده من تطبيق يلا ويل، من اللي الشخص سجله بنفسه. مش تشخيص طبي.', 'Made with the Yalla Well app from what the person logged. Not a medical diagnosis.')}</p>
-</body></html>`;
+  const wLine = w.length > 1 ? `${w[0].kg} → ${w[w.length - 1].kg} kg` : `${p.weight} kg`;
+  const from = input.days[0]?.key, to = input.days[input.days.length - 1]?.key;
+  const head = clinicalHead(L('تقرير للدكتور', 'Report for my doctor'), from && to ? L(`من ${n(dmy(from))} لـ ${n(dmy(to))}`, `${n(dmy(from))} to ${n(dmy(to))}`) : '');
+  const info = infoBox([
+    [L('الاسم', 'Name'), esc(p.name || '—')],
+    [L('النوع والسن', 'Sex and age'), `${p.sex === 'f' ? L('أنثى', 'Female') : L('ذكر', 'Male')} · ${n(p.age)}`],
+    [L('الطول', 'Height'), n(`${p.height} cm`)],
+    [L('الوزن', 'Weight'), n(wLine)],
+  ]);
+  // Notes written from the numbers, and what the doctor said before (as the person typed it).
+  const notes: string[] = [];
+  if (s.dosesDue && pct(s.dosesTaken, s.dosesDue) < 90) notes.push(L(`الجرعات المتعلم عليها ${ad(pct(s.dosesTaken, s.dosesDue))}% من المطلوب، يعني فيه جرعات فاتت أو اتاخدت من غير تسجيل.`, `${pct(s.dosesTaken, s.dosesDue)}% of doses were ticked, so some were missed or taken without logging.`));
+  if (hard) notes.push(L(`كان فيه ${hard === 1 ? 'يوم واحد صعب' : hard === 2 ? 'يومين صعبين' : `${ad(hard)} أيام صعبة`} أو فيهم نشاط للمرض.`, `There ${hard === 1 ? 'was 1 rough or flare day' : `were ${hard} rough or flare days`}.`));
+  const latestOff = (Object.keys(LABS) as LabKind[]).map((k) => latestLab(p, k)).filter((x): x is LabEntry => !!x && x.value !== undefined && labStatus(x.kind, x.value) !== 'ok');
+  if (latestOff.length) notes.push(L(`آخر نتيجة برة المعدل أو على الحد: ${latestOff.map((x) => labName(x.kind)).join('، ')}.`, `Latest result outside or near the edge of the range: ${latestOff.map((x) => labName(x.kind)).join(', ')}.`));
+  const doctor = p.doctorSaid?.trim() ? ux(p, p.doctorSaid) : '';
+  let no = 0;
+  const sec = (title: string, body: string, keep = false) => `<div${keep ? ' class="sec"' : ''}><h3>${secNo(++no)} ${esc(title)}</h3>${body}</div>`;
+  const body = `<div class="wrap">${head}${info}
+${sec(L('الأمراض', 'Conditions'), `<p>${conds.length ? conds.map(esc).join(L('، ', ', ')) : L('مفيش', 'None')}</p>`, true)}
+${sec(L('الأدوية ومواعيدها', 'Medicines and times'), meds.length ? `<table><thead><tr><th>${L('الدوا', 'Medicine')}</th><th>${L('الجرعة', 'Dose')}</th><th>${L('كل قد إيه', 'How often')}</th><th>${L('الميعاد', 'Time')}</th></tr></thead><tbody>${meds.join('')}</tbody></table>` : `<p>${L('مفيش', 'None')}</p>`)}
+${sec(L('آخر شهر', 'Last month'), `<table><tbody>${rows.map(([a, b, c]) => `<tr><td>${esc(a)}</td><td>${b}</td><td>${c}</td></tr>`).join('')}</tbody></table>`)}
+${sec(L('التحاليل', 'Lab results'), labs.length ? `<table><thead><tr><th>${L('التحليل', 'Test')}</th><th>${L('آخر نتيجة', 'Latest result')}</th><th>${L('المعدل الطبيعي', 'Normal range')}</th><th>${L('التاريخ', 'Date')}</th><th>${L('الحالة', 'Status')}</th><th>${L('النتايج اللي قبلها', 'Earlier results')}</th></tr></thead><tbody>${labs.join('')}</tbody></table><p class="mut note">${L('المعدلات تقريبية وبتختلف من معمل للتاني.', 'Ranges are approximate and differ between labs.')}</p>` : `<p>${L('لسه مفيش تحاليل متسجلة', 'No results logged yet')}</p>`)}
+${notes.length || doctor ? sec(L('ملاحظات', 'Notes'), `${notes.length ? `<ul>${notes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}${doctor ? `<p style="margin-top:6px"><b>${L('ملاحظات الدكتور السابقة:', "Doctor's earlier advice:")}</b> ${esc(doctor)}</p>` : ''}`, true) : ''}
+<div class="foot"><span>${L('من اللي الشخص سجله بنفسه في يلا ويل، ومش تشخيص طبي.', 'From what the person logged in Yalla Well. Not a medical diagnosis.')}</span></div>
+</div>`;
+  return page(L('تقرير للدكتور', 'Report for my doctor'), body, clinicalCSS());
 }
 
 export const DAYS: [string, string][] = [['السبت', 'Saturday'], ['الأحد', 'Sunday'], ['الاتنين', 'Monday'], ['التلات', 'Tuesday'], ['الأربع', 'Wednesday'], ['الخميس', 'Thursday'], ['الجمعة', 'Friday']];

@@ -11,6 +11,7 @@ import { Btn, Card, Chip, Rise, Screen, T } from '../../components/ui.tsx';
 import { CycleCard, PregnancyCard, SleepCard } from '../../components/wellbeing.tsx';
 import { dayKey, weekIndex } from '../../lib/day.ts';
 import { doctorHTML, newMedPlan } from '../../lib/health.ts';
+import { labReportHTML } from '../../lib/labreport.ts';
 import { KB_BY_ID } from '../../lib/kb.ts';
 import { play } from '../../lib/sound.ts';
 import { L } from '../../lib/i18n.ts';
@@ -23,6 +24,7 @@ export default function Health() {
   const c = useColors();
   const { profile, saveProfile, readDay, day, history, updateDay } = useStore();
   const [busy, setBusy] = useState(false);
+  const [labBusy, setLabBusy] = useState(false);
   if (!profile) return null;
   // Older profiles kept other medicines as one line of text; show them as medicines with a schedule.
   const p = migrateMeds(profile);
@@ -39,6 +41,12 @@ export default function Health() {
       await Print.printAsync({ html });
     } catch { /* print screen closed or unavailable */ }
     setBusy(false);
+  };
+
+  const labReport = async () => {
+    setLabBusy(true);
+    try { await Print.printAsync({ html: labReportHTML(p, new Date()) }); } catch { /* print screen closed or unavailable */ }
+    setLabBusy(false);
   };
 
   return (
@@ -84,12 +92,12 @@ export default function Health() {
         </Card>
       ) : null}
 
-      <LabCard profile={p} onChange={saveProfile} />
+      <LabCard profile={p} onChange={saveProfile} onReport={labReport} busy={labBusy} />
 
       <Card>
         <T kind="h2">{L('تقرير للدكتور', 'Report for your doctor')}</T>
         <T kind="small">{L(`آخر ٤ أسابيع: الأدوية ومواعيدها والتزامك بيها، الطاقة والألم والنوم، أيام التعب، التمرين، والتحاليل. ${g('اطبعه', 'اطبعيه')} أو ${g('احفظه', 'احفظيه')} PDF و${g('ابعته', 'ابعتيه')} لدكتورك.`, 'The last 4 weeks: medicines, times and how often you took them, energy, pain and sleep, rough days, workouts and lab results. Print it or save it as a PDF for your doctor.')}</T>
-        <Btn title={busy ? L('بيتجهز…', 'Preparing…') : L(g('اعمل التقرير', 'اعملي التقرير'), 'Make the report')} disabled={busy} onPress={report} />
+        <Btn title={busy ? L('بيتجهز', 'Preparing') : L(g('اعمل التقرير', 'اعملي التقرير'), 'Make the report')} disabled={busy} onPress={report} />
       </Card>
 
       <T kind="small" color={c.dim} style={{ textAlign: 'center' }}>{L('التطبيق ده للمساعدة ومش بديل عن دكتورك. أي تغيير في الأدوية أو الأكل لازم يبقى بإشرافه.', "This app is here to help and doesn't replace your doctor. Any change to your medication or diet should be supervised by them.")}</T>

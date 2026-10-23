@@ -1,5 +1,5 @@
-// The flame streak: days in a row on calorie target, lit by hand, with shields that cover a missed day.
-// A shield is earned every 7 days in a row (2 at most). A past day that missed the target uses a shield if there is
+// The streak: days in a row on calorie target, added by hand, with streak freezes ("shields" in the code) that cover
+// a missed day. A freeze is earned every 7 days in a row (2 at most). A past day that missed the target uses a shield if there is
 // one and the streak keeps going; otherwise the streak starts over. A finished day nobody lit still counts once it is
 // over, so the streak never breaks because of a forgotten tap.
 import { dayKey, type DayLog } from './day.ts';

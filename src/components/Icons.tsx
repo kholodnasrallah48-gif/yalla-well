@@ -1,5 +1,5 @@
-// Drawn icons for the streak tiles (instead of emoji), each in a soft round badge.
-import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+// Drawn icons for the streak (instead of emoji): the flame, the streak freeze, and the tile icons.
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { View } from 'react-native';
 
 export function FlameIcon({ size = 22, color = '#FF8A3D', core = '#FFD60A' }: { size?: number; color?: string; core?: string }) {
@@ -46,11 +46,27 @@ export function Badge({ color, size = 40, children }: { color: string; size?: nu
 }
 
 
-export function ShieldIcon({ size = 22, color = '#2E9BFF', on = true, check = '#04130B' }: { size?: number; color?: string; on?: boolean; check?: string }) {
+/** Snowflake: six arms from the middle, each with a small V near its end (viewBox 24). */
+const FLAKE = (() => {
+  const c = 12, r = 6.6, b = 2.3;
+  const pt = (a: number, d: number) => `${(c + d * Math.cos(a)).toFixed(2)} ${(c + d * Math.sin(a)).toFixed(2)}`;
+  let d = '';
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 2;
+    d += `M${pt(a, 0)}L${pt(a, r)}`;
+    // The V: from a point along the arm, out at 45 degrees on each side.
+    const mx = c + (r * 0.62) * Math.cos(a), my = c + (r * 0.62) * Math.sin(a);
+    for (const s of [-1, 1]) d += `M${mx.toFixed(2)} ${my.toFixed(2)}L${(mx + b * Math.cos(a + s * Math.PI / 4)).toFixed(2)} ${(my + b * Math.sin(a + s * Math.PI / 4)).toFixed(2)}`;
+  }
+  return d;
+})();
+
+/** A streak freeze: a snowflake in an icy round badge; dashed and empty while not earned yet. */
+export function FreezeIcon({ size = 22, color = '#2E9BFF', on = true, flake = '#FFFFFF' }: { size?: number; color?: string; on?: boolean; flake?: string }) {
   return (
-    <Svg width={size} height={(size * 26) / 24} viewBox="0 0 24 26">
-      <Path d="M12 1l10 4v8c0 6-4 10-10 12C6 23 2 19 2 13V5z" fill={on ? color : 'none'} stroke={color} strokeWidth={on ? 0 : 1.6} strokeDasharray={on ? undefined : '3 2.5'} />
-      {on ? <Path d="M7.5 13l3 3 6-6" stroke={check} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : null}
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={12} cy={12} r={on ? 11.5 : 10.6} fill={on ? color : 'none'} stroke={color} strokeWidth={on ? 0 : 1.5} strokeDasharray={on ? undefined : '2.8 2.2'} />
+      <Path d={FLAKE} stroke={on ? flake : color} strokeWidth={1.7} strokeLinecap="round" fill="none" opacity={on ? 1 : 0.75} />
     </Svg>
   );
 }

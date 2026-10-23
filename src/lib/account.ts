@@ -7,7 +7,7 @@ import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { backupKey, backupSig, hasProfile, makeBackup, type Backup } from './backup.ts';
+import { backupKey, backupSig, hasProfile, makeBackup, restoreRows, type Backup } from './backup.ts';
 
 // Trimmed: a value pasted into the GitHub secret can carry a stray space, line break or full stop.
 const SB_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
@@ -123,7 +123,7 @@ const restart = () => {
 export async function applySaved(b: Backup) {
   const old = (await AsyncStorage.getAllKeys()).filter(backupKey);
   await AsyncStorage.multiRemove(old);
-  await AsyncStorage.multiSet(Object.entries(b.items));
+  await AsyncStorage.multiSet(restoreRows(b));
   lastSig = backupSig(b);
   restart();
 }

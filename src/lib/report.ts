@@ -5,6 +5,7 @@ import { L, isEn, num, tx } from './i18n.ts';
 import { genderFor, sessionFor, targets, type Profile } from './plan.ts';
 import { MEALS, MEAL_NAME } from './mealplan.ts';
 import { programWeek } from './progress.ts';
+import { PC, ad, esc, n, page, ring, scoreBand, scoreCSS, scoreFoot } from './printkit.ts';
 import type { Meal } from './recipes-data.ts';
 
 export type ReportDay = {
@@ -105,27 +106,75 @@ export function weekReport(p: Profile, start: Date, logs: Record<string, DayLog 
   return { days, wins, misses, from: days[0].date, to: days[6].date };
 }
 
-/** A printable page for the report (shared or saved as PDF from the phone's print sheet). */
+/** Calories in range for the week report (the same band as the wins line). */
+export const kcalState = (kcal: number, target: number, logged: boolean): 'ok' | 'over' | 'under' | 'none' =>
+  !logged ? 'none' : kcal > target * 1.05 ? 'over' : kcal < target * 0.85 ? 'under' : 'ok';
+
+/**
+ * The week's score (0 to 100): the average of three parts, each the share of the week's days so far (or planned
+ * workouts) that hit it: days with calories in range, workouts done (left out when none was planned) and days with
+ * all the water. Days not logged count as not hit; days still to come don't count.
+ */
+export function weekScore(p: Profile, r: WeekReport): { score: number; kcal: number; workouts: number | null; water: number } {
+  const T = targets(p);
+  const past = r.days.filter((d) => !d.future);
+  if (!past.length) return { score: 0, kcal: 0, workouts: null, water: 0 };
+  const kcal = past.filter((d) => kcalState(d.kcal, T.kcal, d.logged) === 'ok').length / past.length;
+  const water = past.filter((d) => d.water >= T.waterCups).length / past.length;
+  const planned = past.filter((d) => d.workout);
+  const workouts = planned.length ? planned.filter((d) => d.workout!.done >= Math.ceil(d.workout!.of / 2)).length / planned.length : null;
+  const parts = [kcal, water, ...(workouts === null ? [] : [workouts])];
+  return { score: Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 100), kcal, workouts, water };
+}
+
+/** A printable page for the report (shared or saved as PDF from the phone's print sheet), in the scoreboard look. */
 export function reportHTML(p: Profile, r: WeekReport): string {
   const T = targets(p);
-  const esc = (s: string) => s.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!);
-  const rows = r.days.map((d) => `<tr${d.future ? ' class="f"' : ''}><td>${dayName(d.date)} ${shortDate(d.date)}</td>
-    <td class="${d.logged && d.kcal > T.kcal * 1.05 ? 'bad' : ''}">${d.logged ? ar(d.kcal) : '—'}</td>
-    <td>${d.logged ? ar(d.p) : '—'}</td><td class="${d.logged && d.f > T.fat ? 'bad' : ''}">${d.logged ? ar(d.f) : '—'}</td>
-    <td>${d.future ? '' : ar(Math.round(d.water * 10) / 10)}</td>
-    <td>${d.future ? '' : d.workout ? (d.workout.done >= Math.ceil(d.workout.of / 2) ? '✓ ' : '✗ ') + esc(tx(d.workout.name)) : L('راحة', 'Rest')}</td></tr>`).join('');
-  const list = (xs: string[], cls: string) => xs.length ? `<ul class="${cls}">${xs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="m">${L('مفيش.', 'None.')}</p>`;
-  return `<!doctype html><html dir="${L('rtl', 'ltr')}" lang="${L('ar', 'en')}"><head><meta charset="utf-8"><style>
-  body{font-family:-apple-system,"Geeza Pro",Tahoma,sans-serif;color:#0A0F16;margin:28px}
-  h1{color:#07110D;margin:0}h1 span{color:#0A8F55}.sub{color:#5B6676;margin:4px 0 18px}
-  h2{font-size:16px;margin:18px 0 6px}table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{border-bottom:1px solid #D6E2E5;padding:7px 6px;text-align:${L('right', 'left')}}th{color:#5A6E74;font-weight:600}
-  .bad{color:#A12C2C;font-weight:700}.f{color:#9AAEB3}.win li{color:#1B6B45}.miss li{color:#A12C2C}.m{color:#5A6E74}
-  li{margin:4px 0}</style></head><body>
-  <h1>${L('يلا <span>ويل</span>', 'Yalla <span>Well</span>')}</h1>
-  <p class="sub">${L(`تقرير الأسبوع من ${dayName(r.from)} ${shortDate(r.from)} لـ ${dayName(r.to)} ${shortDate(r.to)}`, `Weekly report, ${dayName(r.from)} ${shortDate(r.from)} to ${dayName(r.to)} ${shortDate(r.to)}`)}${p.name ? ' · ' + esc(p.name) : ''} · ${L(`الهدف ${ar(T.kcal)} سعرة، ${ar(T.protein)} جم بروتين`, `Target ${ar(T.kcal)} kcal, ${ar(T.protein)} g protein`)}</p>
-  <h2>${L(genderFor(p.sex)('حققت', 'حققتي'), 'Wins')}</h2>${list(r.wins, 'win')}
-  <h2>${L('محتاج يتحسن', 'Needs work')}</h2>${list(r.misses, 'miss')}
-  <h2>${L('كل يوم', 'Day by day')}</h2><table><thead><tr>${(isEn() ? ['Day', 'Calories', 'Protein g', 'Fat g', 'Water', 'Workout'] : ['اليوم', 'سعرات', 'بروتين جم', 'دهون جم', 'مياه', 'تمرين']).map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
-  </body></html>`;
+  const g = genderFor(p.sex);
+  const sc = weekScore(p, r);
+  const past = r.days.filter((d) => !d.future);
+  const logged = past.filter((d) => d.logged);
+  const avg = (f: (d: ReportDay) => number, xs: ReportDay[]) => (xs.length ? xs.reduce((a, d) => a + f(d), 0) / xs.length : 0);
+  const kcalAvg = avg((d) => d.kcal, logged), protAvg = avg((d) => d.p, logged), waterAvg = avg((d) => d.water, past);
+  const planned = past.filter((d) => d.workout);
+  const done = planned.filter((d) => d.workout!.done >= Math.ceil(d.workout!.of / 2)).length;
+  const fmtN = (x: number) => Math.round(x).toLocaleString('en-US');
+  const range = `${shortDate(r.from)} ${L('لـ', 'to')} ${shortDate(r.to)}`;
+
+  const title = sc.score >= 80 ? L('أسبوع قوي', 'A strong week') : sc.score >= 50 ? L('أسبوع كويس', 'A good week') : L('أسبوع نبني عليه', 'A week to build on');
+  const band = scoreBand(ring(sc.score / 100, PC.neon, `${sc.score}%`, true, 24), p.name.trim() ? L(`${title} يا ${p.name.trim().split(/\s+/)[0]}`, `${title}, ${p.name.trim().split(/\s+/)[0]}`) : title,
+    `${esc(range)} · ${L('درجة الأسبوع من السعرات والتمرين والمية', 'Week score from calories, workouts and water')}`);
+
+  const rings = [
+    [logged.length ? kcalAvg / T.kcal : 0, PC.green, logged.length ? `${Math.round((kcalAvg / T.kcal) * 100)}%` : '—', L('السعرات', 'Calories'), logged.length ? n(`${fmtN(kcalAvg)} / ${fmtN(T.kcal)}`) : ''],
+    [logged.length ? protAvg / T.protein : 0, PC.blue, logged.length ? `${Math.round((protAvg / T.protein) * 100)}%` : '—', L('البروتين', 'Protein'), logged.length ? n(`${fmtN(protAvg)} / ${fmtN(T.protein)} g`) : ''],
+    [past.length ? waterAvg / T.waterCups : 0, PC.orange, past.length ? `${Math.round((waterAvg / T.waterCups) * 100)}%` : '—', L('المية', 'Water'), past.length ? `${n(`${Math.round(waterAvg * 10) / 10} / ${T.waterCups}`)} ${L('كوباية', 'cups')}` : ''],
+    [planned.length ? done / planned.length : 0, PC.ink, planned.length ? `${done}/${planned.length}` : '—', L('التمرين', 'Workouts'), planned.length ? L('تمارين خلصت', 'done') : L('مفيش تمرين في الخطة', 'none planned')],
+    // Sub lines are HTML: numbers already wrapped to stay left-to-right.
+  ] as const;
+  const ringRow = `<div class="rings">${rings.map(([pc, c, t, l, sub]) => `<div>${ring(pc, c, t, false, 20)}<b>${esc(l)}</b><span class="sub mut">${sub}</span></div>`).join('')}</div>`;
+
+  const bg = { ok: PC.greenBg, over: PC.amberBg, under: PC.grey, none: PC.grey } as const;
+  const cal = `<div class="sec"><p class="h" style="font-size:13.5px;margin-bottom:6px">${L('كل يوم', 'Each day')}</p><div class="cal">${r.days.map((d) => {
+    const st = d.future ? 'none' : kcalState(d.kcal, T.kcal, d.logged);
+    return `<div style="background:${bg[st]}${d.future ? ';opacity:.55' : ''}"><span>${esc(dayName(d.date))}</span><span class="n">${d.logged ? fmtN(d.kcal) : '—'}</span></div>`;
+  }).join('')}</div>
+  <div class="legend mut"><span><span class="dot" style="background:${PC.green}"></span>${L('في حدود سعراتك', 'Within your calories')}</span><span><span class="dot" style="background:${PC.calAmber}"></span>${L('زيادة', 'Over')}</span><span><span class="dot" style="background:${PC.line}"></span>${L('أقل بكتير أو مفيش تسجيل', 'Well under, or not logged')}</span></div></div>`;
+
+  const list = (xs: string[]) => xs.length ? `<ul>${xs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="mut">${L('مفيش.', 'None.')}</p>`;
+  const cols = `<div class="cols sec"><div style="background:${PC.greenBg}"><p class="h" style="color:${PC.green}">${L(g('حققت', 'حققتي'), 'Wins')}</p>${list(r.wins)}</div><div style="background:${PC.redBg}"><p class="h" style="color:${PC.red}">${L('محتاج يتحسن', 'Needs work')}</p>${list(r.misses)}</div></div>`;
+
+  const rows = r.days.map((d) => {
+    const st = d.future ? 'none' : kcalState(d.kcal, T.kcal, d.logged);
+    const dot = st === 'ok' ? PC.green : st === 'over' ? PC.calAmber : PC.line;
+    const wk = d.future ? '' : d.workout ? `${d.workout.done >= Math.ceil(d.workout.of / 2) ? '✓' : '✗'} ${esc(tx(d.workout.name))}` : L('راحة', 'Rest');
+    return `<tr${d.future ? ' style="color:#A1A1A6"' : ''}><td><span class="dot" style="background:${dot}"></span>${esc(dayName(d.date))} <span class="mut">${esc(shortDate(d.date))}</span></td>
+    <td class="n"${st === 'over' ? ` style="color:${PC.red}"` : ''}>${d.logged ? fmtN(d.kcal) : '—'}</td><td class="n">${d.logged ? `${fmtN(d.p)}g` : '—'}</td>
+    <td class="n"${d.logged && d.f > T.fat ? ` style="color:${PC.red}"` : ''}>${d.logged ? `${fmtN(d.f)}g` : '—'}</td><td class="n">${d.future ? '' : Math.round(d.water * 10) / 10}</td><td>${wk}</td></tr>`;
+  }).join('');
+  const table = `<div class="sec"><table><thead><tr>${[L('اليوم', 'Day'), L('سعرات', 'Calories'), L('بروتين', 'Protein'), L('دهون', 'Fat'), L('مية (كوباية)', 'Water (cups)'), L('تمرين', 'Workout')].map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
+  <p class="mut" style="font-size:10px;margin-top:5px">${L(`الهدف ${ad(fmtN(T.kcal))} سعرة، ${ad(T.protein)} جم بروتين، و${ad(T.fat)} جم دهون بالكتير في اليوم.`, `Target ${fmtN(T.kcal)} kcal, ${T.protein} g protein, and at most ${T.fat} g fat a day.`)}</p></div>`;
+
+  const body = `<div class="wrap">${band}${ringRow}${cal}${cols}${table}${scoreFoot(L('تقرير الأسبوع من يلا ويل', 'Weekly report from Yalla Well'))}</div>`;
+  return page(L('تقرير الأسبوع', 'Weekly report'), body, scoreCSS());
 }

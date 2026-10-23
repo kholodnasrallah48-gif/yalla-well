@@ -9,6 +9,7 @@ import type { Profile } from '../lib/plan.ts';
 import { translateMissing, withTr } from '../lib/translate.ts';
 import { addToHistory, type LiftLog } from '../lib/progress.ts';
 import { accountsOn, signOut } from '../lib/account.ts';
+import { OLD_LAB_PHOTO } from '../lib/backup.ts';
 
 const K = { profile: 'yallawell:profile', custom: 'yallawell:custom', lifts: 'yallawell:lifts', hist: 'yallawell:lifthist', day: (k: string) => 'yallawell:day:' + k };
 
@@ -86,6 +87,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setCustom(c ?? []);
       setDay({ ...blankDay(), ...(d ?? {}) });
       setReady(true);
+      // Lab paper photos kept by older versions are no longer used: free the space once.
+      AsyncStorage.getAllKeys().then((ks) => {
+        const old = ks.filter((k) => k.startsWith(OLD_LAB_PHOTO));
+        if (old.length) AsyncStorage.multiRemove(old).catch(() => {});
+      }).catch(() => {});
     })();
   }, []);
 

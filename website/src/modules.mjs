@@ -1,5 +1,5 @@
 // The content modules: the home page's day timeline, plan example, before and after, numbers and feature teaser, and
-// the features page's sections (food, eating out, training, health, for women, reports, streak, the captain).
+// the features page's sections (food, eating out, training, health, for women, reports, progress, streak, the captain).
 // Every module is written once with L(arabic, english). App screens live in static/media/modules as
 // <name>-ar.webp and <name>-en.webp (phones 600 px wide; report sheets 909 x 1287).
 // Copy rules as in pages.mjs: light colloquial Arabic, gender neutral, "دايت" never "رجيم", no disease or medicine
@@ -172,6 +172,7 @@ export const SECTIONS = (L) => [
   ['health', 'pill', L('صحتك', 'Your health'), L('الأدوية والتحاليل وتقرير للدكتور', 'Medicines, lab tests and a doctor report')],
   ['women', 'heart', L('للستات', 'For women'), L('الدورة والحمل جوه الخطة', 'Your cycle and pregnancy, inside the plan')],
   ['reports', 'doc', L('التقارير', 'Reports'), L('ملفات PDF للأسبوع والتحاليل والدكتور', 'PDFs for your week, your labs and your doctor')],
+  ['progress', 'chart', L('التقدم', 'Progress'), L('الوزن والمقاسات وصورة الإنجاز', 'Weight, measurements and progress photos')],
   ['streak', 'flame', L('الستريك', 'Streak'), L('ستريك وفريز ونقط', 'Streaks, freezes and points')],
   ['captain', 'chat', L('الكابتن', 'The Captain'), L('جملة على قد يومك', 'A line that fits your day')],
 ];
@@ -203,6 +204,10 @@ export function foodModule(ctx) {
       ${shotCard(ctx, 'food-suggest', L('اقتراح فطار على قد السعرات اللي فاضلة', 'A breakfast idea sized to the calories left'), L('اقتراح على قد اللي فاضل', "Ideas that fit what's left"), L('الوجبة الجاية بتتقترح على قد السعرات الباقية، مش رقم ثابت.', 'The next meal is suggested from the calories you have left, not a fixed number.'))}
       ${shotCard(ctx, 'food-recipe', L('وصفة مقاديرها متظبطة على السعرات', 'A recipe with amounts set to the calories'), L('وصفات بنسخ أخف', 'Lighter recipes'), L('١٥١ وصفة من المطبخ العربي، والمقادير بتتغير مع السعرات.', '151 recipes from Arab kitchens, with amounts that change with your calories.'))}
       ${shotCard(ctx, 'food-warn', L('تنبيه أحمر: أكلة مش مناسبة، وبدايل أحسن', 'A red alert: a food that does not fit, with better swaps'), L('تنبيه وبدايل', 'Alerts and swaps'), L('لو أكلة مش مناسبة لحالتك أو فيها حساسية، بيظهر تنبيه أحمر ومعاه بدايل أخف.', "If a food doesn't suit your health or you're allergic to it, a red alert shows up with lighter swaps."))}
+    </div>
+    <div class="tiles m-food-more">
+      <div class="tile reveal"><span class="tile-ic">${icon('plate', 24)}</span><h3>${L('حساسية الأكل', 'Food allergies')}</h3><p>${L('بنسأل عنها في أول مرة: مكسرات، أو لبن، أو بيض، أو سمك، أو قمح، أو أي أكل تاني بالاسم. الوصفات اللي فيها الأكل ده مش بتظهر، ولو اتسجل بيظهر تنبيه أحمر.', "Asked the first time: nuts, milk, eggs, fish, wheat or any other food by name. Recipes with it stay out of your suggestions, and logging it shows a red alert.")}</p></div>
+      <div class="tile reveal"><span class="tile-ic">${icon('doc', 24)}</span><h3>${L('نظامك الخاص', 'Your own plan')}</h3><p>${L('لو فيه نظام أكل من دكتور أو أخصائي تغذية، أرقامه بتتسجل والتطبيق بيمشي عليها بدل حسابه هو.', 'If a doctor or dietitian gave you a plan, enter its numbers and the app follows them instead of its own.')}</p></div>
     </div>
     <p class="m-disc reveal">${L('قراءة الباركود للمنتجات المغلفة في تطبيق الموبايل، ولو الأكلة مش موجودة، فيه بحث في قواعد بيانات الأكل العامة.', "Barcode scanning for packaged food is in the phone app, and foods that aren't listed can be found in public food databases.")}</p>
   </div>
@@ -360,6 +365,20 @@ export function streakModule(ctx) {
 </section>`;
 }
 
+/** Progress: the progress page and the progress photo, side by side. */
+export function progressModule(ctx) {
+  const { L } = ctx;
+  return `<section class="m-mod" id="progress" aria-labelledby="progress-title">
+  <div class="wrap">
+    ${head(L('التقدم', 'Progress'), L('التغيير باين بالأرقام.', 'The change, in numbers.'), L('الوزن لوحده مش بيحكي كل حاجة، فالتطبيق بيتابع المقاسات ونسبة الدهون كمان، وبيطلع صورة للأسبوع بأرقامه.', "Weight alone doesn't tell the whole story, so the app also tracks measurements and body fat, and makes a photo of your week with its numbers."), 'progress-title')}
+    <div class="m-grid2 m-prog">
+      ${shotCard(ctx, 'prog-page', L('صفحة التقدم: الوزن على رسم بياني والمقاسات', 'The progress page: weight on a chart and measurements'), L('صفحة التقدم', 'Progress page'), L('الوزن على رسم بياني، والمقاسات بالسنتي، ونسبة الدهون التقريبية، وصور التقدم. والصور بتفضل على موبايلك.', 'Your weight on a chart, measurements in cm, an estimated body-fat percentage and progress photos. The photos stay on your phone.'))}
+      ${shotCard(ctx, 'prog-photo', L('صورة الإنجاز: إطار فيه أرقام الأسبوع', 'Progress photo: a frame with the week\'s numbers'), L('صورة الإنجاز', 'Progress photo'), L('الكاميرا بتفتح جوه إطار فيه أرقام أسبوعك الحقيقية: الستريك والتمارين وأيام الهدف. الصورة بتتاخد وتتشارك مع الأصحاب.', 'The camera opens inside a frame with your real numbers for the week: streak, workouts and days on target. Take the photo and share it with friends.'))}
+    </div>
+  </div>
+</section>`;
+}
+
 /** 11. The captain's lines through the day; the highlighted card moves along. */
 export function captainModule(ctx) {
   const { L } = ctx;
@@ -370,11 +389,32 @@ export function captainModule(ctx) {
     [L('يوم صعب', 'Rough day'), '8:10', L('مش مشكلة، تمشية ٢٠ دقيقة وبكرة نظبطها.', "No problem. A 20-minute walk, and we'll pick it up tomorrow."), L('لما سؤال الصبح يقول إن الطاقة قليلة، التمرين بيبقى يوم تعافي.', 'When the morning check-in shows low energy, the workout becomes a recovery day.')],
     [L('آخر اليوم', 'End of day'), '9:00', L('الوجبات خلصت، وفاضل ٢٨٠ سعرة لو الجوع جه.', 'Meals are done, with 280 kcal left if you get hungry.'), L('والساعة ١٢ اليوم بيتقفل ويدخل في تقرير الأسبوع.', 'At midnight the day locks and goes into the weekly report.')],
   ];
+  // Real reminder texts from src/lib/reminders.ts (gender neutral ones), newest on top like a lock screen.
+  const notes = [
+    ['9:45', L('يوم النهارده', 'Today'), L('مفيش أكل متسجل النهارده', 'No food logged today')],
+    ['7:30', L('تمرين النهارده', "Today's workout"), L('تمرين النهارده في البيت، ٦ تمارين', "Today's workout is at home: 6 exercises")],
+    ['4:00', L('الغدا', 'Lunch'), L('فاضلك ٧٢٠ سعرة، يعني غدا مريح من غير قلق', '720 kcal left, so lunch can be a proper meal')],
+    ['2:00', L('ميعاد الدوا', 'Medicine time'), L('قرص واحد. مع الأكل أو بعده', '1 tablet. With or after food')],
+    ['1:30', L('المية', 'Water'), L('فاضلك ٣ كوبايات مية النهارده', '3 cups of water left today')],
+  ];
   return `<section class="m-mod" id="captain" aria-labelledby="captain-title">
   <div class="wrap">
     ${head(L('الكابتن', 'The Captain'), L('جملة في وقتها.', 'The right line at the right time.'), L('الكابتن عارف ساعة كام، وفاضل كام سعرة، والنهارده تمرين ولا راحة. فالكلام بيتغير مع اليوم.', 'The Captain knows the time, the calories you have left and whether today is for training or rest, so what he says changes through the day.'), 'captain-title')}
     <div class="m-capt reveal" data-captain>
       ${cards.map(([w, t, q, c], i) => `<div class="m-cc${i === 0 ? ' now' : ''}"><div class="m-when"><span>${w}</span><span class="num" dir="ltr">${t}</span></div><div class="m-who"><span class="m-av">${champ('cheer', { size: 30, ink: '#fff' })}</span><span class="m-dot"></span><span>${L('الكابتن بيقول', 'The Captain says')}</span></div><q>${q}</q><p class="m-ctx">${c}</p></div>`).join('')}
+    </div>
+    <div class="m-notif">
+      <div class="m-notif-txt reveal">
+        <h3 class="h3">${L('ومعاك على الموبايل طول اليوم.', 'And with you on your phone all day.')}</h3>
+        <p>${L('الكابتن بيبعت تنبيهات بأرقام يومك: فاضل كام كوباية مية، وكام سعرة، وميعاد الدوا، وتمرين النهارده، ولو الأكل لسه متسجلش. ولو الحاجة اتعملت، التنبيه بتاعها مش بيوصل.', "The Captain sends reminders with your day's numbers: cups of water left, calories left, medicine times, today's workout and food that isn't logged yet. Anything already done is skipped.")}</p>
+        <p class="muted small">${L('التنبيهات في تطبيق الموبايل بس.', 'Reminders are in the phone app only.')}</p>
+      </div>
+      <div class="m-lock reveal" data-lock aria-label="${L('تنبيهات يلا ويل على شاشة الموبايل', 'Yalla Well reminders on a phone lock screen')}">
+        <div class="m-lock-time num" dir="ltr">9:45</div>
+        <ul role="list">
+          ${notes.map(([t, h, b]) => `<li><span class="m-nic">${champ('cheer', { size: 22, ink: '#fff' })}</span><div><div class="m-nt"><b>${h}</b><span class="num" dir="ltr">${t}</span></div><p>${b}</p></div></li>`).join('')}
+        </ul>
+      </div>
     </div>
   </div>
 </section>`;

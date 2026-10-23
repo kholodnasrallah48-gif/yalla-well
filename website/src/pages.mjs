@@ -3,7 +3,7 @@
 // no formal fusha), gender neutral ("we", the app or nouns as the subject, no imperatives), no tashkeel. Use "دايت",
 // never "رجيم". No disease or medicine names anywhere (lab test names are fine). The streak is "ستريك" with "فريز".
 import { SOCIAL_NAMES, champ, contact, hasSocial, icon, socialLinks, storeButtons } from './layout.mjs';
-import { SECTIONS, beforeAfter, captainModule, dayModule, foodModule, healthModule, numbersModule, outModule, planModule, reportsModule, streakModule, teaser, trainModule, womenModule } from './modules.mjs';
+import { SECTIONS, beforeAfter, captainModule, dayModule, foodModule, healthModule, numbersModule, outModule, planModule, progressModule, reportsModule, streakModule, teaser, trainModule, womenModule } from './modules.mjs';
 import { SOCIAL, WAITLIST_URL, WHATSAPP_CHANNEL } from './config.mjs';
 
 // ---------- small pieces ----------
@@ -210,14 +210,6 @@ const features = {
   desc: (ctx) => ctx.L('مميزات يلا ويل: أكل محسوب بالجرام ووصفات بنسخ أخف، والأكل برة البيت، وتمرين في الجيم أو البيت، والأدوية والتحاليل والتقارير، ومتابعة الدورة والحمل.', 'Yalla Well in detail: food counted by the gram and lighter recipes, eating out, training at the gym or at home, medicines, lab tests and reports, and period and pregnancy tracking.'),
   body(ctx) {
     const { L } = ctx;
-    const more = [
-      ['chart', L('صفحة التقدم', 'Progress page'), L('الوزن على رسم بياني، والمقاسات، ونسبة الدهون التقريبية، وصور التقدم. والصور بتفضل على موبايلك.', 'Your weight on a chart, measurements, an estimated body-fat percentage and progress photos. The photos stay on your phone.')],
-      ['instagram', L('صورة الإنجاز', 'Progress photo'), L('الكاميرا بتفتح جوه إطار فيه أرقام أسبوعك الحقيقية: الستريك والتمارين وأيام الهدف. الصورة بتتاخد وتتشارك مع الأصحاب.', 'The camera opens inside a frame with your real numbers for the week: streak, workouts and days on target. Take the photo and share it with friends.')],
-      ['bell', L('تنبيهات بأرقام اليوم', "Reminders with the day's numbers"), L('للوجبات والمية والتمرين والأدوية والتحاليل. التنبيه بيقول فاضل كام كوباية مية وكام سعرة، وتمرين اليوم، ولو الحاجة اتعملت مش بيوصل. في تطبيق الموبايل بس.', "For meals, water, workouts, medicines and lab tests. Each one mentions your real numbers, like cups of water and calories left, and is skipped once it's done. Phone app only.")],
-      ['plate', L('الحساسية ونظامك الخاص', 'Allergies and your own plan'), L('سؤال عن حساسية الأكل في أول مرة، والوصفات اللي فيها الأكل ده مش بتظهر. ولو فيه نظام من دكتور أو أخصائي تغذية، أرقامه بتتسجل والتطبيق بيمشي عليها.', 'A question about food allergies the first time, and recipes with that food are left out. A plan from a doctor or dietitian can be entered, and the app follows its numbers.')],
-      ['dumbbell', L('الإصابات', 'Injuries'), L('الإصابة اللي تحت العلاج بتشيل التمارين اللي بتضغط عليها لحد ما تخف، وبعدها الخطة الكاملة بترجع.', 'An injury being treated takes out the exercises that load it until it heals, and then the full plan comes back.')],
-      ['globe', L('العربي والإنجليزي', 'Arabic and English'), L('اللغة بتتغير في أي وقت، والعربي بيخاطب الرجل والمرأة كل واحد بصيغته. وفيه لايت ودارك.', 'Switch language any time; the Arabic text addresses men and women each in their own form. Light and dark themes too.')],
-    ];
     return `${pageHero(ctx, L('المميزات', 'Features'), L('التطبيق بيعمل إيه بالظبط؟', 'What the app does, in detail.'), L('التطبيق بيبدأ من جسمك وهدفك وصحتك. أي حالة صحية أو دواء بيتسجل في الأول بيغير الأكل والتمرين والمواعيد، وعلشان كده مفيش خطتين شبه بعض.', "The app starts from your body, your goal and your health. Every condition or medicine you add changes your food, your training and your timings, so no two plans look the same."))}
 <nav class="jump wrap" aria-label="${L('أقسام الصفحة', 'On this page')}">
   ${SECTIONS(L).map(([id, ic, t]) => `<a href="#${id}">${icon(ic, 18)}${t}</a>`).join('')}
@@ -233,16 +225,9 @@ ${trainModule(ctx)}
 ${healthModule(ctx)}
 ${womenModule(ctx)}
 ${reportsModule(ctx)}
+${progressModule(ctx)}
 ${streakModule(ctx)}
 ${captainModule(ctx)}
-<section class="m-mod" id="more" aria-labelledby="more-title">
-  <div class="wrap">
-    <div class="sec-head reveal">${kicker(L('وكمان', 'And more'))}<h2 class="h2" id="more-title">${L('حاجات تانية بتفرق.', 'A few more things.')}</h2></div>
-    <div class="tiles">
-      ${more.map(([ic, t, d]) => `<div class="tile reveal"><span class="tile-ic">${icon(ic, 24)}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}
-    </div>
-  </div>
-</section>
 ${downloadPanel(ctx)}`;
   },
 };

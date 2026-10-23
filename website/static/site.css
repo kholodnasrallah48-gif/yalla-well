@@ -790,3 +790,28 @@ fieldset[aria-invalid='true'] .pick span { border-color: #ff6b6b; }
   .m-stack img, .m-sheet, .m-cc, .m-cc::after { transition: none !important; }
   .m-cc.now { transform: none; }
 }
+
+/* Food: allergies and your own plan under the screens. */
+.m-food-more { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 24px; }
+@media (max-width: 580px) { .m-food-more { grid-template-columns: 1fr; } }
+/* Progress: two phones stay side by side on small screens. */
+@media (max-width: 560px) { .m-prog { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+/* The captain's reminders on a lock screen. */
+.m-notif { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: clamp(24px, 5vw, 64px); align-items: center; margin-top: clamp(40px, 6vw, 72px); }
+.m-notif-txt { display: flex; flex-direction: column; gap: 12px; max-width: 520px; }
+.m-notif-txt .h3 { font-size: clamp(22px, 2.4vw, 30px); line-height: 1.35; }
+.m-notif-txt p { margin: 0; color: var(--soft); font-size: 16px; line-height: 1.8; }
+.m-lock { position: relative; border-radius: 40px; padding: 28px 14px 22px; background: radial-gradient(120% 80% at 50% 0%, #10241a 0%, #070807 60%), #070807; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.1), 0 40px 80px -30px rgba(0, 0, 0, 0.8); }
+.m-lock-time { text-align: center; font-family: var(--head); font-size: 54px; font-weight: 600; line-height: 1; color: #fff; margin-bottom: 22px; letter-spacing: -0.02em; }
+.m-lock ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.m-lock li { display: flex; gap: 10px; align-items: flex-start; padding: 11px 12px; border-radius: 20px; background: rgba(44, 44, 46, 0.78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.m-nic { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #000; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+.m-lock li > div { min-width: 0; flex: 1; }
+.m-nt { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; color: #fff; }
+.m-nt span { color: var(--quiet); font-size: 12px; }
+.m-lock p { margin: 2px 0 0; color: #d1d1d6; font-size: 13.5px; line-height: 1.5; }
+.js .m-lock li { opacity: 0; transform: translateY(-10px); transition: opacity 0.5s var(--ease), transform 0.5s var(--ease); will-change: opacity, transform; }
+.m-lock.show li { opacity: 1; transform: none; }
+.m-lock.show li:nth-child(2) { transition-delay: 0.12s; } .m-lock.show li:nth-child(3) { transition-delay: 0.24s; } .m-lock.show li:nth-child(4) { transition-delay: 0.36s; } .m-lock.show li:nth-child(5) { transition-delay: 0.48s; }
+@media (max-width: 800px) { .m-notif { grid-template-columns: minmax(0, 1fr); } .m-lock { max-width: 380px; width: 100%; margin-inline: auto; } }
+@media (prefers-reduced-motion: reduce) { .js .m-lock li { opacity: 1; transform: none; transition: none; } }

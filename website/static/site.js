@@ -357,6 +357,13 @@
     });
   }
 
+  // The captain's reminders drop onto the lock screen one by one the first time it comes into view.
+  const lock = document.querySelector('[data-lock]');
+  if (lock) {
+    const lo = still ? null : io([lock], (e) => { if (e.isIntersecting) { lo.unobserve(e.target); lock.classList.add('show'); } }, { threshold: 0.35 });
+    if (!lo) lock.classList.add('show');
+  }
+
   // The captain: the highlighted card moves through the day while the section is on screen.
   const capt = document.querySelector('[data-captain]');
   if (capt && !still) {

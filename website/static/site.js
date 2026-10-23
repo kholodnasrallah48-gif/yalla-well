@@ -204,108 +204,181 @@
     }
   }
 
-  // ---------- one app instead of several: the separate apps gather into Yalla Well ----------
-  const stack = document.querySelector('[data-stack]');
-  if (stack) {
-    const cards = [...stack.querySelectorAll('.app-card')];
-    const one = stack.querySelector('.one-card');
-    const sb = stack.querySelector('.stack-btn');
-    const measure = () => {
-      const o = one.getBoundingClientRect();
-      cards.forEach((c, i) => {
-        const r = c.getBoundingClientRect();
-        c.style.setProperty('--dx', `${o.left + o.width / 2 - (r.left + r.width / 2)}px`);
-        c.style.setProperty('--dy', `${o.top + o.height / 2 - (r.top + r.height / 2)}px`);
-        c.style.setProperty('--i', String(i));
-      });
-    };
-    const set = (on) => {
-      if (on) measure();
-      stack.classList.toggle('is-merged', on);
-      sb.textContent = on ? sb.dataset.splitLabel : sb.dataset.merge;
-    };
-    sb.addEventListener('click', () => set(!stack.classList.contains('is-merged')));
-    if (still) set(true);
-    else if ('IntersectionObserver' in window) {
-      const so = new IntersectionObserver(([e]) => {
-        if (!e.isIntersecting) return;
-        so.disconnect();
-        setTimeout(() => set(true), 700);
-      }, { threshold: 0.6 });
-      so.observe(stack.querySelector('.apps'));
-    }
-    window.addEventListener('resize', () => { if (stack.classList.contains('is-merged')) measure(); });
-  }
+  // ---------- content modules (src/modules.mjs) ----------
+  // Every module reads fine without this script: the first screen, the example plan and the first report show as built.
+  const io = (els, cb, opts) => {
+    if (!('IntersectionObserver' in window)) return null;
+    const o = new IntersectionObserver((entries) => entries.forEach(cb), opts);
+    els.forEach((el) => o.observe(el));
+    return o;
+  };
+  /** Shows screen i of a stacked phone. */
+  const showScreen = (stackEl, i) => {
+    [...stackEl.querySelectorAll('img')].forEach((im, k) => {
+      im.classList.toggle('on', k === i);
+      if (k === i) { im.loading = 'eager'; im.removeAttribute('aria-hidden'); } else im.setAttribute('aria-hidden', 'true');
+    });
+  };
 
-  // ---------- inside the app: one phone; scrolling (desktop) or tabs (phone) change its screen ----------
-  const tourEl = document.querySelector('.tour');
-  if (tourEl) {
-    const steps = [...tourEl.querySelectorAll('.tour-step')];
-    const screens = [...tourEl.querySelectorAll('.screen')];
-    const tabs = [...tourEl.querySelectorAll('.tour-tabs button')];
-    const dots = [...tourEl.querySelectorAll('.tour-dots i')];
-    const stage = tourEl.querySelector('.tour-phone');
+  // A day with us: the step in the middle of the screen picks the phone's screen and the clock.
+  const day = document.querySelector('[data-day]');
+  if (day) {
+    const steps = [...day.querySelectorAll('.m-step')];
+    const stackEl = day.querySelector('.m-stack');
+    const clock = day.querySelector('.m-clock');
     let cur = 0;
-    const show = (i) => {
+    const set = (i) => {
       if (i === cur) return;
       cur = i;
-      steps.forEach((s, j) => s.classList.toggle('is-on', j === i));
-      screens.forEach((s, j) => { s.classList.toggle('is-on', j === i); if (j === i) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true'); });
-      dots.forEach((d, j) => d.classList.toggle('is-on', j === i));
-      tabs.forEach((t, j) => { t.setAttribute('aria-selected', String(j === i)); t.tabIndex = j === i ? 0 : -1; });
-      stage.setAttribute('aria-labelledby', `tt-${i}`);
+      steps.forEach((s, k) => s.classList.toggle('on', k === i));
+      showScreen(stackEl, i);
+      const tn = steps[i].querySelector('.m-tn'), tw = steps[i].querySelector('.m-tw');
+      clock.children[0].textContent = tn ? tn.textContent : '';
+      clock.children[1].textContent = tw ? tw.textContent : '';
     };
-    tabs.forEach((t, i) => {
-      t.addEventListener('click', () => { show(i); t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
-      t.addEventListener('keydown', (e) => {
-        const fwd = rtl ? 'ArrowLeft' : 'ArrowRight';
-        const back = rtl ? 'ArrowRight' : 'ArrowLeft';
-        if (e.key !== fwd && e.key !== back) return;
-        e.preventDefault();
-        const n = (i + (e.key === fwd ? 1 : -1) + tabs.length) % tabs.length;
-        tabs[n].focus(); tabs[n].click();
-      });
-    });
-    const wide = window.matchMedia('(min-width: 921px)');
-    if ('IntersectionObserver' in window) {
-      const to = new IntersectionObserver((entries) => {
-        if (!wide.matches) return;
-        for (const e of entries) if (e.isIntersecting) show(steps.indexOf(e.target));
-      }, { rootMargin: '-45% 0px -45% 0px' });
-      steps.forEach((s) => to.observe(s));
-    }
+    io(steps, (e) => { if (e.isIntersecting) set(steps.indexOf(e.target)); }, { rootMargin: '-45% 0px -45% 0px' });
   }
 
-  // ---------- try it: the chosen situations change the plan ----------
-  const tryBox = document.querySelector('.try-box');
-  if (tryBox) {
-    const data = JSON.parse(tryBox.querySelector('.try-data').textContent);
-    const list = tryBox.querySelector('.plan');
-    const on = new Set();
-    let before = new Set(data.base);
-    const render = () => {
-      const items = data.base.map((t) => [t, false]);
-      for (const k of on) for (const [i, t] of data.swap[k] || []) items[i] = [t, true];
-      for (const k of on) for (const t of data.add[k]) items.push([t, true]);
-      list.innerHTML = '';
-      const now = new Set();
-      for (const [t, w] of items) {
-        if (now.has(t)) continue;
-        now.add(t);
-        const li = document.createElement('li');
-        li.textContent = t;
-        if (w) li.classList.add('w');
-        if (!before.has(t)) li.classList.add('is-new');
-        list.appendChild(li);
-      }
-      before = now;
+  // The plan example: each answer rebuilds the example plan.
+  const plan = document.querySelector('[data-plan]');
+  if (plan) {
+    const D = JSON.parse(plan.querySelector('.m-plan-data').textContent);
+    const card = plan.querySelector('.m-plan');
+    const out = (k) => card.querySelector(`[data-p="${k}"]`);
+    const fmt = (n) => Math.round(n).toLocaleString('en-US');
+    const st = { goal: 'lose', days: '3', place: 'gym', health: 'none' };
+    let shown = { k: 1650, p: 135 };
+    const tween = (el, from, to) => {
+      if (still || from === to) { el.textContent = fmt(to); return; }
+      const t0 = performance.now();
+      const f = (t) => { const x = Math.min(1, (t - t0) / 600); el.textContent = fmt(from + (to - from) * (1 - Math.pow(1 - x, 3))); if (x < 1) requestAnimationFrame(f); };
+      requestAnimationFrame(f);
     };
-    tryBox.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => {
-      const k = b.dataset.k;
-      if (on.has(k)) on.delete(k); else on.add(k);
-      b.setAttribute('aria-pressed', String(on.has(k)));
+    const render = () => {
+      let k = { lose: 1650, keep: 2050, gain: 2350 }[st.goal] + { 3: 0, 4: 70, 5: 140 }[st.days];
+      if (st.health === 'chronic' && st.goal === 'lose') k += 150;
+      const p = { lose: 135, keep: 115, gain: 150 }[st.goal];
+      tween(out('k'), shown.k, k);
+      tween(out('p'), shown.p, p);
+      shown = { k, p };
+      out('w').textContent = String(10 + (st.days === '5' ? 1 : 0));
+      out('s').textContent = D.split[st.place][st.days];
+      out('t').textContent = D.today[st.place][st.days] + (st.health === 'chronic' ? D.effort.gentle : D.effort.normal);
+      [0.25, 0.35, 0.12, 0.28].forEach((part, i) => {
+        out(`m${i}`).textContent = D.meals[st.goal][i];
+        out(`m${i}k`).textContent = fmt(Math.round((k * part) / 10) * 10);
+      });
+      out('n').textContent = D.notes[st.health];
+      card.classList.remove('is-flash');
+      if (!still) { void card.offsetWidth; card.classList.add('is-flash'); }
+    };
+    plan.querySelectorAll('[data-q]').forEach((g) => g.addEventListener('click', (e) => {
+      const b = e.target.closest('.chip');
+      if (!b) return;
+      g.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+      st[g.dataset.q] = b.dataset.v;
       render();
     }));
+  }
+
+  // Eating out: the steps play in turn while the section is on screen; a click stops the autoplay.
+  const outEl = document.querySelector('[data-out]');
+  if (outEl) {
+    const btns = [...outEl.querySelectorAll('.m-olist button')];
+    const stackEl = outEl.querySelector('.m-stack');
+    let oi = 0, timer = null, seen = false, held = still;
+    const set = (i) => {
+      oi = i;
+      btns.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+      showScreen(stackEl, i);
+    };
+    const play = () => {
+      clearInterval(timer);
+      outEl.classList.toggle('is-playing', !held && seen);
+      if (held || !seen) return;
+      timer = setInterval(() => set((oi + 1) % btns.length), 4200);
+    };
+    btns.forEach((b, k) => b.addEventListener('click', () => { held = true; set(k); play(); }));
+    io([outEl], (e) => { seen = e.isIntersecting; if (seen && !held) set(oi); play(); }, { threshold: 0.35 });
+  }
+
+  // Rest timer: a 60 second countdown; the ring turns with CSS.
+  const timerEl = document.querySelector('[data-timer]');
+  if (timerEl) {
+    const ring = timerEl.querySelector('.m-ring');
+    const val = timerEl.querySelector('.m-ring-v');
+    const btn = timerEl.querySelector('button');
+    let t = null;
+    const show = (s) => { val.textContent = s >= 60 ? '01:00' : `00:${String(s).padStart(2, '0')}`; };
+    const stop = (label) => { clearInterval(t); t = null; ring.classList.remove('is-run'); btn.textContent = btn.dataset.start; if (label) val.textContent = label; else show(60); };
+    btn.addEventListener('click', () => {
+      if (t) { stop(); return; }
+      let s = 60;
+      show(s);
+      ring.classList.remove('is-run'); void ring.offsetWidth; ring.classList.add('is-run');
+      btn.textContent = btn.dataset.skip;
+      t = setInterval(() => { s -= 1; show(s); if (s <= 0) stop(btn.dataset.go); }, 1000);
+    });
+  }
+
+  // Reports: the top sheet slides away and the next comes forward (buttons, chips, a tap or a swipe).
+  const rep = document.querySelector('[data-reports]');
+  if (rep) {
+    const sheets = [...rep.querySelectorAll('.m-sheet')];
+    const chips = [...rep.querySelectorAll('[data-r]')];
+    const cap = rep.querySelector('.m-rep-cap');
+    const caps = JSON.parse(cap.dataset.caps);
+    const n = sheets.length;
+    let rk = 0;
+    const set = (k, dir) => {
+      const prev = rk;
+      rk = (k + n) % n;
+      sheets.forEach((s) => {
+        const sk = Number(s.dataset.k);
+        if (!still && dir > 0 && sk === prev && prev !== rk) { s.classList.add('is-out'); setTimeout(() => s.classList.remove('is-out'), 380); }
+        s.dataset.pos = String((sk - rk + n) % n);
+        s.querySelector('img').loading = 'eager';
+      });
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(Number(c.dataset.r) === rk)));
+      cap.textContent = caps[rk];
+    };
+    rep.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => set(rk + Number(b.dataset.step), Number(b.dataset.step))));
+    chips.forEach((c) => c.addEventListener('click', () => set(Number(c.dataset.r), 0)));
+    sheets.forEach((s) => s.addEventListener('click', () => set(rk + 1, 1)));
+    const deck = rep.querySelector('.m-deck');
+    let sx = null;
+    deck.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+    deck.addEventListener('touchend', (e) => {
+      if (sx === null) return;
+      const dx = e.changedTouches[0].clientX - sx;
+      const fwd = dx < 0;
+      if (Math.abs(dx) > 40) set(rk + (fwd ? 1 : -1), fwd ? 1 : -1);
+      sx = null;
+    });
+  }
+
+  // The captain: the highlighted card moves through the day while the section is on screen.
+  const capt = document.querySelector('[data-captain]');
+  if (capt && !still) {
+    const cards = [...capt.querySelectorAll('.m-cc')];
+    let ci = 0, ct = null;
+    io([capt], (e) => {
+      clearInterval(ct);
+      if (!e.isIntersecting) return;
+      ct = setInterval(() => { cards[ci].classList.remove('now'); ci = (ci + 1) % cards.length; cards[ci].classList.add('now'); }, 3200);
+    }, { threshold: 0.2 });
+  }
+
+  // Module numbers show their real value at rest and count up from a smaller one when they come into view.
+  const counts = [...document.querySelectorAll('[data-to]')];
+  if (counts.length && !still) {
+    const run = (el) => {
+      const to = Number(el.dataset.to), from = Number(el.dataset.from), t0 = performance.now();
+      const f = (t) => { const x = Math.min(1, (t - t0) / 1400); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - x, 3))).toLocaleString('en-US'); if (x < 1) requestAnimationFrame(f); };
+      el.textContent = String(from);
+      requestAnimationFrame(f);
+    };
+    const co = io(counts, (e) => { if (e.isIntersecting) { co.unobserve(e.target); run(e.target); } }, { threshold: 0.6 });
   }
 
   if (motion) runMotion(); else runBasic();
@@ -435,29 +508,6 @@
           .fromTo(hero.querySelector('.glow'), { scale: 1, opacity: 1 }, { scale: 1.25, opacity: 0.8 }, 0);
       }
 
-      // Feature pages: each phone rises into its panel as the section arrives.
-      document.querySelectorAll('.feature').forEach((f) => {
-        const p = f.querySelector('.feature-media .phone');
-        gsap.fromTo(p, { y: 140, scale: 0.94, opacity: 0.4 },
-          { y: 0, scale: 1, opacity: 1, ease: 'none', scrollTrigger: { trigger: f, start: 'top bottom', end: 'top 30%', scrub: 0.4 } });
-        gsap.set(f.querySelectorAll('.reveal'), { opacity: 1, y: 0 });
-        f.querySelectorAll('.feature-text').forEach((t) => {
-          gsap.from(t.querySelectorAll('.kicker, .h2, .lead, .h3, .ticks li'), { opacity: 0, y: 26, duration: 0.8, ease: 'power3.out', stagger: 0.035, scrollTrigger: { trigger: t, start: 'top 80%', once: true } });
-        });
-      });
-
-      // Numbers count up as the bento arrives.
-      const nums = [...document.querySelectorAll('.bento [data-count]')];
-      if (nums.length) {
-        ScrollTrigger.create({
-          trigger: '.bento', start: 'top 85%', once: true,
-          onEnter: () => nums.forEach((num) => {
-            const o = { v: 0 };
-            gsap.to(o, { v: Number(num.dataset.count), duration: 1.8, ease: 'power3.out', onUpdate: () => { num.textContent = String(Math.round(o.v)); } });
-          }),
-        });
-      }
-
       // How it works: a thin line draws across.
       const how = document.querySelector('.how');
       if (how) {
@@ -478,7 +528,7 @@
       }
 
       // Everything else marked .reveal fades up in small groups; cards also tip forward.
-      const skip = (el) => el.closest('.hero, .page-hero, .feature');
+      const skip = (el) => el.closest('.hero, .page-hero');
       const items = gsap.utils.toArray('.reveal').filter((el) => !skip(el));
       ScrollTrigger.batch(items, {
         start: 'top 92%', once: true,
